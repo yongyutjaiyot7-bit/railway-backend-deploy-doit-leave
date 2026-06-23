@@ -12,7 +12,7 @@ body { font-family:'Sarabun','Segoe UI',sans-serif; background:#f0f4f8; color:#1
 .hero h1 { font-size:22px; font-weight:800; margin-bottom:6px; }
 .hero p { font-size:14px; opacity:.8; }
 .icon-box { width:80px; height:80px; background:#fff; border-radius:20px; margin:0 auto 18px; display:flex; align-items:center; justify-content:center; font-size:40px; box-shadow:0 8px 24px rgba(0,0,0,.2); }
-.container { max-width:480px; margin:0 auto; padding:20px 16px 40px; }
+.container { max-width:520px; margin:0 auto; padding:20px 16px 40px; }
 .card { background:#fff; border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,.07); border:1px solid #edf2f7; }
 .card h2 { font-size:16px; font-weight:700; color:#1e3a5f; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
 .steps { list-style:none; }
@@ -22,71 +22,139 @@ body { font-family:'Sarabun','Segoe UI',sans-serif; background:#f0f4f8; color:#1
 .badge-os { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-bottom:10px; }
 .badge-android { background:#e6f4ea; color:#137333; }
 .badge-ios { background:#e8f0fe; color:#1a73e8; }
+.badge-apk { background:#fff3e0; color:#e65100; }
 .note { font-size:12px; color:#718096; background:#f7fafc; border-radius:8px; padding:10px 12px; margin-top:12px; border-left:3px solid #bee3f8; }
+.note-warn { border-left-color:#fbd38d; background:#fffbeb; }
 .btn-open { display:block; text-align:center; background:linear-gradient(135deg,#1e3a5f,#2b6cb0); color:#fff; padding:14px; border-radius:12px; font-size:15px; font-weight:700; text-decoration:none; margin-top:20px; box-shadow:0 4px 12px rgba(30,58,95,.3); }
+.btn-pwabuilder { display:block; text-align:center; background:linear-gradient(135deg,#7c3aed,#a855f7); color:#fff; padding:12px; border-radius:12px; font-size:14px; font-weight:700; text-decoration:none; margin-top:12px; }
 .img-hint { font-size:22px; margin:0 3px; vertical-align:middle; }
+.tab-nav { display:flex; gap:0; background:#edf2f7; border-radius:12px; padding:4px; margin-bottom:20px; }
+.tab-btn { flex:1; padding:9px 4px; border:none; background:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; color:#718096; transition:.2s; }
+.tab-btn.active { background:#fff; color:#1e3a5f; box-shadow:0 1px 4px rgba(0,0,0,.1); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.highlight { background:#ebf8ff; border:1px solid #90cdf4; border-radius:8px; padding:10px 12px; font-size:13px; margin-bottom:12px; }
 </style>
 </head>
 <body>
 <div class="hero">
   <div class="icon-box">📋</div>
   <h1>ติดตั้ง ระบบลาออนไลน์</h1>
-  <p>เพิ่มลงหน้าจอมือถือใช้งานได้เหมือนแอปจริง</p>
+  <p>เลือกวิธีติดตั้งที่เหมาะกับอุปกรณ์ของคุณ</p>
 </div>
 
 <div class="container">
 
-  <!-- Android -->
-  <div class="card">
-    <span class="badge-os badge-android">🤖 Android</span>
-    <h2>วิธีติดตั้งบน Android</h2>
-    <ul class="steps">
-      <li>
-        <span class="step-num">1</span>
-        <span>เปิดลิงก์ในแอป <b>Chrome</b> (สำคัญ — ต้องใช้ Chrome เท่านั้น)</span>
-      </li>
-      <li>
-        <span class="step-num">2</span>
-        <span>กดเมนู <span class="img-hint">⋮</span> มุมขวาบน</span>
-      </li>
-      <li>
-        <span class="step-num">3</span>
-        <span>กด <b>"เพิ่มลงหน้าจอหลัก"</b> หรือ <b>"ติดตั้งแอป"</b></span>
-      </li>
-      <li>
-        <span class="step-num">4</span>
-        <span>กด <b>"ติดตั้ง"</b> หรือ <b>"เพิ่ม"</b> เพื่อยืนยัน</span>
-      </li>
-    </ul>
-    <div class="note">💡 บางเครื่องจะมีแถบ "เพิ่มไปหน้าจอหลัก" ขึ้นอัตโนมัติที่ด้านล่างหน้าจอ กดได้เลย</div>
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('android',this)">🤖 APK</button>
+    <button class="tab-btn" onclick="showTab('pwa-android',this)">Chrome</button>
+    <button class="tab-btn" onclick="showTab('ios',this)">🍎 iOS</button>
+  </div>
+
+  <!-- Android APK -->
+  <div id="tab-android" class="tab-content active">
+    <div class="card">
+      <span class="badge-os badge-apk">🤖 Android — ติดตั้ง APK (แนะนำ)</span>
+      <h2>สร้าง APK ด้วย PWABuilder</h2>
+      <div class="highlight">วิธีนี้ได้ไฟล์ .apk จริง ติดตั้งได้เหมือนแอปทั่วไป ไม่ต้อง Add to Home Screen</div>
+      <ul class="steps">
+        <li>
+          <span class="step-num">1</span>
+          <span>Deploy ระบบขึ้น <b>Railway / Render / Fly.io</b> ให้มี URL แบบ <b>https://</b></span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span>เปิด <b>pwabuilder.com</b> แล้วใส่ URL ของระบบ กด <b>Start</b></span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span>PWABuilder จะวิเคราะห์ PWA — กด <b>"Package For Stores"</b></span>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span>เลือก <b>Android</b> → กด <b>"Generate Package"</b> → ดาวน์โหลด .apk</span>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span>เปิดไฟล์ .apk บนมือถือ Android เพื่อติดตั้ง<br><span style="color:#718096;font-size:12px">(ต้องเปิด "แหล่งที่มาที่ไม่รู้จัก" ใน Settings → Security)</span></span>
+        </li>
+      </ul>
+      <a class="btn-pwabuilder" href="https://www.pwabuilder.com" target="_blank">🔗 เปิด pwabuilder.com</a>
+      <div class="note">💡 ไฟล์ <b>twa-manifest.json</b> ใน folder public/ ของโปรเจกต์ ใช้เป็น config สำหรับ PWABuilder ได้เลย (แก้ YOUR_RAILWAY_URL ก่อน)</div>
+    </div>
+  </div>
+
+  <!-- Android Chrome -->
+  <div id="tab-pwa-android" class="tab-content">
+    <div class="card">
+      <span class="badge-os badge-android">🤖 Android — Chrome</span>
+      <h2>วิธีติดตั้งบน Android ผ่าน Chrome</h2>
+      <ul class="steps">
+        <li>
+          <span class="step-num">1</span>
+          <span>เปิดลิงก์ในแอป <b>Chrome</b> (สำคัญ — ต้องใช้ Chrome เท่านั้น)</span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span>กดเมนู <b>⋮</b> มุมขวาบน</span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span>กด <b>"เพิ่มลงหน้าจอหลัก"</b> หรือ <b>"ติดตั้งแอป"</b></span>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span>กด <b>"ติดตั้ง"</b> หรือ <b>"เพิ่ม"</b> เพื่อยืนยัน</span>
+        </li>
+      </ul>
+      <div class="note">⚠️ ต้องใช้ URL แบบ https:// เท่านั้น ถ้าเป็น http:// จะไม่แสดงตัวเลือกนี้</div>
+    </div>
   </div>
 
   <!-- iOS -->
-  <div class="card">
-    <span class="badge-os badge-ios">🍎 iPhone / iPad</span>
-    <h2>วิธีติดตั้งบน iOS</h2>
-    <ul class="steps">
-      <li>
-        <span class="step-num">1</span>
-        <span>เปิดลิงก์ใน <b>Safari</b> (ต้องใช้ Safari เท่านั้น ไม่ใช่ Chrome)</span>
-      </li>
-      <li>
-        <span class="step-num">2</span>
-        <span>กดปุ่ม <b>แชร์</b> <span class="img-hint">⬆️</span> ที่แถบล่างของ Safari</span>
-      </li>
-      <li>
-        <span class="step-num">3</span>
-        <span>เลื่อนลงแล้วกด <b>"เพิ่มไปที่หน้าจอโฮม"</b> (Add to Home Screen)</span>
-      </li>
-      <li>
-        <span class="step-num">4</span>
-        <span>กด <b>"เพิ่ม"</b> มุมขวาบน</span>
-      </li>
-    </ul>
-    <div class="note">⚠️ iOS ต้องใช้ Safari เท่านั้น — Chrome บน iPhone ไม่รองรับการติดตั้ง PWA</div>
+  <div id="tab-ios" class="tab-content">
+    <div class="card">
+      <span class="badge-os badge-ios">🍎 iPhone / iPad</span>
+      <h2>วิธีติดตั้งบน iOS</h2>
+      <ul class="steps">
+        <li>
+          <span class="step-num">1</span>
+          <span>เปิดลิงก์ใน <b>Safari</b> (ต้องใช้ Safari เท่านั้น ไม่ใช่ Chrome)</span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span>กดปุ่ม <b>แชร์</b> <span style="font-size:18px">⬆️</span> ที่แถบล่างของ Safari</span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span>เลื่อนลงแล้วกด <b>"เพิ่มไปที่หน้าจอโฮม"</b> (Add to Home Screen)</span>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span>กด <b>"เพิ่ม"</b> มุมขวาบน</span>
+        </li>
+      </ul>
+      <div class="note note-warn">⚠️ iOS รองรับเฉพาะ "Add to Home Screen" เท่านั้น — Apple ไม่อนุญาตให้ติดตั้ง APK หรือแอปนอก App Store บน iPhone/iPad</div>
+    </div>
   </div>
 
   <a class="btn-open" href="/">🚀 เปิดระบบลาออนไลน์</a>
 </div>
+
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+// Auto-select tab by OS
+const ua = navigator.userAgent;
+if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+  showTab('ios', document.querySelectorAll('.tab-btn')[2]);
+} else if (/android/i.test(ua)) {
+  showTab('android', document.querySelectorAll('.tab-btn')[0]);
+}
+</script>
 </body>
 </html>
