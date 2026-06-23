@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a5f">
+<title>ติดตั้งแอป — ระบบลาออนไลน์</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Sarabun','Segoe UI',sans-serif; background:#f0f4f8; color:#1a202c; min-height:100vh; }
+.hero { background:linear-gradient(135deg,#1e3a5f,#2b6cb0); color:#fff; padding:40px 24px 32px; text-align:center; }
+.hero h1 { font-size:22px; font-weight:800; margin-bottom:6px; }
+.hero p { font-size:14px; opacity:.8; }
+.icon-box { width:80px; height:80px; background:#fff; border-radius:20px; margin:0 auto 18px; display:flex; align-items:center; justify-content:center; font-size:40px; box-shadow:0 8px 24px rgba(0,0,0,.2); }
+.container { max-width:480px; margin:0 auto; padding:20px 16px 40px; }
+.card { background:#fff; border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,.07); border:1px solid #edf2f7; }
+.card h2 { font-size:16px; font-weight:700; color:#1e3a5f; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.steps { list-style:none; }
+.steps li { display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid #f0f4f8; font-size:14px; line-height:1.5; }
+.steps li:last-child { border-bottom:none; }
+.step-num { width:26px; height:26px; background:#1e3a5f; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; margin-top:1px; }
+.badge-os { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-bottom:10px; }
+.badge-android { background:#e6f4ea; color:#137333; }
+.badge-ios { background:#e8f0fe; color:#1a73e8; }
+.note { font-size:12px; color:#718096; background:#f7fafc; border-radius:8px; padding:10px 12px; margin-top:12px; border-left:3px solid #bee3f8; }
+.btn-open { display:block; text-align:center; background:linear-gradient(135deg,#1e3a5f,#2b6cb0); color:#fff; padding:14px; border-radius:12px; font-size:15px; font-weight:700; text-decoration:none; margin-top:20px; box-shadow:0 4px 12px rgba(30,58,95,.3); }
+.img-hint { font-size:22px; margin:0 3px; vertical-align:middle; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="icon-box">📋</div>
+  <h1>ติดตั้ง ระบบลาออนไลน์</h1>
+  <p>เพิ่มลงหน้าจอมือถือใช้งานได้เหมือนแอปจริง</p>
+</div>
+
+<div class="container">
+
+  <!-- Android -->
+  <div class="card">
+    <span class="badge-os badge-android">🤖 Android</span>
+    <h2>วิธีติดตั้งบน Android</h2>
+    <ul class="steps">
+      <li>
+        <span class="step-num">1</span>
+        <span>เปิดลิงก์ในแอป <b>Chrome</b> (สำคัญ — ต้องใช้ Chrome เท่านั้น)</span>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <span>กดเมนู <span class="img-hint">⋮</span> มุมขวาบน</span>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <span>กด <b>"เพิ่มลงหน้าจอหลัก"</b> หรือ <b>"ติดตั้งแอป"</b></span>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <span>กด <b>"ติดตั้ง"</b> หรือ <b>"เพิ่ม"</b> เพื่อยืนยัน</span>
+      </li>
+    </ul>
+    <div class="note">💡 บางเครื่องจะมีแถบ "เพิ่มไปหน้าจอหลัก" ขึ้นอัตโนมัติที่ด้านล่างหน้าจอ กดได้เลย</div>
+  </div>
+
+  <!-- iOS -->
+  <div class="card">
+    <span class="badge-os badge-ios">🍎 iPhone / iPad</span>
+    <h2>วิธีติดตั้งบน iOS</h2>
+    <ul class="steps">
+      <li>
+        <span class="step-num">1</span>
+        <span>เปิดลิงก์ใน <b>Safari</b> (ต้องใช้ Safari เท่านั้น ไม่ใช่ Chrome)</span>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <span>กดปุ่ม <b>แชร์</b> <span class="img-hint">⬆️</span> ที่แถบล่างของ Safari</span>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <span>เลื่อนลงแล้วกด <b>"เพิ่มไปที่หน้าจอโฮม"</b> (Add to Home Screen)</span>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <span>กด <b>"เพิ่ม"</b> มุมขวาบน</span>
+      </li>
+    </ul>
+    <div class="note">⚠️ iOS ต้องใช้ Safari เท่านั้น — Chrome บน iPhone ไม่รองรับการติดตั้ง PWA</div>
+  </div>
+
+  <a class="btn-open" href="/">🚀 เปิดระบบลาออนไลน์</a>
+</div>
+</body>
+</html>
