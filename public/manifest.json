@@ -11,6 +11,24 @@
   "lang": "th",
   "dir": "ltr",
   "prefer_related_applications": false,
+  "categories": ["business", "productivity"],
+  "display_override": ["standalone", "minimal-ui"],
+  "screenshots": [
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "ระบบลาออนไลน์"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "ระบบลาออนไลน์"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
