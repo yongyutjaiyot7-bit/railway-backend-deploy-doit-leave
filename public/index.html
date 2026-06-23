@@ -2,7 +2,14 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1e3a5f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ระบบลา">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <title>ระบบลาออนไลน์</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -116,6 +123,89 @@
   .chart-wrap { position: relative; height: 240px; }
   .dash-year { display:flex;align-items:center;gap:10px;margin-bottom:18px; }
   @media(max-width:700px) { .chart-grid { grid-template-columns: 1fr; } }
+
+  /* ===== MOBILE RESPONSIVE ===== */
+  @media(max-width:768px) {
+    /* NAV */
+    nav { padding: 0 14px; height: 54px; }
+    nav h1 { font-size: 15px; }
+    #nav-name { display: none; }
+    #btn-logout { padding: 6px 11px; font-size: 12px; }
+
+    /* TABS — ซ่อนบนมือถือ ใช้ bottom nav แทน */
+    #tabs { display: none; }
+
+    /* MAIN */
+    main { padding: 12px 14px 80px; }
+
+    /* CARD */
+    .card { padding: 16px; margin-bottom: 14px; border-radius: 12px; }
+    .card h2 { font-size: 14px; }
+
+    /* FORM */
+    .form-grid { grid-template-columns: 1fr; gap: 12px; }
+    input, select, textarea { font-size: 16px; padding: 11px 13px; }
+
+    /* TABLE — scroll horizontal */
+    .table-wrap { border-radius: 8px; }
+    table { font-size: 13px; }
+    th, td { padding: 9px 10px; }
+
+    /* STATS */
+    .stat-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+    .stat-card { padding: 14px 12px; }
+    .stat-val { font-size: 26px !important; }
+
+    /* LOGIN */
+    .login-card { width: 92vw; padding: 30px 22px; }
+
+    /* BALANCE */
+    .balance-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+    .balance-item .days { font-size: 24px; }
+
+    /* BUTTON */
+    .btn { padding: 10px 16px; font-size: 13px; }
+
+    /* MODAL */
+    .modal-box { width: 96vw !important; max-width: 96vw !important; padding: 20px !important; }
+
+    /* SECTION HEADER */
+    .section-header { padding: 8px 12px; }
+  }
+
+  /* ===== BOTTOM NAV (มือถือ) ===== */
+  #bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -4px 16px rgba(0,0,0,.1);
+    z-index: 200;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  #bottom-nav .bnav-inner {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 58px;
+  }
+  .bnav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    flex: 1; padding: 6px 2px; cursor: pointer;
+    color: #718096; font-size: 10px; font-weight: 600;
+    border: none; background: none; font-family: inherit;
+    transition: all .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bnav-item .bnav-icon { font-size: 20px; line-height: 1; }
+  .bnav-item.active { color: #1e3a5f; }
+  .bnav-item.active .bnav-icon { transform: scale(1.15); }
+
+  @media(max-width:768px) {
+    #bottom-nav { display: block; }
+  }
 
   /* STATS CARDS */
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 16px; margin-bottom: 22px; }
@@ -381,9 +471,10 @@
 <!-- APP -->
 <div id="app">
   <nav>
-    <h1>🏢 ระบบลาออนไลน์ บริษัท ดูอิท จำกัด</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <div id="nav-user">
       <span id="nav-name"></span>
+      <button id="btn-install-pwa" onclick="installPWA()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;align-items:center;gap:5px">📲 ติดตั้งแอป</button>
       <button id="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
     </div>
   </nav>
@@ -397,6 +488,30 @@
     <div class="tab" id="tab-leave-mgmt" onclick="switchTab('leave-mgmt')" style="display:none">📂 จัดการการลา</div>
     <div class="tab" id="tab-report" onclick="switchTab('report')" style="display:none">📊 รายงาน</div>
     <div class="tab" id="tab-hr" onclick="switchTab('hr')" style="display:none">⚙️ จัดการ HR</div>
+  </div>
+
+  <!-- BOTTOM NAV สำหรับมือถือ -->
+  <div id="bottom-nav">
+    <div class="bnav-inner" id="bnav-inner">
+      <button class="bnav-item active" id="bnav-home" onclick="switchTab('home')">
+        <span class="bnav-icon">🏠</span><span>หน้าหลัก</span>
+      </button>
+      <button class="bnav-item" id="bnav-request" onclick="switchTab('request')" style="display:none">
+        <span class="bnav-icon">📝</span><span>ยื่นใบลา</span>
+      </button>
+      <button class="bnav-item" id="bnav-history" onclick="switchTab('history')" style="display:none">
+        <span class="bnav-icon">📋</span><span>ประวัติ</span>
+      </button>
+      <button class="bnav-item" id="bnav-approve" onclick="switchTab('approve')" style="display:none">
+        <span class="bnav-icon">✅</span><span>อนุมัติ</span>
+      </button>
+      <button class="bnav-item" id="bnav-report" onclick="switchTab('report')" style="display:none">
+        <span class="bnav-icon">📊</span><span>รายงาน</span>
+      </button>
+      <button class="bnav-item" id="bnav-hr" onclick="switchTab('hr')" style="display:none">
+        <span class="bnav-icon">⚙️</span><span>จัดการ HR</span>
+      </button>
+    </div>
   </div>
 
   <main>
@@ -1291,6 +1406,10 @@ function showApp() {
     document.getElementById('tab-hr').style.display = '';
     document.getElementById('tab-calendar-all').style.display = '';
     document.getElementById('tab-approve').style.display = '';
+    // bottom nav HR
+    document.getElementById('bnav-approve').style.display = '';
+    document.getElementById('bnav-report').style.display = '';
+    document.getElementById('bnav-hr').style.display = '';
     // populate year selector
     const sel = document.getElementById('dash-year');
     for (let y = curYear; y >= curYear - 4; y--) sel.innerHTML += `<option value="${y}" ${y===curYear?'selected':''}>${y + 543}</option>`;
@@ -1303,8 +1422,18 @@ function showApp() {
     document.getElementById('tab-request').style.display = '';
     document.getElementById('tab-history').style.display = '';
     document.getElementById('tab-calendar-my').style.display = '';
-    if (isApprover) { document.getElementById('tab-approve').style.display = ''; document.getElementById('tab-calendar-all').style.display = ''; }
-    if (isManager)  document.getElementById('tab-report').style.display = '';
+    // bottom nav พนักงาน
+    document.getElementById('bnav-request').style.display = '';
+    document.getElementById('bnav-history').style.display = '';
+    if (isApprover) {
+      document.getElementById('tab-approve').style.display = '';
+      document.getElementById('tab-calendar-all').style.display = '';
+      document.getElementById('bnav-approve').style.display = '';
+    }
+    if (isManager) {
+      document.getElementById('tab-report').style.display = '';
+      document.getElementById('bnav-report').style.display = '';
+    }
     loadBalance();
     loadCalMy();
     loadApprovers();
@@ -1358,8 +1487,13 @@ async function doRegister() {
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
+  const tabEl = document.getElementById('tab-' + name);
+  if (tabEl) tabEl.classList.add('active');
   document.getElementById('page-' + name).classList.add('active');
+  // sync bottom nav
+  document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
+  const bnavEl = document.getElementById('bnav-' + name);
+  if (bnavEl) bnavEl.classList.add('active');
   if (name === 'calendar-my')  loadCalMy();
   if (name === 'calendar-all') loadCalAll();
   if (name === 'home' && user.role === 'hr_admin') loadDashboard();
@@ -2713,6 +2847,42 @@ function showTooltip(e, evJson) {
   tip.style.top  = (e.clientY + 14) + 'px';
 }
 function hideTooltip() { document.getElementById('tooltip').style.display = 'none'; }
+</script>
+
+<script>
+// PWA: Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+// PWA: Install prompt (Android Chrome)
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // แสดงปุ่ม install ถ้ายังไม่ได้ติดตั้ง
+  const btn = document.getElementById('btn-install-pwa');
+  if (btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('btn-install-pwa');
+  if (btn) btn.style.display = 'none';
+  deferredPrompt = null;
+});
+
+async function installPWA() {
+  if (!deferredPrompt) {
+    Swal.fire({ icon:'info', title:'วิธีติดตั้ง', html:
+      '<b>Android:</b> เมนู ⋮ → "เพิ่มลงหน้าจอหลัก"<br><br><b>iPhone/iPad:</b> กดปุ่ม <b>แชร์ 🔗</b> → "เพิ่มไปที่หน้าจอโฮม"',
+      confirmButtonColor:'#1e3a5f', confirmButtonText:'ตกลง' });
+    return;
+  }
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') deferredPrompt = null;
+}
 </script>
 </body>
 </html>

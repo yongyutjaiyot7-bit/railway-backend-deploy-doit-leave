@@ -7,6 +7,12 @@ async function main() {
 
   const app = express();
   app.use(express.json());
+  // Service worker ต้องการ header Service-Worker-Allowed
+  app.use('/sw.js', (req, res, next) => {
+    res.setHeader('Service-Worker-Allowed', '/');
+    res.setHeader('Cache-Control', 'no-cache');
+    next();
+  });
   app.use(express.static(path.join(__dirname, '../public')));
 
   app.use('/api/auth', require('./routes/auth')(db));
