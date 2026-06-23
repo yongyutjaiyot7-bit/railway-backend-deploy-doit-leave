@@ -181,9 +181,13 @@
     input, select, textarea { font-size:16px !important; padding:11px 12px !important; }
 
     /* TABLE — scroll แนวนอน */
-    .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-    table { font-size:12px; min-width:480px; }
-    th, td { padding:7px 8px; white-space:nowrap; }
+    .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; }
+    table { font-size:11px; min-width:480px; width:max-content; }
+    th, td { padding:6px 7px; white-space:nowrap; }
+    /* ป้องกัน table ล้น main */
+    main { max-width:100vw; }
+    .page { overflow-x:hidden; }
+    .card { overflow-x:hidden; }
 
     /* BUTTON */
     .btn { padding:10px 14px; font-size:13px; min-height:42px; }
@@ -497,8 +501,8 @@
           <option value="cancelled">ยกเลิก</option>
         </select>
       </div>
-      <div class="form-group"><label>วันที่เริ่มลา</label><input type="date" id="el-start"></div>
-      <div class="form-group"><label>วันที่สิ้นสุด</label><input type="date" id="el-end"></div>
+      <div class="form-group"><label>วันที่เริ่มลา</label><input type="date" id="el-start" min=""></div>
+      <div class="form-group"><label>วันที่สิ้นสุด</label><input type="date" id="el-end" min=""></div>
       <div class="form-group full"><label>เหตุผล</label><textarea id="el-reason"></textarea></div>
     </div>
     <div class="modal-actions">
@@ -2326,6 +2330,10 @@ function openEditLeave(rJson) {
   document.getElementById('el-start').value  = r.start_date;
   document.getElementById('el-end').value    = r.end_date;
   document.getElementById('el-reason').value = r.reason;
+  // ป้องกันการเลือกวันย้อนหลัง
+  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('el-start').min = todayStr;
+  document.getElementById('el-end').min   = todayStr;
   document.getElementById('edit-leave-modal').classList.add('open');
 }
 function closeEditLeaveModal() { document.getElementById('edit-leave-modal').classList.remove('open'); }
