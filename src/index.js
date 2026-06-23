@@ -6,6 +6,20 @@ async function main() {
   const db = await initDb();
 
   const app = express();
+
+  // CORS — อนุญาต React Native web และ mobile app
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowed = ['http://localhost:8081', 'http://localhost:19006', 'http://localhost:3000'];
+    if (!origin || allowed.includes(origin) || /^exp:\/\//.test(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    if (req.method === 'OPTIONS') { res.sendStatus(204); return; }
+    next();
+  });
+
   app.use(express.json());
   // Service worker ต้องการ header Service-Worker-Allowed
   app.use('/sw.js', (req, res, next) => {
