@@ -1,4 +1,4 @@
-const CACHE = 'leave-app-v2';
+const CACHE = 'leave-app-v3';
 const STATIC = [
   '/',
   '/manifest.json',

@@ -2942,18 +2942,6 @@ if ('serviceWorker' in navigator) {
 
 // PWA: Install prompt (Android Chrome)
 let deferredPrompt;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // แสดงปุ่ม install ถ้ายังไม่ได้ติดตั้ง
-  const btn = document.getElementById('btn-install-pwa');
-  if (btn) btn.style.display = 'flex';
-});
-window.addEventListener('appinstalled', () => {
-  const btn = document.getElementById('btn-install-pwa');
-  if (btn) btn.style.display = 'none';
-  deferredPrompt = null;
-});
 
 function detectOS() {
   const ua = navigator.userAgent;
@@ -2962,60 +2950,86 @@ function detectOS() {
   return 'other';
 }
 
+function isStandaloneMode() {
+  return window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+}
+
+// จับ event ก่อน install prompt จาก Chrome/Android
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBtn();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const btn = document.getElementById('btn-install-pwa');
+  if (btn) btn.style.display = 'none';
+});
+
+function showInstallBtn() {
+  if (isStandaloneMode()) return; // ติดตั้งแล้ว ซ่อนปุ่ม
+  const os = detectOS();
+  if (os === 'ios' || os === 'android') {
+    const btn = document.getElementById('btn-install-pwa');
+    if (btn) btn.style.display = 'flex';
+  }
+}
+
+// แสดงปุ่มทันทีที่โหลดบนมือถือ
+window.addEventListener('DOMContentLoaded', showInstallBtn);
+
 async function installPWA() {
   const os = detectOS();
-  if (os === 'ios') {
-    Swal.fire({
-      icon: 'info',
-      title: '📲 ติดตั้งบน iPhone/iPad',
-      html: `
-        <div style="text-align:left;line-height:1.9;font-size:14px">
-          <b>ขั้นตอน:</b><br>
-          1. กดปุ่ม <b>แชร์</b> <span style="font-size:18px">⬆️</span> ที่แถบล่างของ Safari<br>
-          2. เลื่อนลงแล้วกด <b>"เพิ่มไปที่หน้าจอโฮม"</b><br>
-          3. กด <b>"เพิ่ม"</b> มุมขวาบน<br><br>
-          <span style="color:#718096;font-size:12px">⚠️ ต้องใช้ Safari เท่านั้น (ไม่รองรับ Chrome บน iOS)</span>
-        </div>`,
-      confirmButtonColor: '#1e3a5f',
-      confirmButtonText: 'ตกลง'
-    });
-    return;
-  }
-  if (os === 'android' && !deferredPrompt) {
-    Swal.fire({
-      icon: 'info',
-      title: '📲 ติดตั้งบน Android',
-      html: `
-        <div style="text-align:left;line-height:1.9;font-size:14px">
-          <b>ขั้นตอน (Chrome):</b><br>
-          1. กดเมนู <b>⋮</b> มุมขวาบน<br>
-          2. กด <b>"เพิ่มลงหน้าจอหลัก"</b><br>
-          3. กด <b>"เพิ่ม"</b><br>
-        </div>`,
-      confirmButtonColor: '#1e3a5f',
-      confirmButtonText: 'ตกลง'
-    });
-    return;
-  }
+
+  // Android: มี deferredPrompt → แสดง native install dialog
   if (deferredPrompt) {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
       deferredPrompt = null;
-      document.getElementById('btn-install-pwa').style.display = 'none';
+      const btn = document.getElementById('btn-install-pwa');
+      if (btn) btn.style.display = 'none';
     }
+    return;
+  }
+
+  // iOS → คำแนะนำ Safari
+  if (os === 'ios') {
+    Swal.fire({
+      icon: 'info',
+      title: '📲 ติดตั้งบน iPhone/iPad',
+      html: `<div style="text-align:left;line-height:2;font-size:14px">
+        1. เปิดใน <b>Safari</b> (ไม่ใช่ Chrome)<br>
+        2. กดปุ่ม <b>แชร์ ⬆️</b> ที่แถบล่าง<br>
+        3. เลือก <b>"เพิ่มไปที่หน้าจอโฮม"</b><br>
+        4. กด <b>"เพิ่ม"</b> มุมขวาบน<br>
+        <span style="color:#718096;font-size:12px">⚠️ ต้องใช้ Safari เท่านั้น</span>
+      </div>`,
+      confirmButtonColor: '#1e3a5f',
+      confirmButtonText: 'เข้าใจแล้ว'
+    });
+    return;
+  }
+
+  // Android: ยังไม่มี deferredPrompt → คำแนะนำ manual
+  if (os === 'android') {
+    Swal.fire({
+      icon: 'info',
+      title: '📲 ติดตั้งบน Android',
+      html: `<div style="text-align:left;line-height:2;font-size:14px">
+        1. เปิดใน <b>Chrome</b><br>
+        2. กดเมนู <b>⋮</b> มุมขวาบน<br>
+        3. กด <b>"เพิ่มลงหน้าจอหลัก"</b> หรือ <b>"ติดตั้งแอป"</b><br>
+        4. กด <b>"ติดตั้ง"</b><br>
+        <span style="color:#718096;font-size:12px">💡 หรือรอให้ Chrome แสดง popup ติดตั้งอัตโนมัติ</span>
+      </div>`,
+      confirmButtonColor: '#1e3a5f',
+      confirmButtonText: 'เข้าใจแล้ว'
+    });
   }
 }
-
-// แสดงปุ่ม install บน iOS Safari ด้วย (ไม่มี beforeinstallprompt)
-window.addEventListener('DOMContentLoaded', () => {
-  const os = detectOS();
-  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-  if (!isStandalone && (os === 'ios' || os === 'android')) {
-    const btn = document.getElementById('btn-install-pwa');
-    if (btn) btn.style.display = 'flex';
-  }
-});
 </script>
 </body>
 </html>
