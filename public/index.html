@@ -1747,6 +1747,15 @@ function fpToISO(fp) {
 function initFlatpickr() {
   if (fpStart && fpEnd) return;
   const today = new Date(); today.setHours(0,0,0,0);
+
+  // ตรวจสอบ + บังคับ minDate แม้บน scroll wheel (iOS/Android)
+  function enforceMinDate(fp, sel, minD) {
+    if (sel[0] && sel[0] < minD) {
+      fp.setDate(minD, true);
+      Swal.fire({ icon:'warning', title:'ไม่สามารถเลือกวันย้อนหลังได้', text:'กรุณาเลือกวันที่ตั้งแต่วันนี้เป็นต้นไป', confirmButtonColor:'#1e3a5f' });
+    }
+  }
+
   const opts = {
     enableTime: true,
     dateFormat: 'd-m-Y H:i',
@@ -1759,12 +1768,21 @@ function initFlatpickr() {
   fpStart = flatpickr('#req-start', {
     ...opts,
     onChange: (sel) => {
-      if (sel[0] && fpEnd) fpEnd.set('minDate', sel[0]);
+      enforceMinDate(fpStart, sel, today);
+      if (sel[0] && sel[0] >= today && fpEnd) fpEnd.set('minDate', sel[0]);
       calcReqDays();
+    },
+    onClose: (sel) => {
+      enforceMinDate(fpStart, sel, today);
     },
   });
   fpEnd = flatpickr('#req-end', {
     ...opts,
+    onChange: (sel) => {
+      const minEnd = (fpStart?.selectedDates[0] && fpStart.selectedDates[0] >= today) ? fpStart.selectedDates[0] : today;
+      enforceMinDate(fpEnd, sel, minEnd);
+      calcReqDays();
+    },
     onClose: (sel) => {
       // ตรวจสอบหลังจากปิด calendar สิ้นสุด (ผู้ใช้ยืนยันเลือกแล้ว)
       calcReqDays();
