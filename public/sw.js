@@ -1,17 +1,17 @@
-const CACHE = 'leave-app-v1';
+const CACHE = 'leave-app-v2';
 const STATIC = [
   '/',
   '/manifest.json',
-  'https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js',
-  'https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css',
-  'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css',
-  'https://cdn.jsdelivr.net/npm/flatpickr',
-  'https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
 ];
 
 self.addEventListener('install', e => {
+  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(STATIC)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => {
+      return Promise.allSettled(STATIC.map(url => c.add(url)));
+    })
   );
 });
 
@@ -25,17 +25,24 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // API calls — network only, no cache
+
+  // API calls → network only (ไม่ cache ข้อมูล)
   if (url.pathname.startsWith('/api/')) return;
+
+  // GET only
+  if (e.request.method !== 'GET') return;
+
   e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        if (res && res.status === 200 && e.request.method === 'GET') {
+    caches.match(e.request).then(cached => {
+      const networkFetch = fetch(e.request).then(res => {
+        if (res && res.status === 200) {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      })
-      .catch(() => caches.match(e.request))
+      });
+      // Network first, fallback to cache (รองรับ iOS offline)
+      return networkFetch.catch(() => cached);
+    })
   );
 });

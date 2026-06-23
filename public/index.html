@@ -2,14 +2,20 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1e3a5f">
+<!-- Android PWA -->
 <meta name="mobile-web-app-capable" content="yes">
+<!-- iOS PWA -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ระบบลา">
+<!-- iOS icons -->
+<link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png">
+<!-- iOS splash screens (iPhone) -->
+<link rel="apple-touch-startup-image" href="/icons/splash-portrait.png" media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3)">
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <title>ระบบลาออนไลน์</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -124,53 +130,25 @@
   .dash-year { display:flex;align-items:center;gap:10px;margin-bottom:18px; }
   @media(max-width:700px) { .chart-grid { grid-template-columns: 1fr; } }
 
-  /* ===== MOBILE RESPONSIVE ===== */
-  @media(max-width:768px) {
-    /* NAV */
-    nav { padding: 0 14px; height: 54px; }
-    nav h1 { font-size: 15px; }
-    #nav-name { display: none; }
-    #btn-logout { padding: 6px 11px; font-size: 12px; }
-
-    /* TABS — ซ่อนบนมือถือ ใช้ bottom nav แทน */
-    #tabs { display: none; }
-
-    /* MAIN */
-    main { padding: 12px 14px 80px; }
-
-    /* CARD */
-    .card { padding: 16px; margin-bottom: 14px; border-radius: 12px; }
-    .card h2 { font-size: 14px; }
-
-    /* FORM */
-    .form-grid { grid-template-columns: 1fr; gap: 12px; }
-    input, select, textarea { font-size: 16px; padding: 11px 13px; }
-
-    /* TABLE — scroll horizontal */
-    .table-wrap { border-radius: 8px; }
-    table { font-size: 13px; }
-    th, td { padding: 9px 10px; }
-
-    /* STATS */
-    .stat-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
-    .stat-card { padding: 14px 12px; }
-    .stat-val { font-size: 26px !important; }
-
-    /* LOGIN */
-    .login-card { width: 92vw; padding: 30px 22px; }
-
-    /* BALANCE */
-    .balance-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
-    .balance-item .days { font-size: 24px; }
-
-    /* BUTTON */
-    .btn { padding: 10px 16px; font-size: 13px; }
-
-    /* MODAL */
-    .modal-box { width: 96vw !important; max-width: 96vw !important; padding: 20px !important; }
-
-    /* SECTION HEADER */
-    .section-header { padding: 8px 12px; }
+  /* ===== iOS & ANDROID BASE FIXES ===== */
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    height: -webkit-fill-available;
+  }
+  body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  /* iOS: ป้องกัน input zoom (ต้องการ font-size >= 16px) */
+  input, select, textarea { touch-action: manipulation; }
+  /* iOS: safe area สำหรับ notch */
+  nav {
+    padding-top: env(safe-area-inset-top);
+    padding-left: max(28px, env(safe-area-inset-left));
+    padding-right: max(28px, env(safe-area-inset-right));
   }
 
   /* ===== BOTTOM NAV (มือถือ) ===== */
@@ -181,9 +159,11 @@
     background: #fff;
     border-top: 1px solid #e2e8f0;
     box-shadow: 0 -4px 16px rgba(0,0,0,.1);
-    z-index: 200;
-    padding: 0;
+    z-index: 500;
+    /* iOS safe area สำหรับ home indicator */
     padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   #bottom-nav .bnav-inner {
     display: flex;
@@ -193,18 +173,83 @@
   }
   .bnav-item {
     display: flex; flex-direction: column; align-items: center; gap: 3px;
-    flex: 1; padding: 6px 2px; cursor: pointer;
+    flex: 1; padding: 8px 2px; cursor: pointer;
     color: #718096; font-size: 10px; font-weight: 600;
     border: none; background: none; font-family: inherit;
-    transition: all .15s;
+    transition: color .15s, transform .15s;
     -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+    /* iOS: ทำให้ tap ตอบสนองเร็ว */
+    touch-action: manipulation;
   }
-  .bnav-item .bnav-icon { font-size: 20px; line-height: 1; }
+  .bnav-item .bnav-icon { font-size: 22px; line-height: 1; transition: transform .15s; }
   .bnav-item.active { color: #1e3a5f; }
-  .bnav-item.active .bnav-icon { transform: scale(1.15); }
+  .bnav-item.active .bnav-icon { transform: scale(1.2); }
+  .bnav-item:active { opacity: 0.7; }
 
   @media(max-width:768px) {
     #bottom-nav { display: block; }
+  }
+
+  /* ===== MOBILE RESPONSIVE ===== */
+  @media(max-width:768px) {
+    /* NAV */
+    nav { padding: env(safe-area-inset-top) 14px 0; height: calc(54px + env(safe-area-inset-top)); align-items: flex-end; padding-bottom: 8px; }
+    nav h1 { font-size: 15px; }
+    #nav-name { display: none; }
+    #btn-logout { padding: 6px 11px; font-size: 12px; }
+    #btn-install-pwa { padding: 5px 9px; font-size: 11px; }
+
+    /* TABS — ซ่อนบนมือถือ ใช้ bottom nav แทน */
+    #tabs { display: none; }
+
+    /* MAIN — เว้น padding ล่างให้ bottom nav + safe area */
+    main { padding: 12px 14px calc(70px + env(safe-area-inset-bottom)); }
+
+    /* CARD */
+    .card { padding: 14px; margin-bottom: 12px; border-radius: 12px; }
+    .card h2 { font-size: 14px; }
+
+    /* FORM */
+    .form-grid { grid-template-columns: 1fr; gap: 12px; }
+    /* iOS: font-size 16px ป้องกัน auto-zoom เวลา focus input */
+    input, select, textarea { font-size: 16px !important; padding: 12px 13px; border-radius: 10px; }
+
+    /* TABLE */
+    .table-wrap { border-radius: 8px; -webkit-overflow-scrolling: touch; }
+    table { font-size: 12px; }
+    th, td { padding: 8px 9px; }
+
+    /* STATS */
+    .stat-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+    .stat-card { padding: 14px 12px; }
+    .stat-card .val { font-size: 26px; }
+
+    /* LOGIN */
+    .login-card { width: 92vw; padding: 28px 20px; }
+
+    /* BALANCE */
+    .balance-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+    .balance-item .days { font-size: 24px; }
+    .balance-item { padding: 14px 10px; }
+
+    /* BUTTON */
+    .btn { padding: 11px 16px; font-size: 13px; }
+    /* iOS: ปุ่มใหญ่พอสำหรับนิ้ว (min 44px) */
+    .btn-sm { padding: 8px 13px; min-height: 36px; }
+
+    /* MODAL */
+    .modal { width: 95vw !important; max-width: 95vw !important; padding: 20px !important; margin: 0 auto; }
+
+    /* SECTION HEADER */
+    .section-header { padding: 8px 12px; }
+
+    /* CHART */
+    .chart-wrap { height: 180px; }
+
+    /* STEP indicators */
+    .steps { gap: 2px; }
+    .step { font-size: 10px; }
   }
 
   /* STATS CARDS */
@@ -2872,17 +2917,67 @@ window.addEventListener('appinstalled', () => {
   deferredPrompt = null;
 });
 
+function detectOS() {
+  const ua = navigator.userAgent;
+  if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'ios';
+  if (/android/i.test(ua)) return 'android';
+  return 'other';
+}
+
 async function installPWA() {
-  if (!deferredPrompt) {
-    Swal.fire({ icon:'info', title:'วิธีติดตั้ง', html:
-      '<b>Android:</b> เมนู ⋮ → "เพิ่มลงหน้าจอหลัก"<br><br><b>iPhone/iPad:</b> กดปุ่ม <b>แชร์ 🔗</b> → "เพิ่มไปที่หน้าจอโฮม"',
-      confirmButtonColor:'#1e3a5f', confirmButtonText:'ตกลง' });
+  const os = detectOS();
+  if (os === 'ios') {
+    Swal.fire({
+      icon: 'info',
+      title: '📲 ติดตั้งบน iPhone/iPad',
+      html: `
+        <div style="text-align:left;line-height:1.9;font-size:14px">
+          <b>ขั้นตอน:</b><br>
+          1. กดปุ่ม <b>แชร์</b> <span style="font-size:18px">⬆️</span> ที่แถบล่างของ Safari<br>
+          2. เลื่อนลงแล้วกด <b>"เพิ่มไปที่หน้าจอโฮม"</b><br>
+          3. กด <b>"เพิ่ม"</b> มุมขวาบน<br><br>
+          <span style="color:#718096;font-size:12px">⚠️ ต้องใช้ Safari เท่านั้น (ไม่รองรับ Chrome บน iOS)</span>
+        </div>`,
+      confirmButtonColor: '#1e3a5f',
+      confirmButtonText: 'ตกลง'
+    });
     return;
   }
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  if (outcome === 'accepted') deferredPrompt = null;
+  if (os === 'android' && !deferredPrompt) {
+    Swal.fire({
+      icon: 'info',
+      title: '📲 ติดตั้งบน Android',
+      html: `
+        <div style="text-align:left;line-height:1.9;font-size:14px">
+          <b>ขั้นตอน (Chrome):</b><br>
+          1. กดเมนู <b>⋮</b> มุมขวาบน<br>
+          2. กด <b>"เพิ่มลงหน้าจอหลัก"</b><br>
+          3. กด <b>"เพิ่ม"</b><br>
+        </div>`,
+      confirmButtonColor: '#1e3a5f',
+      confirmButtonText: 'ตกลง'
+    });
+    return;
+  }
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      deferredPrompt = null;
+      document.getElementById('btn-install-pwa').style.display = 'none';
+    }
+  }
 }
+
+// แสดงปุ่ม install บน iOS Safari ด้วย (ไม่มี beforeinstallprompt)
+window.addEventListener('DOMContentLoaded', () => {
+  const os = detectOS();
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  if (!isStandalone && (os === 'ios' || os === 'android')) {
+    const btn = document.getElementById('btn-install-pwa');
+    if (btn) btn.style.display = 'flex';
+  }
+});
 </script>
 </body>
 </html>
