@@ -363,7 +363,7 @@
 <!-- LOGIN -->
 <div id="login-page">
   <div class="login-card">
-    <h1>🏢 ระบบลาออนไลน์<br>DOIT</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <p>กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน</p>
     <div id="login-alert"></div>
     <div class="form-group">
@@ -550,7 +550,7 @@
 <!-- APP -->
 <div id="app">
   <nav>
-    <h1>🏢 ระบบลาออนไลน์ บริษัท ดูอิท จำกัด</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <div id="nav-user">
       <span id="nav-name"></span>
       <button id="btn-install-pwa" onclick="installPWA()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;align-items:center;gap:5px">📲 ติดตั้งแอป</button>
@@ -793,6 +793,12 @@
               <table><thead><tr><th>แผนก</th><th>ประเภท</th><th>ครั้ง</th><th>วัน</th></tr></thead>
               <tbody id="dash-dept-tbody"><tr><td colspan="4" class="empty">กำลังโหลด...</td></tr></tbody></table>
             </div>
+          </div>
+        </div>
+        <div class="chart-grid" style="margin-top:0">
+          <div class="chart-card" style="grid-column:1/-1">
+            <h3>📈 เทรนด์การลารายเดือนแยกประเภท</h3>
+            <div class="chart-wrap" style="height:260px"><canvas id="chart-trend"></canvas></div>
           </div>
         </div>
       </div>
@@ -1207,6 +1213,7 @@
       <!-- Sub tabs -->
       <div style="display:flex;gap:6px;flex-wrap:wrap;background:#fff;border-radius:12px;padding:10px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);border:1px solid #edf2f7">
         <button class="btn btn-sm" id="hrtab-dash" onclick="hrTab('dash')" style="background:linear-gradient(135deg,#1e3a5f,#2b6cb0);color:#fff;box-shadow:0 2px 6px rgba(30,58,95,.3)">📈 ภาพรวม</button>
+        <button class="btn btn-sm" id="hrtab-calendar" onclick="hrTab('calendar')" style="background:#f0f4f8;color:#4a5568">📅 ปฏิทินการลา</button>
         <button class="btn btn-sm" id="hrtab-emp" onclick="hrTab('emp')" style="background:#f0f4f8;color:#4a5568">👥 พนักงาน</button>
         <button class="btn btn-sm" id="hrtab-import" onclick="hrTab('import')" style="background:#f0f4f8;color:#4a5568">📥 นำเข้า Excel</button>
         <button class="btn btn-sm" id="hrtab-perm" onclick="hrTab('perm')" style="background:#f0f4f8;color:#4a5568">🔐 สิทธิ์การเข้าถึง</button>
@@ -1228,6 +1235,20 @@
             </tr></thead>
             <tbody id="hr-dept-tbody"><tr><td colspan="3" class="empty">กำลังโหลด...</td></tr></tbody>
           </table></div>
+        </div>
+      </div>
+
+      <!-- CALENDAR (HR) -->
+      <div id="hrsec-calendar" style="display:none">
+        <div class="card">
+          <h2>📅 ปฏิทินการลาพนักงานทั้งหมด</h2>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <button class="btn btn-sm btn-primary" onclick="hrCalNav(-1)">&#9664; เดือนก่อน</button>
+            <span id="hr-cal-title" style="font-size:16px;font-weight:700;color:#1e3a5f;min-width:160px;text-align:center"></span>
+            <button class="btn btn-sm btn-primary" onclick="hrCalNav(1)">เดือนถัดไป &#9654;</button>
+            <div id="hr-cal-legend" style="display:flex;gap:10px;flex-wrap:wrap;margin-left:auto"></div>
+          </div>
+          <div id="hr-cal-grid" style="overflow-x:auto"></div>
         </div>
       </div>
 
@@ -1343,6 +1364,44 @@
 
       <!-- PERMISSIONS -->
       <div id="hrsec-perm" style="display:none">
+
+        <!-- Per-user permissions -->
+        <div class="card" style="margin-bottom:22px">
+          <h2>👤 สิทธิ์เข้าถึงเฉพาะรายบุคคล</h2>
+          <p style="font-size:13px;color:#718096;margin-bottom:16px">กำหนดว่าพนักงานแต่ละคนสามารถเห็นเมนูและเข้าถึงส่วนใดของระบบได้บ้าง (นอกเหนือจากสิทธิ์ตามบทบาท)</p>
+          <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end">
+            <div class="form-group">
+              <label>🔍 ค้นหาพนักงาน</label>
+              <input id="up-search" placeholder="ชื่อ / รหัส / แผนก" style="width:220px" oninput="filterUserPerms()">
+            </div>
+            <div class="form-group">
+              <label>🏢 แผนก</label>
+              <input id="up-dept" placeholder="ทุกแผนก" style="width:150px" oninput="filterUserPerms()">
+            </div>
+          </div>
+          <div class="table-wrap" style="overflow-x:auto">
+            <table id="up-table" style="min-width:900px">
+              <thead>
+                <tr><td colspan="9" style="background:#fffbeb;color:#744210;font-size:12px;padding:6px 10px;border-bottom:1px solid #fbd38d">
+                  ⚠️ เมนู พนักงาน / นำเข้า Excel / สิทธิ์การเข้าถึง / ผู้อนุมัติต่อแผนก / ประเภทการลา — เฉพาะ HR Admin เท่านั้น
+                </td></tr>
+                <tr>
+                  <th style="min-width:130px">พนักงาน</th>
+                  <th style="min-width:80px">รหัส</th>
+                  <th style="min-width:80px">แผนก</th>
+                  <th style="text-align:center;min-width:90px" title="เปิด/ปิด HR Panel ในเมนูหลัก">เข้าถึง<br>HR Panel</th>
+                  <th style="text-align:center;min-width:90px" title="ดู Dashboard ภาพรวมการลา">Dashboard<br>ภาพรวม</th>
+                  <th style="text-align:center;min-width:90px" title="ดูปฏิทินการลาพนักงานทั้งหมด">ปฏิทิน<br>การลา</th>
+                  <th style="text-align:center;min-width:90px" title="ดูรายการลาทั้งหมด (เมนูจัดการการลา)">รายการลา<br>ทั้งหมด</th>
+                  <th style="text-align:center;min-width:80px" title="ดูรายงาน">รายงาน</th>
+                  <th style="text-align:center;min-width:70px" title="Export ข้อมูล">Export</th>
+                </tr>
+              </thead>
+              <tbody id="up-tbody"><tr><td colspan="9" class="empty">กำลังโหลด...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="card">
           <h2>🔐 จัดการสิทธิ์การเข้าถึงตามบทบาท</h2>
           <p style="font-size:13px;color:#718096;margin-bottom:16px">กำหนดว่าแต่ละบทบาทสามารถเข้าถึงและดำเนินการใดได้บ้างในระบบ</p>
@@ -1555,15 +1614,17 @@ function showApp() {
   document.getElementById('app').style.display       = 'block';
   document.getElementById('nav-name').textContent    = user.name;
 
-  // ดึง employee_type ล่าสุดจาก DB และอัปเดต user ใน localStorage
+  // ดึง employee_type + menuPerms ล่าสุดจาก DB
   fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
     .then(r => r.ok ? r.json() : null)
     .then(data => {
       if (data) {
         user.employee_type        = data.employee_type || 'monthly';
         user.probation_start_date = data.probation_start_date || null;
+        user.menuPerms            = data.menuPerms || {};
         localStorage.setItem('user', JSON.stringify(user));
         if (typeof calcReqDays === 'function') calcReqDays();
+        applyUserMenuPerms();
       }
     }).catch(() => {});
 
@@ -1626,6 +1687,36 @@ function showApp() {
   });
 }
 
+// ====== USER MENU PERMISSIONS ======
+function applyUserMenuPerms() {
+  const isHR = user.role === 'hr_admin';
+  if (isHR) return;
+  const p = user.menuPerms || {};
+  const _show = id => { const el = document.getElementById(id); if (el) el.style.display = ''; };
+  const _hide = id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+
+  // sub-tabs เหล่านี้เป็นสิทธิ์ hr_admin เท่านั้น — ซ่อนเสมอสำหรับ non-HR
+  ['hrtab-emp','hrtab-import','hrtab-perm','hrtab-approver','hrtab-leavetype',
+   'hrsec-emp','hrsec-import','hrsec-perm','hrsec-approver','hrsec-leavetype'].forEach(_hide);
+
+  if (p.can_access_hr) {
+    _show('tab-hr');
+    if (!p.can_view_dashboard_hr) _hide('hrtab-dash');
+    else {
+      // populate dash-year dropdown (สำหรับ non-HR user ที่ได้รับสิทธิ์)
+      const sel = document.getElementById('dash-year');
+      if (sel && sel.options.length === 0) {
+        const curYear = new Date().getFullYear();
+        for (let y = curYear; y >= curYear - 4; y--)
+          sel.innerHTML += `<option value="${y}" ${y===curYear?'selected':''}>${y + 543}</option>`;
+      }
+    }
+    if (!p.can_view_hr_calendar)  _hide('hrtab-calendar');
+    if (p.can_view_all_requests)  { _show('tab-leave-mgmt'); loadLeaveRecords(); }
+  }
+  if (p.can_view_report) _show('tab-report');
+}
+
 // ====== AUTH ======
 async function doLogin() {
   const email    = document.getElementById('login-email').value.trim();
@@ -1643,15 +1734,19 @@ async function doLogin() {
   token = r.token; user = r.user;
   localStorage.setItem('token', token);
   localStorage.setItem('user', JSON.stringify(user));
-  await Swal.fire({
-    icon: 'success',
-    title: `ยินดีต้อนรับ`,
-    text: `${user.name || user.employee_id} เข้าสู่ระบบสำเร็จ`,
-    timer: 1500,
-    timerProgressBar: true,
+  await Swal.mixin({
+    toast: true,
+    position: 'top-end',
     showConfirmButton: false,
-    confirmButtonColor: '#1e3a5f',
+    timer: 2000,
+    timerProgressBar: true,
+    didOpen: toast => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
+  }).fire({
+    icon: 'success',
+    title: 'ยินดีต้อนรับ',
+    text: `${user.name || user.employee_id}`,
   });
+  await new Promise(r => setTimeout(r, 300));
   showApp();
 }
 
@@ -1768,6 +1863,12 @@ function switchTab(name) {
   if (name === 'calendar-all') loadCalAll();
   if (name === 'home' && user.role === 'hr_admin') loadDashboard();
   if (name === 'home' && user.role !== 'hr_admin') loadBalance();
+  if (name === 'hr' && user.role !== 'hr_admin') {
+    // find first visible HR sub-tab for non-HR users
+    const p = user.menuPerms || {};
+    const firstTab = p.can_view_dashboard_hr ? 'dash' : p.can_view_hr_calendar ? 'calendar' : null;
+    if (firstTab) hrTab(firstTab);
+  }
   if (name === 'leave-mgmt')   loadLeaveRecords();
   if (name === 'request')      loadApprovers();
   if (name === 'approve')      { loadPending(); loadApproveHistory(); }
@@ -1991,11 +2092,26 @@ function initFlatpickr() {
   if (fpStart && fpEnd) return;
   const today = new Date(); today.setHours(0,0,0,0);
 
-  // ตรวจสอบ + บังคับ minDate แม้บน scroll wheel (iOS/Android)
-  function enforceMinDate(fp, sel, minD) {
+  // ตรวจสอบ + บังคับ minDate — อ่าน minDate จาก fp.config แทนการ hard-code today
+  function getMinDate() {
+    const selectedId = parseInt(document.getElementById('req-type')?.value);
+    const isSick = sickLeaveTypeId && selectedId === sickLeaveTypeId;
+    const t = new Date(); t.setHours(0,0,0,0);
+    return isSick ? new Date(t.getTime() - 30 * 86400000) : t;
+  }
+
+  function enforceMinDate(fp, sel) {
+    const minD = getMinDate();
     if (sel[0] && sel[0] < minD) {
       fp.setDate(minD, true);
-      Swal.fire({ icon:'warning', title:'ไม่สามารถเลือกวันย้อนหลังได้', text:'กรุณาเลือกวันที่ตั้งแต่วันนี้เป็นต้นไป', confirmButtonColor:'#1e3a5f' });
+      const selectedId = parseInt(document.getElementById('req-type')?.value);
+      const isSick = sickLeaveTypeId && selectedId === sickLeaveTypeId;
+      Swal.fire({
+        icon: 'warning',
+        title: 'ไม่สามารถเลือกวันดังกล่าวได้',
+        text: isSick ? 'ลาป่วยย้อนหลังได้ไม่เกิน 30 วัน' : 'กรุณาเลือกวันที่ตั้งแต่วันนี้เป็นต้นไป',
+        confirmButtonColor: '#1e3a5f',
+      });
     }
   }
 
@@ -2050,22 +2166,24 @@ function initFlatpickr() {
   fpStart = flatpickr('#req-start', {
     ...opts,
     onChange: (sel) => {
-      enforceMinDate(fpStart, sel, today);
-      if (sel[0] && sel[0] >= today && fpEnd) fpEnd.set('minDate', sel[0]);
+      enforceMinDate(fpStart, sel);
+      const minD = getMinDate();
+      if (sel[0] && sel[0] >= minD && fpEnd) fpEnd.set('minDate', sel[0]);
       applyTimeRange(fpStart, dateStrFromDate(sel[0]));
       enforceTimeRange(fpStart, sel);
       calcReqDays();
     },
     onClose: (sel) => {
-      enforceMinDate(fpStart, sel, today);
+      enforceMinDate(fpStart, sel);
       enforceTimeRange(fpStart, sel);
     },
   });
   fpEnd = flatpickr('#req-end', {
     ...opts,
     onChange: (sel) => {
-      const minEnd = (fpStart?.selectedDates[0] && fpStart.selectedDates[0] >= today) ? fpStart.selectedDates[0] : today;
-      enforceMinDate(fpEnd, sel, minEnd);
+      const minD = getMinDate();
+      const minEnd = (fpStart?.selectedDates[0] && fpStart.selectedDates[0] >= minD) ? fpStart.selectedDates[0] : minD;
+      enforceMinDate(fpEnd, sel);
       applyTimeRange(fpEnd, dateStrFromDate(sel[0]));
       enforceTimeRange(fpEnd, sel);
       calcReqDays();
@@ -2584,6 +2702,31 @@ async function loadDashboard() {
   // Dept detail table
   const tbody = document.getElementById('dash-dept-tbody');
   tbody.innerHTML = d.byDept.length ? d.byDept.map(r=>`<tr><td>${r.department}</td><td style="font-size:12px">${r.leave_type}</td><td>${r.count}</td><td>${r.days}</td></tr>`).join('') : '<tr><td colspan="4" class="empty">ยังไม่มีข้อมูล</td></tr>';
+
+  // Chart: Trend (Stacked Bar by leave type per month)
+  destroyChart('trend');
+  const trendTypes = [...new Set((d.byMonthType||[]).map(r=>r.leave_type))];
+  charts['trend'] = new Chart(document.getElementById('chart-trend'), {
+    type: 'bar',
+    data: {
+      labels: MONTH_LABELS,
+      datasets: trendTypes.map((t, i) => ({
+        label: t,
+        data: Array.from({length:12}, (_, mi) => {
+          const m = String(mi+1).padStart(2,'0');
+          const found = (d.byMonthType||[]).find(r => r.month === m && r.leave_type === t);
+          return found ? found.days : 0;
+        }),
+        backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+        borderRadius: 3,
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, title: { display: true, text: 'วัน' } } },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
 }
 
 // ====== LEAVE MANAGEMENT (HR) ======
@@ -2683,7 +2826,7 @@ let currentEmpId = null;
 let leaveTypesCache = [];
 
 function hrTab(name) {
-  ['dash','emp','import','perm','approver','leavetype'].forEach(t => {
+  ['dash','calendar','emp','import','perm','approver','leavetype'].forEach(t => {
     document.getElementById(`hrsec-${t}`).style.display = 'none';
     const btn = document.getElementById(`hrtab-${t}`);
     if (btn) { btn.style.background = '#f0f4f8'; btn.style.color = '#4a5568'; btn.style.boxShadow = 'none'; }
@@ -2693,8 +2836,9 @@ function hrTab(name) {
   document.getElementById(`hrtab-${name}`).style.color = '#fff';
   document.getElementById(`hrtab-${name}`).style.boxShadow = '0 2px 6px rgba(30,58,95,.3)';
   if (name === 'dash')      loadHrStats();
+  if (name === 'calendar')  loadHrCalendar();
   if (name === 'emp')       loadEmployees();
-  if (name === 'perm')      loadPermissions();
+  if (name === 'perm')      { loadUserPerms(); loadPermissions(); }
   if (name === 'approver')  loadDeptApprovers();
   if (name === 'leavetype') loadLeaveTypesHr();
 }
@@ -2776,6 +2920,95 @@ async function loadHrStats() {
   `;
   const tbody = document.getElementById('hr-dept-tbody');
   tbody.innerHTML = s.byDepartment.length ? s.byDepartment.map(r => `<tr><td>${r.department}</td><td>${r.total}</td><td>${r.days}</td></tr>`).join('') : '<tr><td colspan="3" class="empty">ยังไม่มีข้อมูล</td></tr>';
+}
+
+// ===== HR CALENDAR =====
+let hrCalYear = new Date().getFullYear();
+let hrCalMonth = new Date().getMonth(); // 0-based
+let hrCalData = [];
+let hrCalTypeColors = {};
+
+async function loadHrCalendar() {
+  hrCalYear = hrCalYear || new Date().getFullYear();
+  hrCalMonth = hrCalMonth !== undefined ? hrCalMonth : new Date().getMonth();
+
+  // fetch leave data for this month (approved only)
+  const y = hrCalYear, m = String(hrCalMonth + 1).padStart(2, '0');
+  const data = await api('GET', `/hr/leave-records?status=approved&year=${y}&month=${m}`);
+  hrCalData = Array.isArray(data) ? data : [];
+
+  // assign colors to leave types
+  const types = [...new Set(hrCalData.map(r => r.leave_type_name))];
+  types.forEach((t, i) => { if (!hrCalTypeColors[t]) hrCalTypeColors[t] = CHART_COLORS[i % CHART_COLORS.length]; });
+
+  // render legend
+  const legendEl = document.getElementById('hr-cal-legend');
+  legendEl.innerHTML = types.map(t => `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px"><span style="width:12px;height:12px;border-radius:3px;background:${hrCalTypeColors[t]};display:inline-block"></span>${t}</span>`).join('');
+
+  // render calendar grid
+  renderHrCalGrid();
+}
+
+function hrCalNav(dir) {
+  hrCalMonth += dir;
+  if (hrCalMonth > 11) { hrCalMonth = 0; hrCalYear++; }
+  if (hrCalMonth < 0)  { hrCalMonth = 11; hrCalYear--; }
+  loadHrCalendar();
+}
+
+function renderHrCalGrid() {
+  const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  document.getElementById('hr-cal-title').textContent = `${THAI_MONTHS[hrCalMonth]} ${hrCalYear + 543}`;
+
+  const firstDay = new Date(hrCalYear, hrCalMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(hrCalYear, hrCalMonth + 1, 0).getDate();
+
+  // build day→events map
+  const dayMap = {};
+  hrCalData.forEach(r => {
+    const start = new Date(r.start_date + 'T00:00:00');
+    const end   = new Date(r.end_date   + 'T00:00:00');
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      if (d.getFullYear() === hrCalYear && d.getMonth() === hrCalMonth) {
+        const key = d.getDate();
+        if (!dayMap[key]) dayMap[key] = [];
+        dayMap[key].push(r);
+      }
+    }
+  });
+
+  const DOW = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  let html = `<table style="width:100%;border-collapse:collapse;min-width:560px">
+    <thead><tr>${DOW.map((d,i)=>`<th style="padding:8px 4px;text-align:center;font-size:12px;font-weight:700;color:${i===0?'#e53e3e':i===6?'#3182ce':'#4a5568'};background:#f7fafc;border:1px solid #e2e8f0">${d}</th>`).join('')}</tr></thead>
+    <tbody>`;
+
+  let day = 1;
+  for (let row = 0; row < 6; row++) {
+    if (day > daysInMonth) break;
+    html += '<tr>';
+    for (let col = 0; col < 7; col++) {
+      const cellDay = (row === 0 && col < firstDay) ? null : day <= daysInMonth ? day++ : null;
+      const isToday = cellDay && hrCalYear === new Date().getFullYear() && hrCalMonth === new Date().getMonth() && cellDay === new Date().getDate();
+      const isSun = col === 0, isSat = col === 6;
+      const events = cellDay ? (dayMap[cellDay] || []) : [];
+      // limit display to first 3 events, show +N more
+      const visible = events.slice(0, 3);
+      const extra = events.length - visible.length;
+      html += `<td style="vertical-align:top;padding:4px;border:1px solid #e2e8f0;min-height:70px;${isToday?'background:#ebf8ff;':''}${!cellDay?'background:#f9fafb;':''}">`;
+      if (cellDay) {
+        html += `<div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${isToday?'#2b6cb0':isSun?'#e53e3e':isSat?'#3182ce':'#2d3748'};margin-bottom:3px">${cellDay}</div>`;
+        visible.forEach(ev => {
+          const color = hrCalTypeColors[ev.leave_type_name] || '#718096';
+          html += `<div title="${ev.employee_name} — ${ev.leave_type_name}" style="font-size:10px;background:${color};color:#fff;border-radius:3px;padding:1px 4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:default">${ev.employee_name}</div>`;
+        });
+        if (extra > 0) html += `<div style="font-size:10px;color:#718096;margin-top:1px">+${extra} เพิ่มเติม</div>`;
+      }
+      html += '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('hr-cal-grid').innerHTML = html;
 }
 
 let hrEmpData = [];
@@ -2927,6 +3160,66 @@ async function deleteEmployee(id, name) {
 
 // ====== PERMISSIONS ======
 const PROTECTED_ROLES = ['employee','unit_head','department_head','division_manager','hr_admin'];
+
+// ===== USER MENU PERMISSIONS (per-user) =====
+let upAllData = [];
+
+// สิทธิ์ที่ HR Admin สามารถมอบให้พนักงานรายบุคคล
+// (พนักงาน, นำเข้า Excel, สิทธิ์, ผู้อนุมัติ, ประเภทการลา — hr_admin เท่านั้น จึงไม่อยู่ในรายการนี้)
+const UP_FIELDS = [
+  { key:'can_access_hr',         label:'เข้าถึง HR Panel' },
+  { key:'can_view_dashboard_hr', label:'Dashboard ภาพรวม' },
+  { key:'can_view_hr_calendar',  label:'ปฏิทินการลา' },
+  { key:'can_view_all_requests', label:'รายการลาทั้งหมด' },
+  { key:'can_view_report',       label:'รายงาน' },
+  { key:'can_export',            label:'Export' },
+];
+
+async function loadUserPerms() {
+  const tbody = document.getElementById('up-tbody');
+  tbody.innerHTML = '<tr><td colspan="9" class="empty">กำลังโหลด...</td></tr>';
+  const data = await api('GET', '/hr/user-permissions');
+  if (!Array.isArray(data)) {
+    tbody.innerHTML = `<tr><td colspan="9" style="color:#e53e3e;padding:16px;text-align:center">⚠️ โหลดข้อมูลไม่ได้: ${data?.error || 'ไม่ทราบสาเหตุ'}<br><button class="btn btn-sm btn-primary" onclick="loadUserPerms()" style="margin-top:8px">ลองใหม่</button></td></tr>`;
+    return;
+  }
+  upAllData = data;
+  filterUserPerms();
+}
+
+function filterUserPerms() {
+  const search = (document.getElementById('up-search')?.value || '').toLowerCase();
+  const dept   = (document.getElementById('up-dept')?.value   || '').toLowerCase();
+  const tbody  = document.getElementById('up-tbody');
+  const filtered = upAllData.filter(u => {
+    const matchS = !search || u.name.toLowerCase().includes(search) || (u.employee_id||'').toLowerCase().includes(search) || (u.department||'').toLowerCase().includes(search);
+    const matchD = !dept || (u.department||'').toLowerCase().includes(dept);
+    return matchS && matchD;
+  });
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty">ไม่พบข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = filtered.map(u => {
+    const tds = UP_FIELDS.map(f =>
+      `<td style="text-align:center"><label class="toggle"><input type="checkbox" ${u[f.key] ? 'checked' : ''}
+        onchange="updateUserPerm(${u.id},'${f.key}',this.checked,this)"><span class="slider"></span></label></td>`
+    ).join('');
+    const roleLabel = ROLE_LABEL[u.role] || u.role;
+    return `<tr>
+      <td><b>${u.name}</b><br><span style="font-size:11px;color:#718096">${roleLabel}</span></td>
+      <td style="font-size:13px">${u.employee_id||''}</td>
+      <td style="font-size:13px">${u.department||''}</td>
+      ${tds}
+    </tr>`;
+  }).join('');
+}
+
+async function updateUserPerm(userId, field, value, checkbox) {
+  const r = await api('PUT', `/hr/user-permissions/${userId}`, { [field]: value ? 1 : 0 });
+  if (r.error) { swalError(r.error); checkbox.checked = !value; return; }
+  // sync local data
+  const row = upAllData.find(u => u.id === userId);
+  if (row) row[field] = value ? 1 : 0;
+  // if turning off can_access_hr, auto-turn off all sub-permissions in the data (UI still needs user to untoggle)
+}
 
 async function loadPermissions() {
   const data = await api('GET', '/hr/permissions');

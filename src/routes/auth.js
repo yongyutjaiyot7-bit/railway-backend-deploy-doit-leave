@@ -66,7 +66,9 @@ module.exports = function (db) {
       const payload = require('jsonwebtoken').verify(token, JWT_SECRET);
       const user = db.prepare('SELECT id,employee_id,name,email,role,department,division,unit,employee_type,probation_start_date FROM users WHERE id=?').get(payload.id);
       if (!user) return res.status(404).json({ message: 'ไม่พบผู้ใช้' });
-      res.json({ id: user.id, employee_id: user.employee_id, name: user.name, role: user.role, employee_type: user.employee_type || 'monthly', probation_start_date: user.probation_start_date || null });
+      let menuPerms = {};
+      try { menuPerms = db.prepare('SELECT * FROM user_menu_permissions WHERE user_id=?').get(user.id) || {}; } catch(e) {}
+      res.json({ id: user.id, employee_id: user.employee_id, name: user.name, role: user.role, employee_type: user.employee_type || 'monthly', probation_start_date: user.probation_start_date || null, menuPerms });
     } catch(e) {
       res.status(401).json({ message: 'Token ไม่ถูกต้อง' });
     }

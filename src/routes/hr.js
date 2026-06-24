@@ -2,13 +2,47 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const XLSX = require('xlsx');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 
 const xlsUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 module.exports = function (db) {
   const router = express.Router();
-  router.use(authenticate, authorize('hr_admin'));
+
+  // ตรวจสิทธิ์: hr_admin เข้าได้เสมอ หรือมี can_access_hr ใน user_menu_permissions
+  router.use(authenticate, (req, res, next) => {
+    if (req.user.role === 'hr_admin') return next();
+    try {
+      const perm = db.prepare('SELECT * FROM user_menu_permissions WHERE user_id=?').get(req.user.id) || {};
+      if (!perm.can_access_hr) return res.status(403).json({ message: 'ไม่มีสิทธิ์เข้าถึง HR Panel' });
+
+      const p = req.path, m = req.method;
+      // เขียนข้อมูลพนักงาน ต้องมี can_manage_employees
+      if ((p.startsWith('/employees') || p.startsWith('/import-employees')) && m !== 'GET') {
+        if (!perm.can_manage_employees) return res.status(403).json({ message: 'ไม่มีสิทธิ์จัดการพนักงาน' });
+      }
+      // จัดการประเภทการลา
+      if (p.startsWith('/leave-types') && m !== 'GET') {
+        if (!perm.can_manage_leave_types) return res.status(403).json({ message: 'ไม่มีสิทธิ์จัดการประเภทการลา' });
+      }
+      // ตั้งค่าระบบ (permissions, dept-approvers, user-permissions)
+      if ((p.startsWith('/permissions') || p.startsWith('/dept-approvers') || p.startsWith('/user-permissions')) && m !== 'GET') {
+        if (!perm.can_manage_settings) return res.status(403).json({ message: 'ไม่มีสิทธิ์จัดการการตั้งค่า' });
+      }
+      // ดูรายการลา
+      if (p.startsWith('/leave-records') || p.startsWith('/leave-record/')) {
+        if (!perm.can_view_all_requests && !perm.can_view_hr_calendar) return res.status(403).json({ message: 'ไม่มีสิทธิ์ดูรายการลา' });
+      }
+      // รายงาน
+      if (p.startsWith('/report') && !perm.can_view_report) return res.status(403).json({ message: 'ไม่มีสิทธิ์ดูรายงาน' });
+      // export
+      if ((p.startsWith('/export') || p.startsWith('/employee-template')) && !perm.can_export) return res.status(403).json({ message: 'ไม่มีสิทธิ์ export ข้อมูล' });
+
+      next();
+    } catch(e) {
+      return res.status(403).json({ message: 'ไม่มีสิทธิ์ดำเนินการนี้' });
+    }
+  });
 
   // ===== จัดการพนักงาน =====
 
@@ -157,6 +191,78 @@ module.exports = function (db) {
     if (!p) return res.status(404).json({ message: 'ไม่พบบทบาท' });
     db.prepare('DELETE FROM access_permissions WHERE role=?').run(req.params.role);
     res.json({ message: `ลบบทบาท "${req.params.role}" สำเร็จ` });
+  });
+
+  // ===== สิทธิ์เฉพาะรายบุคคล =====
+  const MENU_PERM_FIELDS = ['can_access_hr','can_view_dashboard_hr','can_manage_employees','can_manage_leave_types','can_manage_settings','can_view_hr_calendar','can_view_all_requests','can_view_report','can_export'];
+
+  // ensure table exists at runtime (in case DB file predates migration)
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS user_menu_permissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      can_access_hr INTEGER DEFAULT 0,
+      can_view_dashboard_hr INTEGER DEFAULT 0,
+      can_manage_employees INTEGER DEFAULT 0,
+      can_manage_leave_types INTEGER DEFAULT 0,
+      can_manage_settings INTEGER DEFAULT 0,
+      can_view_hr_calendar INTEGER DEFAULT 0,
+      can_view_all_requests INTEGER DEFAULT 0,
+      can_view_report INTEGER DEFAULT 0,
+      can_export INTEGER DEFAULT 0,
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+  } catch(e) {}
+
+  // GET /api/hr/user-permissions — รายชื่อพนักงานพร้อมสิทธิ์
+  router.get('/user-permissions', (req, res) => {
+    try {
+      const rows = db.prepare(`
+        SELECT u.id, u.employee_id, u.name, u.role, u.department,
+               COALESCE(ump.can_access_hr,0) as can_access_hr,
+               COALESCE(ump.can_view_dashboard_hr,0) as can_view_dashboard_hr,
+               COALESCE(ump.can_manage_employees,0) as can_manage_employees,
+               COALESCE(ump.can_manage_leave_types,0) as can_manage_leave_types,
+               COALESCE(ump.can_manage_settings,0) as can_manage_settings,
+               COALESCE(ump.can_view_hr_calendar,0) as can_view_hr_calendar,
+               COALESCE(ump.can_view_all_requests,0) as can_view_all_requests,
+               COALESCE(ump.can_view_report,0) as can_view_report,
+               COALESCE(ump.can_export,0) as can_export
+        FROM users u
+        LEFT JOIN user_menu_permissions ump ON ump.user_id = u.id
+        WHERE u.role != 'hr_admin'
+        ORDER BY u.department, u.name
+      `).all();
+      res.json(rows);
+    } catch(e) {
+      res.status(500).json({ message: 'เกิดข้อผิดพลาด: ' + e.message });
+    }
+  });
+
+  // PUT /api/hr/user-permissions/:userId — upsert สิทธิ์รายบุคคล
+  router.put('/user-permissions/:userId', (req, res) => {
+    try {
+      const uid = Number(req.params.userId);
+      const u = db.prepare('SELECT * FROM users WHERE id=?').get(uid);
+      if (!u) return res.status(404).json({ message: 'ไม่พบผู้ใช้' });
+      const fields = {};
+      MENU_PERM_FIELDS.forEach(f => { if (req.body[f] !== undefined) fields[f] = req.body[f] ? 1 : 0; });
+      const existing = db.prepare('SELECT id FROM user_menu_permissions WHERE user_id=?').get(uid);
+      if (existing) {
+        if (Object.keys(fields).length > 0) {
+          const sets = Object.keys(fields).map(f => `${f}=?`).join(',');
+          db.prepare(`UPDATE user_menu_permissions SET ${sets}, updated_at=datetime('now') WHERE user_id=?`).run(...Object.values(fields), uid);
+        }
+      } else {
+        const cols = ['user_id', ...Object.keys(fields)].join(',');
+        const vals = [uid, ...Object.values(fields)];
+        db.prepare(`INSERT INTO user_menu_permissions (${cols}) VALUES (${vals.map(()=>'?').join(',')})`).run(...vals);
+      }
+      res.json({ message: 'บันทึกสิทธิ์สำเร็จ' });
+    } catch(e) {
+      res.status(500).json({ message: 'เกิดข้อผิดพลาด: ' + e.message });
+    }
   });
 
   // ===== กำหนดผู้อนุมัติต่อแผนก =====
@@ -337,9 +443,17 @@ module.exports = function (db) {
       GROUP BY lt.name ORDER BY lt.name
     `).all(year);
 
+    // เทรนด์รายเดือนแยกตามประเภทการลา
+    const byMonthType = db.prepare(`
+      SELECT strftime('%m', lr.start_date) as month, lt.name as leave_type, SUM(lr.days) as days
+      FROM leave_requests lr JOIN leave_types lt ON lt.id = lr.leave_type_id
+      WHERE lr.status = 'approved' AND strftime('%Y', lr.start_date) = ?
+      GROUP BY month, lt.name ORDER BY month, lt.name
+    `).all(y);
+
     res.json({
       summary: { totalEmployees: totalEmp.c, pending: pending.c, approvedCount: approved.c, approvedDays: approved.d||0, rejected: rejected.c },
-      byDept, monthly, byType, byYear, balance
+      byDept, monthly, byType, byYear, balance, byMonthType
     });
   });
 

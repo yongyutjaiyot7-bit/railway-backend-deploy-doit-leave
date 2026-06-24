@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, authorize, authorizeOrPerm } = require('../middleware/auth');
 const { upload, UPLOAD_DIR } = require('../middleware/upload');
 
 module.exports = function (db) {
@@ -283,7 +283,7 @@ module.exports = function (db) {
   });
 
   // GET /api/leave/pending
-  router.get('/pending', authenticate, authorize('unit_head', 'department_head', 'division_manager', 'hr_admin'), (req, res) => {
+  router.get('/pending', authenticate, authorizeOrPerm(db, 'can_view_all_requests', 'unit_head', 'department_head', 'division_manager', 'hr_admin'), (req, res) => {
     // Query by approver_id directly so a user assigned as level-1 approver (even if their role is dept_head)
     // will still see the request — role-based level assumption breaks when the same user covers multiple levels.
     let rows;
@@ -321,7 +321,7 @@ module.exports = function (db) {
   });
 
   // POST /api/leave/approve/:approvalId
-  router.post('/approve/:approvalId', authenticate, authorize('unit_head', 'department_head', 'division_manager', 'hr_admin'), (req, res) => {
+  router.post('/approve/:approvalId', authenticate, authorizeOrPerm(db, 'can_view_all_requests', 'unit_head', 'department_head', 'division_manager', 'hr_admin'), (req, res) => {
     const { action, comment } = req.body;
     if (!['approve', 'reject'].includes(action)) {
       return res.status(400).json({ message: 'action ต้องเป็น approve หรือ reject' });
@@ -410,7 +410,7 @@ module.exports = function (db) {
   });
 
   // GET /api/leave/history
-  router.get('/history', authenticate, authorize('unit_head', 'department_head', 'division_manager', 'hr_admin'), (req, res) => {
+  router.get('/history', authenticate, authorizeOrPerm(db, 'can_view_all_requests', 'unit_head', 'department_head', 'division_manager', 'hr_admin'), (req, res) => {
     const rows = db.prepare(`
       SELECT lr.request_no, lr.start_date, lr.end_date, lr.days, lr.reason, lr.status as lr_status,
         lt.name as leave_type_name,
@@ -473,7 +473,7 @@ module.exports = function (db) {
   });
 
   // GET /api/leave/report
-  router.get('/report', authenticate, authorize('department_head', 'division_manager', 'hr_admin'), (req, res) => {
+  router.get('/report', authenticate, authorizeOrPerm(db, 'can_view_report', 'department_head', 'division_manager', 'hr_admin'), (req, res) => {
     const { department, year } = req.query;
     const y = year && !isNaN(parseInt(year)) ? String(parseInt(year)) : null;
     let sql = `

@@ -25,4 +25,16 @@ function authorize(...roles) {
   };
 }
 
-module.exports = { authenticate, authorize, JWT_SECRET };
+// authorizeOrPerm — อนุญาตถ้า role ตรง หรือ มี permField ใน user_menu_permissions
+function authorizeOrPerm(db, permField, ...roles) {
+  return (req, res, next) => {
+    if (roles.includes(req.user.role)) return next();
+    try {
+      const perm = db.prepare('SELECT * FROM user_menu_permissions WHERE user_id=?').get(req.user.id);
+      if (perm && perm[permField]) return next();
+    } catch(e) {}
+    return res.status(403).json({ message: 'ไม่มีสิทธิ์ดำเนินการนี้' });
+  };
+}
+
+module.exports = { authenticate, authorize, authorizeOrPerm, JWT_SECRET };

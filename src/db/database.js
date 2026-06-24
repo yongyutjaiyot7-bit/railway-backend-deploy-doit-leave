@@ -215,6 +215,24 @@ async function initDb() {
   try { sqlDb.run('ALTER TABLE leave_requests ADD COLUMN is_backdated INTEGER DEFAULT 0'); } catch(e) {}
   // Migration: requires_doc_over_days — แนบเอกสารเมื่อลาเกิน N วัน (0 = ปิด)
   try { sqlDb.run('ALTER TABLE leave_types ADD COLUMN requires_doc_over_days INTEGER DEFAULT 0'); } catch(e) {}
+  // Migration: per-user menu permissions
+  sqlDb.run(`
+    CREATE TABLE IF NOT EXISTS user_menu_permissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      can_access_hr INTEGER DEFAULT 0,
+      can_view_dashboard_hr INTEGER DEFAULT 0,
+      can_manage_employees INTEGER DEFAULT 0,
+      can_manage_leave_types INTEGER DEFAULT 0,
+      can_manage_settings INTEGER DEFAULT 0,
+      can_view_hr_calendar INTEGER DEFAULT 0,
+      can_view_all_requests INTEGER DEFAULT 0,
+      can_view_report INTEGER DEFAULT 0,
+      can_export INTEGER DEFAULT 0,
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
   const pCount = db.prepare('SELECT COUNT(*) as c FROM access_permissions').get();
   if (!pCount || pCount.c === 0) {
     const insPerm = db.prepare(`INSERT INTO access_permissions
