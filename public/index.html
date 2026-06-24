@@ -475,9 +475,9 @@
       <div class="form-group"><label>ฝ่าย (Division)</label><input id="em-div" placeholder="การเงิน"></div>
       <div class="form-group"><label>ประเภทพนักงาน</label>
         <select id="em-emptype" onchange="toggleProbationField()">
-          <option value="monthly">รายเดือน (จ-พฤ 9ชม / ศ 8ชม / ส 4ชม เว้น)</option>
-          <option value="daily">รายวัน (จ-ส 8ชม ทุกวัน)</option>
-          <option value="housekeeping">แม่บ้าน</option>
+          <option value="monthly">รายเดือน (จ-พฤ 9ชม / ศ 8ชม / ส 4ชม เว้นเสาร์ | หักพักเที่ยง)</option>
+          <option value="daily">รายวัน (จ-ส 8ชม | หักพักเที่ยง)</option>
+          <option value="housekeeping">แม่บ้าน (ประจำ: จ-ศ 9ชม ส 3ชม / ทดลองงาน: จ-ส 8ชม)</option>
         </select>
       </div>
       <div class="form-group" id="em-probation-group" style="display:none">
@@ -1469,13 +1469,17 @@ function getWorkHoursForDayFE(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   const dow = d.getDay();
   if (dow === 0) return 0;
-  if (empType === 'daily') { return 8; } // จ-ส 8h ทุกวัน
+  if (empType === 'daily') {
+    // จ-พฤ 9:00-18:00 หักพัก 1h = 8h, ศ-ส 8:00-17:00 หักพัก 1h = 8h
+    return 8;
+  }
   if (empType === 'housekeeping') {
     const passed = probStart ? (new Date(dateStr) - new Date(probStart)) / 86400000 >= 120 : false;
+    // แม่บ้านประจำ: จ-ศ 9h, ส 3h | แม่บ้านทดลองงาน: จ-ส 8h
     if (passed) return dow <= 5 ? 9 : 3;
     return 8;
   }
-  // monthly
+  // monthly: จ-พฤ 8:00-18:00 หักพัก 1h = 9h, ศ 8:00-17:00 หักพัก 1h = 8h, ส 8:00-12:00 ไม่ทับพัก = 4h
   if (dow <= 4) return 9;
   if (dow === 5) return 8;
   return isWorkingSaturday(d) ? 4 : 0;
@@ -1498,10 +1502,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function showApp() {
   document.getElementById('login-page').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.getElementById('nav-name').textContent = user.name;
+  document.getElementById('app').style.display       = 'block';
+  document.getElementById('nav-name').textContent    = user.name;
 
-  // ดึงข้อมูล employee_type ล่าสุดจาก DB (อัปเดต localStorage ถ้าเปลี่ยน)
+  // ดึง employee_type ล่าสุดจาก DB และอัปเดต user ใน localStorage
   fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
     .then(r => r.ok ? r.json() : null)
     .then(data => {
@@ -1509,7 +1513,6 @@ function showApp() {
         user.employee_type        = data.employee_type || 'monthly';
         user.probation_start_date = data.probation_start_date || null;
         localStorage.setItem('user', JSON.stringify(user));
-        // คำนวณใหม่ถ้ากำลังอยู่ที่ฟอร์มยื่นลา
         if (typeof calcReqDays === 'function') calcReqDays();
       }
     }).catch(() => {});
@@ -1520,7 +1523,6 @@ function showApp() {
   const curYear = new Date().getFullYear();
 
   if (isHR) {
-    // HR: ซ่อนเมนูพนักงาน แสดงเมนู HR
     document.getElementById('home-employee').style.display = 'none';
     document.getElementById('home-hr').style.display = '';
     document.getElementById('tab-leave-mgmt').style.display = '';
@@ -1528,23 +1530,19 @@ function showApp() {
     document.getElementById('tab-hr').style.display = '';
     document.getElementById('tab-calendar-all').style.display = '';
     document.getElementById('tab-approve').style.display = '';
-    // bottom nav HR
     document.getElementById('bnav-approve').style.display = '';
     document.getElementById('bnav-report').style.display = '';
     document.getElementById('bnav-hr').style.display = '';
-    // populate year selector
     const sel = document.getElementById('dash-year');
     for (let y = curYear; y >= curYear - 4; y--) sel.innerHTML += `<option value="${y}" ${y===curYear?'selected':''}>${y + 543}</option>`;
-    loadDashboard();
+    // โหลดข้อมูล background (ไม่ใช่ chart)
     loadLeaveRecords();
     loadApproveHistory();
     loadPending();
   } else {
-    // พนักงาน/หัวหน้า: แสดงเมนูปกติ
     document.getElementById('tab-request').style.display = '';
     document.getElementById('tab-history').style.display = '';
     document.getElementById('tab-calendar-my').style.display = '';
-    // bottom nav พนักงาน
     document.getElementById('bnav-request').style.display = '';
     document.getElementById('bnav-history').style.display = '';
     if (isApprover) {
@@ -1556,17 +1554,19 @@ function showApp() {
       document.getElementById('tab-report').style.display = '';
       document.getElementById('bnav-report').style.display = '';
     }
-    loadBalance();
+    // โหลดข้อมูล background
     loadCalMy();
     loadApprovers();
-    if (isApprover) { loadPending(); loadApproveHistory(); loadCalAll(); }
+    if (isApprover) { loadApproveHistory(); loadCalAll(); }
   }
 
   document.getElementById('rpt-year').value = curYear;
   document.getElementById('lm-year').value  = curYear;
-
   loadLeaveTypes();
   loadHistory();
+
+  // switchTab หลัง browser paint ครั้งถัดไป เพื่อให้ canvas มีขนาดก่อน Chart.js render
+  requestAnimationFrame(() => switchTab('home'));
 }
 
 // ====== AUTH ======
@@ -1582,8 +1582,23 @@ async function doLogin() {
 }
 
 function doLogout() {
-  localStorage.clear(); token = null; user = null;
-  location.reload();
+  // แจ้ง backend ก่อน (fire-and-forget) แล้วล้าง session ทันที
+  fetch('/api/auth/logout', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token }
+  }).catch(() => {}).finally(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    token = null;
+    user  = null;
+    // reset ตัวแปร global ที่แคชข้อมูลไว้
+    historyCache = [];
+    leaveTypesCache = [];
+    sickLeaveTypeId = null;
+    if (fpStart) { try { fpStart.destroy(); } catch(e){} fpStart = null; }
+    if (fpEnd)   { try { fpEnd.destroy();   } catch(e){} fpEnd   = null; }
+    location.replace(location.origin + location.pathname);
+  });
 }
 
 function showRegister()  { document.getElementById('register-modal').classList.add('open'); }

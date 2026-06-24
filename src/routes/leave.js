@@ -31,7 +31,7 @@ module.exports = function (db) {
     if (dow === 0) return 0; // อาทิตย์ไม่ทำงาน
 
     if (empType === 'daily') {
-      // รายวัน: จ-ส 8h (ทุกวัน)
+      // รายวัน: จ-พฤ 9:00-18:00 หักพัก 1h = 8h, ศ-ส 8:00-17:00 หักพัก 1h = 8h
       return 8;
     }
 
@@ -40,16 +40,16 @@ module.exports = function (db) {
         ? (new Date(dateStr + 'T00:00:00') - new Date(probStartStr + 'T00:00:00')) / 86400000 >= 120
         : false;
       if (passedProbation) {
-        // ผ่านทดลองงาน 120 วัน: จ-ศ 9h, ส 3h
+        // แม่บ้านประจำ: จ-ศ 7:00-17:00 = 9h, ส = 3h
         if (dow <= 5) return 9;
         return 3;
       } else {
-        // ยังไม่ผ่านทดลองงาน: จ-ส 8h
+        // แม่บ้านทดลองงาน: จ-ส 7:00-16:00 = 8h (ทุกวัน)
         return 8;
       }
     }
 
-    // monthly (default): จ-พฤ 9h, ศ 8h, ส 4h เว้นเสาร์
+    // monthly: จ-พฤ 8:00-18:00 หักพัก 1h = 9h, ศ 8:00-17:00 หักพัก 1h = 8h, ส 8:00-12:00 ไม่ทับพัก = 4h
     if (dow <= 4) return 9;
     if (dow === 5) return 8;
     return isWorkingSaturday(d) ? 4 : 0;

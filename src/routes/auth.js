@@ -36,6 +36,12 @@ module.exports = function (db) {
     }
   });
 
+  // POST /api/auth/logout — ล้าง session (JWT stateless → client ล้าง token เอง; endpoint นี้เพื่อ audit log)
+  router.post('/logout', (req, res) => {
+    // JWT ไม่มี server-side session — แค่ acknowledge คำขอ
+    res.json({ message: 'ออกจากระบบสำเร็จ' });
+  });
+
   // GET /api/auth/me — ข้อมูลผู้ใช้ปัจจุบัน (รวม employee_type ล่าสุดจาก DB)
   router.get('/me', (req, res) => {
     const authHeader = req.headers.authorization;
