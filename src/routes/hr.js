@@ -232,19 +232,26 @@ module.exports = function (db) {
 
   // POST /api/hr/leave-types
   router.post('/leave-types', (req, res) => {
-    const { name, max_days_per_year, requires_document } = req.body;
+    const { name, max_days_per_year, requires_document, requires_doc_over_days } = req.body;
     if (!name || !max_days_per_year) return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
-    const r = db.prepare('INSERT INTO leave_types (name,max_days_per_year,requires_document) VALUES (?,?,?)').run(name, Number(max_days_per_year), requires_document ? 1 : 0);
+    const r = db.prepare('INSERT INTO leave_types (name,max_days_per_year,requires_document,requires_doc_over_days) VALUES (?,?,?,?)')
+      .run(name, Number(max_days_per_year), requires_document ? 1 : 0, requires_doc_over_days ? Number(requires_doc_over_days) : 0);
     res.status(201).json({ message: 'เพิ่มประเภทการลาสำเร็จ', id: r.lastInsertRowid });
   });
 
   // PUT /api/hr/leave-types/:id
   router.put('/leave-types/:id', (req, res) => {
-    const { name, max_days_per_year, requires_document } = req.body;
+    const { name, max_days_per_year, requires_document, requires_doc_over_days } = req.body;
     const lt = db.prepare('SELECT * FROM leave_types WHERE id=?').get(req.params.id);
     if (!lt) return res.status(404).json({ message: 'ไม่พบประเภทการลา' });
-    db.prepare('UPDATE leave_types SET name=?,max_days_per_year=?,requires_document=? WHERE id=?')
-      .run(name||lt.name, max_days_per_year ? Number(max_days_per_year) : lt.max_days_per_year, requires_document !== undefined ? (requires_document?1:0) : lt.requires_document, lt.id);
+    db.prepare('UPDATE leave_types SET name=?,max_days_per_year=?,requires_document=?,requires_doc_over_days=? WHERE id=?')
+      .run(
+        name||lt.name,
+        max_days_per_year ? Number(max_days_per_year) : lt.max_days_per_year,
+        requires_document !== undefined ? (requires_document?1:0) : lt.requires_document,
+        requires_doc_over_days !== undefined ? Number(requires_doc_over_days) : (lt.requires_doc_over_days||0),
+        lt.id
+      );
     res.json({ message: 'อัปเดตประเภทการลาสำเร็จ' });
   });
 

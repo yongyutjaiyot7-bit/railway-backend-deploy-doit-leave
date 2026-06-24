@@ -1258,6 +1258,16 @@
             </div>
             <button class="btn btn-primary" style="margin-top:auto" onclick="openEmpModal()">+ เพิ่มพนักงาน</button>
           </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <label style="font-size:13px;color:#4a5568;font-weight:600">แสดง</label>
+              <select id="hr-emp-page-size" onchange="hrEmpGoPage(1)" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:13px;background:#fff">
+                <option value="10">10</option><option value="25" selected>25</option><option value="50">50</option><option value="100">100</option>
+              </select>
+              <label style="font-size:13px;color:#4a5568;font-weight:600">รายการ/หน้า</label>
+            </div>
+            <span id="hr-emp-table-info" style="font-size:13px;color:#718096"></span>
+          </div>
           <div class="table-wrap"><table>
             <thead><tr>
               <th>รหัสพนักงาน</th>
@@ -1270,6 +1280,7 @@
             </tr></thead>
             <tbody id="emp-tbody"><tr><td colspan="7" class="empty">กำลังโหลด...</td></tr></tbody>
           </table></div>
+          <div id="hr-emp-pagination" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:14px"></div>
         </div>
       </div>
 
@@ -1431,6 +1442,10 @@
                 <option value="1">ต้องการ</option>
               </select>
             </div>
+            <div class="form-group">
+              <label>⏰ ลาเกิน (วัน)</label>
+              <input id="lt-over-days" type="number" min="0" style="width:100px" placeholder="เช่น 3 (0=ปิด)">
+            </div>
             <button class="btn btn-primary" style="margin-top:auto" onclick="saveLeaveType()">+ เพิ่มประเภทการลา</button>
           </div>
 
@@ -1441,9 +1456,10 @@
               <th>ชื่อประเภทการลา</th>
               <th style="text-align:center">โควต้าวันลา/ปี</th>
               <th style="text-align:center">ต้องแนบเอกสาร</th>
+              <th style="text-align:center">ลาเกิน (วัน) แนบเอกสาร</th>
               <th style="text-align:center">จัดการ</th>
             </tr></thead>
-            <tbody id="lt-tbody"><tr><td colspan="4" class="empty">กำลังโหลด...</td></tr></tbody>
+            <tbody id="lt-tbody"><tr><td colspan="5" class="empty">กำลังโหลด...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -1927,6 +1943,7 @@ function empGoPage(p) {
 // ====== REQUEST ======
 async function loadLeaveTypes() {
   const data = await api('GET', '/leave/types');
+  if (Array.isArray(data)) leaveTypesCache = data; // cache for requires_doc_over_days validation
   const sel = document.getElementById('req-type');
   if (sel) {
     sel.innerHTML = data.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
@@ -2210,6 +2227,21 @@ async function submitRequest() {
     return swalError('วันที่/เวลาสิ้นสุดต้องอยู่หลังวันที่เริ่มลา');
   if (!approver1_id || !approver2_id) return swalError('กรุณาเลือกผู้อนุมัติทุกส่วน');
 
+  // ตรวจสอบเงื่อนไข "ลาเกิน N วัน ต้องแนบเอกสาร"
+  const selLeaveType = (leaveTypesCache || []).find(lt => String(lt.id) === String(leave_type_id));
+  const overDaysLimit = selLeaveType?.requires_doc_over_days || 0;
+  const currentDays = parseFloat(document.getElementById('req-days-all')?.textContent) || 0;
+  const files = document.getElementById('req-files').files;
+  if (overDaysLimit > 0 && currentDays >= overDaysLimit && files.length === 0) {
+    return Swal.fire({
+      icon: 'warning',
+      title: 'ต้องแนบเอกสาร',
+      html: `การลา <b>${selLeaveType?.name || ''}</b> เกิน <b>${overDaysLimit} วัน</b><br>กรุณาแนบเอกสารประกอบการลา`,
+      confirmButtonColor: '#1e3a5f',
+      confirmButtonText: 'ตกลง',
+    });
+  }
+
   const fd = new FormData();
   fd.append('leave_type_id', leave_type_id);
   fd.append('start_date', start_date);
@@ -2220,7 +2252,6 @@ async function submitRequest() {
   fd.append('department', document.getElementById('req-dept').value);
   fd.append('approver1_id', approver1_id);
   fd.append('approver2_id', approver2_id);
-  const files = document.getElementById('req-files').files;
   for (const f of files) fd.append('attachments', f);
 
   const resp = await fetch('/api/leave/request', {
@@ -2744,6 +2775,9 @@ async function loadHrStats() {
   tbody.innerHTML = s.byDepartment.length ? s.byDepartment.map(r => `<tr><td>${r.department}</td><td>${r.total}</td><td>${r.days}</td></tr>`).join('') : '<tr><td colspan="3" class="empty">ยังไม่มีข้อมูล</td></tr>';
 }
 
+let hrEmpData = [];
+let hrEmpPage = 1;
+
 async function loadEmployees() {
   const search = document.getElementById('emp-search').value;
   const dept   = document.getElementById('emp-filter-dept').value;
@@ -2753,9 +2787,20 @@ async function loadEmployees() {
   if (dept)   url += `department=${encodeURIComponent(dept)}&`;
   if (role)   url += `role=${role}`;
   const data = await api('GET', url);
+  hrEmpData = Array.isArray(data) ? data : [];
+  hrEmpPage = 1;
+  renderHrEmpTable();
+}
+
+function renderHrEmpTable() {
+  const pageSize = parseInt(document.getElementById('hr-emp-page-size')?.value || 25);
+  const total  = hrEmpData.length;
+  const pages  = Math.max(1, Math.ceil(total / pageSize));
+  if (hrEmpPage > pages) hrEmpPage = pages;
+  const slice  = hrEmpData.slice((hrEmpPage - 1) * pageSize, hrEmpPage * pageSize);
+
   const tbody = document.getElementById('emp-tbody');
-  if (!Array.isArray(data) || !data.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">ไม่พบข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = data.map(u => `<tr>
+  tbody.innerHTML = slice.length ? slice.map(u => `<tr>
     <td style="font-family:monospace">${u.employee_id}</td>
     <td>${u.name}</td>
     <td style="font-size:13px">${u.email}</td>
@@ -2766,7 +2811,40 @@ async function loadEmployees() {
       <button class="btn btn-sm" style="background:#ebf4ff;color:#2b6cb0;margin-right:4px" onclick="openEmpModal(${u.id})">แก้ไข</button>
       <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${u.id},'${u.name}')">ลบ</button>
     </td>
-  </tr>`).join('');
+  </tr>`).join('') : '<tr><td colspan="7" class="empty">ไม่พบข้อมูล</td></tr>';
+
+  const infoEl = document.getElementById('hr-emp-table-info');
+  if (infoEl) infoEl.textContent = total
+    ? `แสดง ${(hrEmpPage-1)*pageSize+1}–${Math.min(hrEmpPage*pageSize,total)} จากทั้งหมด ${total} รายการ`
+    : 'ไม่พบข้อมูล';
+
+  const pag = document.getElementById('hr-emp-pagination');
+  if (!pag) return;
+  if (pages <= 1) { pag.innerHTML = ''; return; }
+
+  const btnS = (active, disabled) =>
+    `style="padding:6px 13px;border:1.5px solid ${active?'#2b6cb0':'#e2e8f0'};border-radius:8px;cursor:${disabled?'default':'pointer'};font-size:13px;font-weight:${active?700:400};background:${active?'linear-gradient(135deg,#1e3a5f,#2b6cb0)':'#fff'};color:${active?'#fff':disabled?'#a0aec0':'#4a5568'};transition:.15s;opacity:${disabled?.5:1}"`;
+
+  let html = `<button ${btnS(false, hrEmpPage===1)} onclick="hrEmpGoPage(${hrEmpPage-1})" ${hrEmpPage===1?'disabled':''}>‹ ก่อนหน้า</button>`;
+
+  // แสดงปุ่มหน้าแบบ smart: 1 ... x-1 x x+1 ... N
+  const showPages = new Set([1, pages, hrEmpPage, hrEmpPage-1, hrEmpPage+1].filter(p => p >= 1 && p <= pages));
+  const sorted = [...showPages].sort((a,b) => a-b);
+  let prev = 0;
+  for (const p of sorted) {
+    if (p - prev > 1) html += `<span style="padding:0 4px;color:#a0aec0;font-size:15px;align-self:center">…</span>`;
+    html += `<button ${btnS(p===hrEmpPage, false)} onclick="hrEmpGoPage(${p})">${p}</button>`;
+    prev = p;
+  }
+  html += `<button ${btnS(false, hrEmpPage===pages)} onclick="hrEmpGoPage(${hrEmpPage+1})" ${hrEmpPage===pages?'disabled':''}>ถัดไป ›</button>`;
+  pag.innerHTML = html;
+}
+
+function hrEmpGoPage(p) {
+  const pageSize = parseInt(document.getElementById('hr-emp-page-size')?.value || 25);
+  const pages = Math.max(1, Math.ceil(hrEmpData.length / pageSize));
+  hrEmpPage = Math.max(1, Math.min(p, pages));
+  renderHrEmpTable();
 }
 
 async function openEmpModal(id = null) {
@@ -2936,9 +3014,9 @@ async function loadDeptApprovers() {
   });
 
   const levelBadge = (lv) => {
-    const colors = { 1: '#3182ce', 2: '#3182ce', 3: '#e53e3e' };
-    const bg = colors[lv] || '#718096';
-    return `<span style="display:inline-block;background:${bg};color:#fff;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:600">ระดับ ${lv}</span>`;
+    const display = Math.min(lv, 2); // level 3+ ถือเป็นระดับ 2
+    const bg = display === 1 ? '#3182ce' : '#e53e3e';
+    return `<span style="display:inline-block;background:${bg};color:#fff;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:600">ระดับ ${display}</span>`;
   };
 
   const entries = Object.values(grouped);
@@ -3033,36 +3111,60 @@ async function loadLeaveTypesHr() {
   const data = await api('GET', '/hr/leave-types');
   const tbody = document.getElementById('lt-tbody');
   if (!Array.isArray(data)) return;
-  tbody.innerHTML = data.map(lt => `<tr>
+  tbody.innerHTML = data.map(lt => {
+    const overDays = lt.requires_doc_over_days || 0;
+    return `<tr>
     <td><input id="ltname-${lt.id}" value="${lt.name}" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:140px"></td>
-    <td><input type="number" id="ltdays-${lt.id}" value="${lt.max_days_per_year}" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:80px" min="1"></td>
+    <td style="text-align:center"><input type="number" id="ltdays-${lt.id}" value="${lt.max_days_per_year}" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:80px;text-align:center" min="1"></td>
     <td style="text-align:center"><label class="toggle"><input type="checkbox" id="ltdoc-${lt.id}" ${lt.requires_document ? 'checked' : ''}><span class="slider"></span></label></td>
-    <td>
+    <td style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <label class="toggle"><input type="checkbox" id="ltover-toggle-${lt.id}" ${overDays > 0 ? 'checked' : ''} onchange="toggleOverDays(${lt.id})"><span class="slider"></span></label>
+        <input type="number" id="ltover-${lt.id}" value="${overDays > 0 ? overDays : 3}" min="1" style="border:1px solid #e2e8f0;border-radius:6px;padding:4px 6px;width:64px;text-align:center;${overDays === 0 ? 'opacity:.4;pointer-events:none' : ''}">
+        <span style="font-size:12px;color:#718096">วัน</span>
+      </div>
+    </td>
+    <td style="text-align:center">
       <button class="btn btn-sm" style="background:#ebf4ff;color:#2b6cb0;margin-right:4px" onclick="updateLeaveType(${lt.id})">บันทึก</button>
       <button class="btn btn-danger btn-sm" onclick="deleteLeaveType(${lt.id},'${lt.name}')">ลบ</button>
     </td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
+}
+
+function toggleOverDays(id) {
+  const checked = document.getElementById(`ltover-toggle-${id}`).checked;
+  const inp = document.getElementById(`ltover-${id}`);
+  inp.style.opacity = checked ? '1' : '.4';
+  inp.style.pointerEvents = checked ? '' : 'none';
 }
 
 async function saveLeaveType() {
   clearAlert('lt-alert');
+  const overToggle = document.getElementById('lt-over-toggle');
+  const overVal = parseInt(document.getElementById('lt-over-days').value) || 0;
   const r = await api('POST', '/hr/leave-types', {
     name: document.getElementById('lt-name').value.trim(),
     max_days_per_year: parseInt(document.getElementById('lt-days').value),
     requires_document: parseInt(document.getElementById('lt-doc').value),
+    requires_doc_over_days: overVal > 0 ? overVal : 0,
   });
   if (r.error) return swalError(r.error);
   swalSuccess(r.message, () => loadLeaveTypesHr());
   document.getElementById('lt-name').value = '';
   document.getElementById('lt-days').value = '';
+  document.getElementById('lt-over-days').value = '';
   loadLeaveTypesHr();
 }
 
 async function updateLeaveType(id) {
+  const overEnabled = document.getElementById(`ltover-toggle-${id}`)?.checked;
+  const overVal = parseInt(document.getElementById(`ltover-${id}`)?.value) || 3;
   const r = await api('PUT', `/hr/leave-types/${id}`, {
     name: document.getElementById(`ltname-${id}`).value.trim(),
     max_days_per_year: parseInt(document.getElementById(`ltdays-${id}`).value),
     requires_document: document.getElementById(`ltdoc-${id}`).checked ? 1 : 0,
+    requires_doc_over_days: overEnabled ? overVal : 0,
   });
   if (r.error) return swalError(r.error);
   swalSuccess(r.message, () => loadLeaveTypesHr());

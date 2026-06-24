@@ -213,8 +213,8 @@ async function initDb() {
   try { sqlDb.run("ALTER TABLE users ADD COLUMN employee_type TEXT DEFAULT 'monthly'"); } catch(e) {}
   try { sqlDb.run('ALTER TABLE users ADD COLUMN probation_start_date TEXT'); } catch(e) {}
   try { sqlDb.run('ALTER TABLE leave_requests ADD COLUMN is_backdated INTEGER DEFAULT 0'); } catch(e) {}
-
-  // Seed permissions
+  // Migration: requires_doc_over_days — แนบเอกสารเมื่อลาเกิน N วัน (0 = ปิด)
+  try { sqlDb.run('ALTER TABLE leave_types ADD COLUMN requires_doc_over_days INTEGER DEFAULT 0'); } catch(e) {}
   const pCount = db.prepare('SELECT COUNT(*) as c FROM access_permissions').get();
   if (!pCount || pCount.c === 0) {
     const insPerm = db.prepare(`INSERT INTO access_permissions

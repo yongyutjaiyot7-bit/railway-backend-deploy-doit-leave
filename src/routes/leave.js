@@ -153,6 +153,12 @@ module.exports = function (db) {
       }
     }
 
+    // ตรวจสอบเงื่อนไข "ลาเกิน N วัน ต้องแนบเอกสาร"
+    const leaveTypeMeta = db.prepare('SELECT * FROM leave_types WHERE id = ?').get(leave_type_id);
+    const overLimit = leaveTypeMeta?.requires_doc_over_days || 0;
+    // (days จะถูกคำนวณด้านล่าง ณ จุดนี้ใช้ค่าคร่าวๆ จากวันที่)
+    // ตรวจสอบหลังคำนวณ days จริง — ดำเนินการด้านล่างแทน
+
     // ดึงประเภทพนักงานสำหรับคำนวณชั่วโมงทำงาน
     const userInfo  = db.prepare('SELECT employee_type, probation_start_date FROM users WHERE id = ?').get(req.user.id);
     const empType   = userInfo?.employee_type || 'monthly';
@@ -165,6 +171,11 @@ module.exports = function (db) {
     if (hours <= 0) {
       (req.files || []).forEach(f => fs.unlink(f.path, () => {}));
       return res.status(400).json({ message: 'วันที่/เวลาไม่ถูกต้อง หรือไม่มีวันทำงานในช่วงที่เลือก' });
+    }
+
+    // ตรวจสอบ requires_doc_over_days หลังคำนวณ days จริงแล้ว
+    if (overLimit > 0 && days >= overLimit && (!req.files || req.files.length === 0)) {
+      return res.status(400).json({ message: `การลา ${leaveTypeMeta?.name || ''} เกิน ${overLimit} วัน กรุณาแนบเอกสารประกอบการลา` });
     }
 
     const year = new Date(start_date).getFullYear();
