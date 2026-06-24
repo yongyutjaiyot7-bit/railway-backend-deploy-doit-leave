@@ -1589,21 +1589,12 @@ function showApp() {
     loadApproveHistory();
     loadPending();
   } else {
-    document.getElementById('home-employee').style.display = '';
-    document.getElementById('tab-request').style.display = '';
-    document.getElementById('tab-history').style.display = '';
-    document.getElementById('tab-calendar-my').style.display = '';
-    document.getElementById('bnav-request').style.display = '';
-    document.getElementById('bnav-history').style.display = '';
-    if (isApprover) {
-      document.getElementById('tab-approve').style.display = '';
-      document.getElementById('tab-calendar-all').style.display = '';
-      document.getElementById('bnav-approve').style.display = '';
-    }
-    if (isManager) {
-      document.getElementById('tab-report').style.display = '';
-      document.getElementById('bnav-report').style.display = '';
-    }
+    const _show = id => { const el = document.getElementById(id); if (el) el.style.display = ''; };
+    _show('home-employee');
+    _show('tab-request'); _show('tab-history'); _show('tab-calendar-my');
+    _show('bnav-request'); _show('bnav-history');
+    if (isApprover) { _show('tab-approve'); _show('tab-calendar-all'); _show('bnav-approve'); }
+    if (isManager)  { _show('tab-report'); _show('bnav-report'); }
     // โหลดข้อมูลหน้าหลักทันที ไม่รอ switchTab
     loadBalance();
     loadCalMy();
@@ -1611,8 +1602,10 @@ function showApp() {
     if (isApprover) { loadPending(); loadApproveHistory(); loadCalAll(); }
   }
 
-  document.getElementById('rpt-year').value = curYear;
-  document.getElementById('lm-year').value  = curYear;
+  const _rptYear = document.getElementById('rpt-year');
+  const _lmYear  = document.getElementById('lm-year');
+  if (_rptYear) _rptYear.value = curYear;
+  if (_lmYear)  _lmYear.value  = curYear;
   loadLeaveTypes();
   loadHistory();
 
@@ -1943,14 +1936,23 @@ function empGoPage(p) {
 // ====== REQUEST ======
 async function loadLeaveTypes() {
   const data = await api('GET', '/leave/types');
-  if (!Array.isArray(data) || !data.length) return;
+  console.log('[loadLeaveTypes]', data);
+  if (!Array.isArray(data)) {
+    console.warn('[loadLeaveTypes] API error:', data);
+    return;
+  }
+  if (!data.length) {
+    console.warn('[loadLeaveTypes] ไม่มีประเภทการลาในฐานข้อมูล');
+    return;
+  }
   leaveTypesCache = data;
   const sel = document.getElementById('req-type');
   if (sel) {
     sel.innerHTML = data.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-    // ลบ listener เก่าก่อนเพื่อป้องกันซ้ำ
     sel.removeEventListener('change', updateLeaveDateMin);
     sel.addEventListener('change', updateLeaveDateMin);
+  } else {
+    console.warn('[loadLeaveTypes] ไม่พบ #req-type element');
   }
   const sick = data.find(t => t.name === 'ลาป่วย');
   sickLeaveTypeId = sick ? sick.id : null;
