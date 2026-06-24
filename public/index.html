@@ -62,6 +62,10 @@
   input, select, textarea { border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 10px 13px; font-size: 14px; font-family: inherit; transition: all .15s; background: #fff; color:#2d3748; }
   input:focus, select:focus, textarea:focus { outline: none; border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66,153,225,.15); background:#fafcff; }
   input:read-only { background:#f7fafc;color:#718096; }
+  input.field-error { border-color: #e53e3e !important; box-shadow: 0 0 0 3px rgba(229,62,62,.15) !important; }
+  .field-error-msg { font-size: 12px; color: #e53e3e; margin-top: 4px; display: none; }
+  .field-error-msg.show { display: block; }
+  input.field-ok { border-color: #48bb78 !important; box-shadow: 0 0 0 3px rgba(72,187,120,.12) !important; }
   select { appearance:auto; cursor:pointer; }
   textarea { resize: vertical; min-height: 90px; }
 
@@ -351,6 +355,7 @@
     .card { padding: 18px; }
     #emp-stat-grid-row { grid-template-columns: repeat(2,1fr) !important; }
   }
+  .flatpickr-time .numInput { text-align: center; }
 </style>
 </head>
 <body>
@@ -358,7 +363,7 @@
 <!-- LOGIN -->
 <div id="login-page">
   <div class="login-card">
-    <h1>🏢 ระบบลาออนไลน์<br> DOIT </h1>
+    <h1>🏢 ระบบลาออนไลน์<br>DOIT</h1>
     <p>กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน</p>
     <div id="login-alert"></div>
     <div class="form-group">
@@ -385,6 +390,7 @@
       <div class="form-group">
         <label>รหัสพนักงาน</label>
         <input id="reg-empid" placeholder="EMP001">
+        <span class="field-error-msg" id="reg-empid-err">รหัสพนักงานนี้มีในระบบแล้ว</span>
       </div>
       <div class="form-group">
         <label>ชื่อ-นามสกุล</label>
@@ -393,6 +399,7 @@
       <div class="form-group">
         <label>อีเมล</label>
         <input id="reg-email" type="email" placeholder="email@company.com">
+        <span class="field-error-msg" id="reg-email-err">อีเมลนี้มีในระบบแล้ว</span>
       </div>
       <div class="form-group">
         <label>รหัสผ่าน</label>
@@ -1485,6 +1492,33 @@ function getWorkHoursForDayFE(dateStr) {
   return isWorkingSaturday(d) ? 4 : 0;
 }
 
+// Return { minTime, maxTime } string "HH:MM" for the given date and current user's employee type
+function getWorkTimeRange(dateStr) {
+  const empType  = user?.employee_type || 'monthly';
+  const probStart = user?.probation_start_date || null;
+  const d = new Date(dateStr + 'T12:00:00');
+  const dow = d.getDay();
+  if (dow === 0) return null; // Sunday — no work
+  if (empType === 'daily') {
+    if (dow <= 4) return { minTime: '09:00', maxTime: '18:00' }; // จ-พฤ
+    return { minTime: '08:00', maxTime: '17:00' }; // ศ-ส
+  }
+  if (empType === 'housekeeping') {
+    const passed = probStart ? (new Date(dateStr) - new Date(probStart)) / 86400000 >= 120 : false;
+    if (passed) {
+      if (dow === 6) return { minTime: '07:00', maxTime: '10:00' }; // ส 3h
+      return { minTime: '07:00', maxTime: '17:00' }; // จ-ศ 9h
+    }
+    if (dow === 0) return null;
+    return { minTime: '07:00', maxTime: '16:00' }; // ทดลองงาน จ-ส 8h
+  }
+  // monthly
+  if (dow <= 4) return { minTime: '08:00', maxTime: '18:00' }; // จ-พฤ
+  if (dow === 5) return { minTime: '08:00', maxTime: '17:00' }; // ศ
+  if (isWorkingSaturday(d)) return { minTime: '08:00', maxTime: '12:00' }; // ส (working)
+  return null; // เสาร์ที่ไม่ทำงาน
+}
+
 // Show/hide probation date field in employee form
 function toggleProbationField() {
   const t = document.getElementById('em-emptype')?.value;
@@ -1519,8 +1553,8 @@ function showApp() {
 
   const isApprover = ['unit_head','department_head','division_manager','hr_admin'].includes(user.role);
   const isManager  = ['division_manager','hr_admin'].includes(user.role);
-  const isHR = user.role === 'hr_admin';
-  const curYear = new Date().getFullYear();
+  const isHR       = user.role === 'hr_admin';
+  const curYear    = new Date().getFullYear();
 
   if (isHR) {
     document.getElementById('home-employee').style.display = 'none';
@@ -1535,11 +1569,11 @@ function showApp() {
     document.getElementById('bnav-hr').style.display = '';
     const sel = document.getElementById('dash-year');
     for (let y = curYear; y >= curYear - 4; y--) sel.innerHTML += `<option value="${y}" ${y===curYear?'selected':''}>${y + 543}</option>`;
-    // โหลดข้อมูล background (ไม่ใช่ chart)
     loadLeaveRecords();
     loadApproveHistory();
     loadPending();
   } else {
+    document.getElementById('home-employee').style.display = '';
     document.getElementById('tab-request').style.display = '';
     document.getElementById('tab-history').style.display = '';
     document.getElementById('tab-calendar-my').style.display = '';
@@ -1554,10 +1588,11 @@ function showApp() {
       document.getElementById('tab-report').style.display = '';
       document.getElementById('bnav-report').style.display = '';
     }
-    // โหลดข้อมูล background
+    // โหลดข้อมูลหน้าหลักทันที ไม่รอ switchTab
+    loadBalance();
     loadCalMy();
     loadApprovers();
-    if (isApprover) { loadApproveHistory(); loadCalAll(); }
+    if (isApprover) { loadPending(); loadApproveHistory(); loadCalAll(); }
   }
 
   document.getElementById('rpt-year').value = curYear;
@@ -1565,8 +1600,21 @@ function showApp() {
   loadLeaveTypes();
   loadHistory();
 
-  // switchTab หลัง browser paint ครั้งถัดไป เพื่อให้ canvas มีขนาดก่อน Chart.js render
-  requestAnimationFrame(() => switchTab('home'));
+  // activate หน้าหลัก + re-render chart (HR) หลัง browser paint 1 เฟรม
+  requestAnimationFrame(() => {
+    // activate tab โดยไม่ call loadBalance/loadDashboard ซ้ำ
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const tabEl = document.getElementById('tab-home');
+    if (tabEl) tabEl.classList.add('active');
+    const pageEl = document.getElementById('page-home');
+    if (pageEl) pageEl.classList.add('active');
+    document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
+    const bnavEl = document.getElementById('bnav-home');
+    if (bnavEl) bnavEl.classList.add('active');
+    // สำหรับ HR: render chart หลัง canvas มีขนาดแล้ว
+    if (isHR) loadDashboard();
+  });
 }
 
 // ====== AUTH ======
@@ -1574,10 +1622,27 @@ async function doLogin() {
   const email    = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   const r = await api('POST', '/auth/login', { email, password });
-  if (r.error) return swalError(r.error);
+  if (r.error) {
+    return Swal.fire({
+      icon: 'error',
+      title: 'เข้าสู่ระบบไม่สำเร็จ',
+      text: 'ชื่อหรือรหัสผ่านไม่ถูกต้อง',
+      confirmButtonColor: '#e53e3e',
+      confirmButtonText: 'ลองใหม่',
+    });
+  }
   token = r.token; user = r.user;
   localStorage.setItem('token', token);
   localStorage.setItem('user', JSON.stringify(user));
+  await Swal.fire({
+    icon: 'success',
+    title: `ยินดีต้อนรับ`,
+    text: `${user.name || user.employee_id} เข้าสู่ระบบสำเร็จ`,
+    timer: 1500,
+    timerProgressBar: true,
+    showConfirmButton: false,
+    confirmButtonColor: '#1e3a5f',
+  });
   showApp();
 }
 
@@ -1601,10 +1666,69 @@ function doLogout() {
   });
 }
 
-function showRegister()  { document.getElementById('register-modal').classList.add('open'); }
+function showRegister() {
+  // reset validation state
+  ['reg-empid','reg-email'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('field-error','field-ok'); }
+  });
+  ['reg-empid-err','reg-email-err'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
+  document.getElementById('register-modal').classList.add('open');
+}
 function closeRegister() { document.getElementById('register-modal').classList.remove('open'); }
 
+let _regCheckTimer = {};
+function regFieldCheck(field, value) {
+  clearTimeout(_regCheckTimer[field]);
+  if (!value) return;
+  _regCheckTimer[field] = setTimeout(async () => {
+    const params = new URLSearchParams({ [field]: value });
+    const r = await fetch(API + '/auth/check?' + params).then(res => res.json()).catch(() => ({}));
+    const inputEl = document.getElementById(field === 'employee_id' ? 'reg-empid' : 'reg-email');
+    const errEl   = document.getElementById(field === 'employee_id' ? 'reg-empid-err' : 'reg-email-err');
+    const exists  = field === 'employee_id' ? r.employee_id_exists : r.email_exists;
+    if (!inputEl) return;
+    inputEl.classList.toggle('field-error', !!exists);
+    inputEl.classList.toggle('field-ok', !exists);
+    if (errEl) errEl.classList.toggle('show', !!exists);
+    if (exists) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลซ้ำในระบบ',
+        text: field === 'employee_id' ? `รหัสพนักงาน "${value}" มีในระบบแล้ว` : `อีเมล "${value}" มีในระบบแล้ว`,
+        confirmButtonColor: '#e53e3e',
+        confirmButtonText: 'ตกลง',
+        timer: 4000,
+        timerProgressBar: true,
+      });
+    }
+  }, 600);
+}
+
+// wire up real-time listeners after DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('reg-empid')?.addEventListener('blur', e => regFieldCheck('employee_id', e.target.value.trim()));
+  document.getElementById('reg-email')?.addEventListener('blur', e => regFieldCheck('email', e.target.value.trim()));
+  document.getElementById('reg-empid')?.addEventListener('input', e => {
+    // clear error state while typing
+    e.target.classList.remove('field-error','field-ok');
+    document.getElementById('reg-empid-err')?.classList.remove('show');
+  });
+  document.getElementById('reg-email')?.addEventListener('input', e => {
+    e.target.classList.remove('field-error','field-ok');
+    document.getElementById('reg-email-err')?.classList.remove('show');
+  });
+});
+
 async function doRegister() {
+  // ตรวจสอบ field-error ก่อน submit
+  if (document.getElementById('reg-empid')?.classList.contains('field-error') ||
+      document.getElementById('reg-email')?.classList.contains('field-error')) {
+    return Swal.fire({ icon:'error', title:'ไม่สามารถลงทะเบียนได้', text:'กรุณาแก้ไขข้อมูลที่ซ้ำในระบบก่อน', confirmButtonColor:'#e53e3e' });
+  }
   const body = {
     employee_id: document.getElementById('reg-empid').value.trim(),
     name:        document.getElementById('reg-name').value.trim(),
@@ -1855,6 +1979,45 @@ function initFlatpickr() {
     }
   }
 
+  let _timeAlertShowing = false;
+  function applyTimeRange(fp, dateStr) {
+    const range = dateStr ? getWorkTimeRange(dateStr) : null;
+    fp.set('minTime', range ? range.minTime : '00:00');
+    fp.set('maxTime', range ? range.maxTime : '23:59');
+  }
+
+  function enforceTimeRange(fp, sel) {
+    if (!sel[0]) return;
+    const dateStr = dateStrFromDate(sel[0]);
+    const range = dateStr ? getWorkTimeRange(dateStr) : null;
+    if (!range) return;
+    const [maxH, maxM] = range.maxTime.split(':').map(Number);
+    const [minH, minM] = range.minTime.split(':').map(Number);
+    const selH = sel[0].getHours(), selM = sel[0].getMinutes();
+    const overMax = selH > maxH || (selH === maxH && selM > maxM);
+    const underMin = selH < minH || (selH === minH && selM < minM);
+    if ((overMax || underMin) && !_timeAlertShowing) {
+      _timeAlertShowing = true;
+      const clampTime = overMax ? range.maxTime : range.minTime;
+      const [ch, cm] = clampTime.split(':').map(Number);
+      const clamped = new Date(sel[0]);
+      clamped.setHours(ch, cm, 0, 0);
+      fp.setDate(clamped, false);
+      Swal.fire({
+        icon: 'warning',
+        title: 'เกินเวลาทำงาน',
+        html: `เวลาทำงานของวันนี้คือ <b>${range.minTime} – ${range.maxTime} น.</b><br>ระบบปรับเวลาเป็น <b>${clampTime} น.</b> ให้อัตโนมัติ`,
+        confirmButtonColor: '#1e3a5f',
+      }).then(() => { _timeAlertShowing = false; });
+    }
+  }
+
+  function dateStrFromDate(d) {
+    if (!d) return null;
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+
   const opts = {
     enableTime: true,
     dateFormat: 'd-m-Y H:i',
@@ -1869,10 +2032,13 @@ function initFlatpickr() {
     onChange: (sel) => {
       enforceMinDate(fpStart, sel, today);
       if (sel[0] && sel[0] >= today && fpEnd) fpEnd.set('minDate', sel[0]);
+      applyTimeRange(fpStart, dateStrFromDate(sel[0]));
+      enforceTimeRange(fpStart, sel);
       calcReqDays();
     },
     onClose: (sel) => {
       enforceMinDate(fpStart, sel, today);
+      enforceTimeRange(fpStart, sel);
     },
   });
   fpEnd = flatpickr('#req-end', {
@@ -1880,6 +2046,8 @@ function initFlatpickr() {
     onChange: (sel) => {
       const minEnd = (fpStart?.selectedDates[0] && fpStart.selectedDates[0] >= today) ? fpStart.selectedDates[0] : today;
       enforceMinDate(fpEnd, sel, minEnd);
+      applyTimeRange(fpEnd, dateStrFromDate(sel[0]));
+      enforceTimeRange(fpEnd, sel);
       calcReqDays();
     },
     onClose: (sel) => {

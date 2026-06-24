@@ -6,6 +6,21 @@ const { JWT_SECRET } = require('../middleware/auth');
 module.exports = function (db) {
   const router = express.Router();
 
+  // GET /api/auth/check — ตรวจสอบว่า employee_id หรือ email ซ้ำในฐานข้อมูลหรือไม่
+  router.get('/check', (req, res) => {
+    const { employee_id, email } = req.query;
+    const result = {};
+    if (employee_id) {
+      const row = db.prepare('SELECT id FROM users WHERE employee_id = ?').get(employee_id.trim());
+      result.employee_id_exists = !!row;
+    }
+    if (email) {
+      const row = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim());
+      result.email_exists = !!row;
+    }
+    res.json(result);
+  });
+
   // POST /api/auth/register
   router.post('/register', async (req, res) => {
     const { employee_id, name, email, password, role, department, division, unit } = req.body;
