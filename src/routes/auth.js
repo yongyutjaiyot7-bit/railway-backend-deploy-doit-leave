@@ -36,6 +36,21 @@ module.exports = function (db) {
     }
   });
 
+  // GET /api/auth/me — ข้อมูลผู้ใช้ปัจจุบัน (รวม employee_type ล่าสุดจาก DB)
+  router.get('/me', (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ message: 'Unauthorized' });
+    try {
+      const token = authHeader.split(' ')[1];
+      const payload = require('jsonwebtoken').verify(token, JWT_SECRET);
+      const user = db.prepare('SELECT id,employee_id,name,email,role,department,division,unit,employee_type,probation_start_date FROM users WHERE id=?').get(payload.id);
+      if (!user) return res.status(404).json({ message: 'ไม่พบผู้ใช้' });
+      res.json({ id: user.id, employee_id: user.employee_id, name: user.name, role: user.role, employee_type: user.employee_type || 'monthly', probation_start_date: user.probation_start_date || null });
+    } catch(e) {
+      res.status(401).json({ message: 'Token ไม่ถูกต้อง' });
+    }
+  });
+
   // POST /api/auth/login
   router.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -48,7 +63,7 @@ module.exports = function (db) {
       JWT_SECRET,
       { expiresIn: '8h' }
     );
-    res.json({ token, user: { id: user.id, employee_id: user.employee_id, name: user.name, role: user.role } });
+    res.json({ token, user: { id: user.id, employee_id: user.employee_id, name: user.name, role: user.role, employee_type: user.employee_type || 'monthly', probation_start_date: user.probation_start_date || null } });
   });
 
   return router;

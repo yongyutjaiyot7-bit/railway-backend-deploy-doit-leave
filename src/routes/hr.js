@@ -16,7 +16,7 @@ module.exports = function (db) {
   router.get('/employees', (req, res) => {
     const { search, department, division, role } = req.query;
     let sql = `SELECT u.id, u.employee_id, u.name, u.email, u.role,
-                      u.department, u.division, u.unit, u.created_at
+                      u.department, u.division, u.unit, u.employee_type, u.probation_start_date, u.created_at
                FROM users u WHERE 1=1`;
     const params = [];
     if (search) { sql += ' AND (u.name LIKE ? OR u.employee_id LIKE ? OR u.email LIKE ?)'; const s = `%${search}%`; params.push(s, s, s); }
@@ -29,7 +29,7 @@ module.exports = function (db) {
 
   // GET /api/hr/employees/:id
   router.get('/employees/:id', (req, res) => {
-    const u = db.prepare('SELECT id,employee_id,name,email,role,department,division,unit,created_at FROM users WHERE id=?').get(req.params.id);
+    const u = db.prepare('SELECT id,employee_id,name,email,role,department,division,unit,employee_type,probation_start_date,created_at FROM users WHERE id=?').get(req.params.id);
     if (!u) return res.status(404).json({ message: 'ไม่พบพนักงาน' });
     // ดูโควต้าการลาด้วย
     const year = new Date().getFullYear();
@@ -43,18 +43,20 @@ module.exports = function (db) {
 
   // POST /api/hr/employees
   router.post('/employees', async (req, res) => {
-    const { employee_id, name, email, password, role, department, division, unit, leave_quotas } = req.body;
+    const { employee_id, name, email, password, role, department, division, unit, employee_type, probation_start_date, leave_quotas } = req.body;
     const validRoles = ['employee','unit_head','department_head','division_manager','hr_admin'];
+    const validEmpTypes = ['monthly','daily','housekeeping'];
     if (!employee_id || !name || !email || !password || !role) {
       return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
     }
     if (!validRoles.includes(role)) return res.status(400).json({ message: 'role ไม่ถูกต้อง' });
+    const empType = validEmpTypes.includes(employee_type) ? employee_type : 'monthly';
     try {
       const hash = await bcrypt.hash(password, 10);
       const r = db.prepare(`
-        INSERT INTO users (employee_id,name,email,password,role,department,division,unit)
-        VALUES (?,?,?,?,?,?,?,?)
-      `).run(employee_id, name, email, hash, role, department||'', division||'', unit||'');
+        INSERT INTO users (employee_id,name,email,password,role,department,division,unit,employee_type,probation_start_date)
+        VALUES (?,?,?,?,?,?,?,?,?,?)
+      `).run(employee_id, name, email, hash, role, department||'', division||'', unit||'', empType, probation_start_date||null);
       const uid = r.lastInsertRowid;
       const year = new Date().getFullYear();
       const types = db.prepare('SELECT * FROM leave_types').all();
@@ -71,16 +73,18 @@ module.exports = function (db) {
 
   // PUT /api/hr/employees/:id
   router.put('/employees/:id', async (req, res) => {
-    const { name, email, password, role, department, division, unit, leave_quotas } = req.body;
+    const { name, email, password, role, department, division, unit, employee_type, probation_start_date, leave_quotas } = req.body;
     const u = db.prepare('SELECT * FROM users WHERE id=?').get(req.params.id);
     if (!u) return res.status(404).json({ message: 'ไม่พบพนักงาน' });
     const validRoles = ['employee','unit_head','department_head','division_manager','hr_admin'];
+    const validEmpTypes = ['monthly','daily','housekeeping'];
     if (role && !validRoles.includes(role)) return res.status(400).json({ message: 'role ไม่ถูกต้อง' });
+    const empType = employee_type && validEmpTypes.includes(employee_type) ? employee_type : (u.employee_type || 'monthly');
     try {
       let passwordField = u.password;
       if (password) passwordField = await bcrypt.hash(password, 10);
-      db.prepare(`UPDATE users SET name=?,email=?,password=?,role=?,department=?,division=?,unit=? WHERE id=?`)
-        .run(name||u.name, email||u.email, passwordField, role||u.role, department||u.department, division||u.division, unit||u.unit, u.id);
+      db.prepare(`UPDATE users SET name=?,email=?,password=?,role=?,department=?,division=?,unit=?,employee_type=?,probation_start_date=? WHERE id=?`)
+        .run(name||u.name, email||u.email, passwordField, role||u.role, department||u.department, division||u.division, unit||u.unit, empType, probation_start_date !== undefined ? (probation_start_date||null) : u.probation_start_date, u.id);
       // อัปเดตโควต้าการลาถ้าส่งมา
       if (leave_quotas) {
         const year = new Date().getFullYear();
@@ -210,8 +214,8 @@ module.exports = function (db) {
     // ระดับตรวจสอบ (1): หัวหน้าหน่วยงาน, หัวหน้าแผนก
     // ระดับอนุมัติ (2): ผู้จัดการฝ่ายขึ้นไป
     const roles = level === 1
-      ? ['unit_head','department_head']
-      : ['division_manager','hr_admin'];
+      ? ['unit_head','department_head','division_manager','hr_admin']
+      : ['department_head','division_manager','hr_admin'];
     const placeholders = roles.map(() => '?').join(',');
     const rows = db.prepare(`
       SELECT id, employee_id, name, role, department, division, unit

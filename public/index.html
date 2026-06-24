@@ -473,6 +473,17 @@
       <div class="form-group"><label>หน่วยงาน (Unit)</label><input id="em-unit" placeholder="หน่วยบัญชี1"></div>
       <div class="form-group"><label>แผนก (Department)</label><input id="em-dept" placeholder="บัญชี"></div>
       <div class="form-group"><label>ฝ่าย (Division)</label><input id="em-div" placeholder="การเงิน"></div>
+      <div class="form-group"><label>ประเภทพนักงาน</label>
+        <select id="em-emptype" onchange="toggleProbationField()">
+          <option value="monthly">รายเดือน (จ-พฤ 9ชม / ศ 8ชม / ส 4ชม เว้น)</option>
+          <option value="daily">รายวัน (จ-ส 8ชม ทุกวัน)</option>
+          <option value="housekeeping">แม่บ้าน</option>
+        </select>
+      </div>
+      <div class="form-group" id="em-probation-group" style="display:none">
+        <label>วันเริ่มงาน/เริ่มทดลองงาน <span style="color:#718096;font-size:12px">(สำหรับคำนวณ 120 วัน)</span></label>
+        <input id="em-probation" type="date">
+      </div>
     </div>
     <div style="margin-top:16px">
       <p style="font-size:13px;font-weight:600;color:#4a5568;margin-bottom:10px">โควต้าวันลา (ปีนี้)</p>
@@ -1443,6 +1454,43 @@ let token = localStorage.getItem('token');
 let user  = JSON.parse(localStorage.getItem('user') || 'null');
 let currentApprovalId = null;
 
+// ====== WORK HOURS CALCULATION (mirrors backend) ======
+// Reference working Saturday for monthly employees (เสาร์เว้นเสาร์)
+const WORKING_SAT_REF = new Date('2026-01-03T00:00:00');
+function isWorkingSaturday(d) {
+  const ref = new Date(WORKING_SAT_REF.getFullYear(), WORKING_SAT_REF.getMonth(), WORKING_SAT_REF.getDate());
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diff = Math.round((target - ref) / 86400000);
+  return diff % 14 === 0;
+}
+function getWorkHoursForDayFE(dateStr) {
+  const empType  = user?.employee_type || 'monthly';
+  const probStart = user?.probation_start_date || null;
+  const d = new Date(dateStr + 'T12:00:00');
+  const dow = d.getDay();
+  if (dow === 0) return 0;
+  if (empType === 'daily') { return 8; } // จ-ส 8h ทุกวัน
+  if (empType === 'housekeeping') {
+    const passed = probStart ? (new Date(dateStr) - new Date(probStart)) / 86400000 >= 120 : false;
+    if (passed) return dow <= 5 ? 9 : 3;
+    return 8;
+  }
+  // monthly
+  if (dow <= 4) return 9;
+  if (dow === 5) return 8;
+  return isWorkingSaturday(d) ? 4 : 0;
+}
+
+// Show/hide probation date field in employee form
+function toggleProbationField() {
+  const t = document.getElementById('em-emptype')?.value;
+  const g = document.getElementById('em-probation-group');
+  if (g) g.style.display = t === 'housekeeping' ? '' : 'none';
+}
+
+// Cache sick leave type id (set after loadLeaveTypes())
+let sickLeaveTypeId = null;
+
 // ====== INIT ======
 window.addEventListener('DOMContentLoaded', () => {
   if (token && user) showApp();
@@ -1452,6 +1500,19 @@ function showApp() {
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('nav-name').textContent = user.name;
+
+  // ดึงข้อมูล employee_type ล่าสุดจาก DB (อัปเดต localStorage ถ้าเปลี่ยน)
+  fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (data) {
+        user.employee_type        = data.employee_type || 'monthly';
+        user.probation_start_date = data.probation_start_date || null;
+        localStorage.setItem('user', JSON.stringify(user));
+        // คำนวณใหม่ถ้ากำลังอยู่ที่ฟอร์มยื่นลา
+        if (typeof calcReqDays === 'function') calcReqDays();
+      }
+    }).catch(() => {});
 
   const isApprover = ['unit_head','department_head','division_manager','hr_admin'].includes(user.role);
   const isManager  = ['division_manager','hr_admin'].includes(user.role);
@@ -1728,10 +1789,33 @@ function empGoPage(p) {
 async function loadLeaveTypes() {
   const data = await api('GET', '/leave/types');
   const sel = document.getElementById('req-type');
-  if (sel) sel.innerHTML = data.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  if (sel) {
+    sel.innerHTML = data.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    sel.addEventListener('change', updateLeaveDateMin);
+  }
+  // cache sick leave id for backdating rule
+  const sick = data.find(t => t.name === 'ลาป่วย');
+  sickLeaveTypeId = sick ? sick.id : null;
   // populate history filter
   const hSel = document.getElementById('hist-filter-type');
   if (hSel && hSel.options.length <= 1) data.forEach(t => { const o = new Option(t.name, t.name); hSel.add(o); });
+}
+
+// Adjust flatpickr minDate based on selected leave type
+// ลาป่วย → อนุญาตย้อนหลัง 30 วัน, อื่นๆ → วันนี้
+function updateLeaveDateMin() {
+  if (!fpStart || !fpEnd) return;
+  const selectedId = parseInt(document.getElementById('req-type')?.value);
+  const isSick = sickLeaveTypeId && selectedId === sickLeaveTypeId;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const minD = isSick ? new Date(today.getTime() - 30 * 86400000) : today;
+  fpStart.set('minDate', minD);
+  fpEnd.set('minDate', minD);
+  // ถ้าเลือกวันไว้แล้วและเป็นวันก่อน minD ให้ clear
+  if (!isSick) {
+    const sv = fpStart.selectedDates[0];
+    if (sv && sv < today) { fpStart.clear(); fpEnd.clear(); }
+  }
 }
 
 // ---- Flatpickr instances ----
@@ -1801,17 +1885,30 @@ function initFlatpickr() {
   });
 }
 
-// นับวันทำงาน (ไม่นับวันอาทิตย์) ระหว่าง startDate และ endDate (inclusive, date-only)
-function countWorkDays(startDateStr, endDateStr) {
-  const s = new Date(startDateStr + 'T00:00:00');
-  const e = new Date(endDateStr   + 'T00:00:00');
-  let count = 0;
-  const cur = new Date(s);
-  while (cur <= e) {
-    if (cur.getDay() !== 0) count++; // 0 = อาทิตย์
+// คำนวณวันลาโดยใช้ประเภทพนักงาน (mirrors backend calcLeaveResult)
+function calcLeaveResultFE(startDateStr, endDateStr, startDtStr, endDtStr) {
+  const start = new Date(startDateStr + 'T00:00:00');
+  const end   = new Date(endDateStr   + 'T00:00:00');
+  let totalHours = 0, totalDays = 0;
+  const cur = new Date(start);
+  const pad = n => String(n).padStart(2, '0');
+  while (cur <= end) {
+    const ds = `${cur.getFullYear()}-${pad(cur.getMonth()+1)}-${pad(cur.getDate())}`;
+    const maxH = getWorkHoursForDayFE(ds);
+    if (maxH > 0) {
+      if (startDateStr === endDateStr) {
+        const actualH = (new Date(endDtStr) - new Date(startDtStr)) / 3600000;
+        const h = Math.min(Math.max(0, actualH), maxH);
+        totalHours += h;
+        totalDays  += Math.max(0.5, Math.round((h / maxH) * 2) / 2);
+      } else {
+        totalHours += maxH;
+        totalDays  += maxH < 5 ? 0.5 : 1;
+      }
+    }
     cur.setDate(cur.getDate() + 1);
   }
-  return count;
+  return { hours: totalHours, days: Math.max(totalDays > 0 ? 0.5 : 0, totalDays) };
 }
 
 function calcReqDays() {
@@ -1827,11 +1924,9 @@ function calcReqDays() {
 
   const start = new Date(sv);
   const end   = new Date(ev);
-  const diffMs = end - start;
-
   if (box) box.style.display = '';
 
-  if (diffMs <= 0) {
+  if (end <= start) {
     document.getElementById('req-days').textContent = '';
     document.getElementById('req-duration-text').textContent = '⚠️ กรุณาตรวจสอบวันที่และเวลา';
     document.getElementById('req-days-all').textContent  = '-';
@@ -1841,41 +1936,29 @@ function calcReqDays() {
     return;
   }
 
-  const totalMin   = Math.floor(diffMs / 60000);
-  const totalHours = totalMin / 60;
-  const WORK_HOURS = 8;
-  const isPartialDay = totalHours < WORK_HOURS;
-
-  const days   = Math.floor(totalMin / (60 * 24));
-  const remMin = totalMin % (60 * 24);
-  const hours  = Math.floor(remMin / 60);
-  const mins   = remMin % 60;
-
   const startDateStr = sv.slice(0, 10);
   const endDateStr   = ev.slice(0, 10);
-  const workDays = countWorkDays(startDateStr, endDateStr);
-  const allDays  = days + (remMin > 0 ? 1 : 0);
+  const { hours: workHours, days: workDays } = calcLeaveResultFE(startDateStr, endDateStr, sv, ev);
+  const totalMin = Math.round(workHours * 60);
+  const dispH    = Math.floor(workHours);
+  const dispM    = Math.round((workHours - dispH) * 60);
 
-  // แถบสรุปย่อ
   const parts = [];
-  if (days > 0)  parts.push(`${days} วัน`);
-  if (hours > 0) parts.push(`${hours} ชั่วโมง`);
-  if (mins > 0)  parts.push(`${mins} นาที`);
-  const summaryText = parts.join(' ') || '< 1 นาที';
+  if (workDays >= 1) parts.push(`${workDays} วัน`);
+  else { if (dispH > 0) parts.push(`${dispH} ชั่วโมง`); if (dispM > 0) parts.push(`${dispM} นาที`); }
+  const summaryText = parts.join(' ') || `${workHours.toFixed(1)} ชั่วโมง`;
 
-  // Fractional days (same as backend: rounded to 0.5)
-  const fracDays = Math.max(0.5, Math.round(totalHours / WORK_HOURS * 2) / 2);
-
+  const isPartialDay = workDays < 1;
   if (isPartialDay) {
-    document.getElementById('req-days').textContent = `รวม ${summaryText} = ${fracDays} วัน (ลาไม่เต็มวัน)`;
-    document.getElementById('req-duration-text').textContent = `⏰ ลาไม่เต็มวัน  ${summaryText}  (เทียบ ${fracDays} วัน)`;
-    document.getElementById('req-days-all').textContent  = fracDays;
-    document.getElementById('req-days-work').textContent = fracDays;
+    document.getElementById('req-days').textContent = `รวม ${summaryText} (ลาไม่เต็มวัน)`;
+    document.getElementById('req-duration-text').textContent = `⏰ ลาไม่เต็มวัน ${summaryText} (เทียบ ${workDays} วัน)`;
+    document.getElementById('req-days-all').textContent  = workDays;
+    document.getElementById('req-days-work').textContent = workDays;
     document.getElementById('req-mins-total').textContent = totalMin.toLocaleString();
   } else {
-    document.getElementById('req-days').textContent = `รวม ${summaryText} (วันทำงาน ${workDays} วัน)`;
-    document.getElementById('req-duration-text').textContent = `${allDays} วัน  /  ${totalMin.toLocaleString()} นาที`;
-    document.getElementById('req-days-all').textContent  = allDays;
+    document.getElementById('req-days').textContent = `รวม ${workDays} วันทำงาน (${workHours.toFixed(0)} ชม.)`;
+    document.getElementById('req-duration-text').textContent = `${workDays} วัน / ${workHours.toFixed(0)} ชั่วโมงทำงาน`;
+    document.getElementById('req-days-all').textContent  = workDays;
     document.getElementById('req-days-work').textContent = workDays;
     document.getElementById('req-mins-total').textContent = totalMin.toLocaleString();
   }
@@ -2028,7 +2111,7 @@ function renderHistoryTable() {
     const dateRange = r.start_date !== r.end_date ? `${r.start_date}<br><span style="color:#a0aec0;font-size:11px">ถึง ${r.end_date}</span>` : r.start_date;
     return `<tr>
       <td><span style="font-family:monospace;font-size:12px;background:#f0f4f8;padding:3px 8px;border-radius:6px">${r.request_no}</span></td>
-      <td><span style="background:#ebf8ff;color:#2c5282;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${r.leave_type_name}</span></td>
+      <td><span style="background:#ebf8ff;color:#2c5282;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${r.leave_type_name}</span>${r.is_backdated ? '<br><span style="background:#fff3cd;color:#856404;font-size:10px;padding:1px 6px;border-radius:8px;margin-top:2px;display:inline-block">ย้อนหลัง</span>' : ''}</td>
       <td style="font-size:13px">${dateRange}</td>
       <td style="text-align:center"><div style="font-weight:800;font-size:16px;color:#1e3a5f">${r.days}</div><div style="font-size:10px;color:#a0aec0">วัน</div></td>
       <td>${statusBadge(r.status)}</td>
@@ -2524,14 +2607,19 @@ async function openEmpModal(id = null) {
     document.getElementById('em-name').value  = u.name || '';
     document.getElementById('em-email').value = u.email || '';
     document.getElementById('em-pass').value  = '';
-    document.getElementById('em-role').value  = u.role || 'employee';
-    document.getElementById('em-unit').value  = u.unit || '';
-    document.getElementById('em-dept').value  = u.department || '';
-    document.getElementById('em-div').value   = u.division || '';
+    document.getElementById('em-role').value    = u.role || 'employee';
+    document.getElementById('em-unit').value    = u.unit || '';
+    document.getElementById('em-dept').value    = u.department || '';
+    document.getElementById('em-div').value     = u.division || '';
+    document.getElementById('em-emptype').value = u.employee_type || 'monthly';
+    document.getElementById('em-probation').value = u.probation_start_date || '';
+    toggleProbationField();
     if (u.balances) u.balances.forEach(b => { const el = document.getElementById(`quota-${b.leave_type_id}`); if (el) el.value = b.total_days; });
   } else {
-    ['em-empid','em-name','em-email','em-pass','em-unit','em-dept','em-div'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('em-role').value = 'employee';
+    ['em-empid','em-name','em-email','em-pass','em-unit','em-dept','em-div','em-probation'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('em-role').value    = 'employee';
+    document.getElementById('em-emptype').value = 'monthly';
+    toggleProbationField();
   }
   document.getElementById('emp-modal').classList.add('open');
 }
@@ -2546,10 +2634,12 @@ async function saveEmployee() {
     name:        document.getElementById('em-name').value.trim(),
     email:       document.getElementById('em-email').value.trim(),
     password:    document.getElementById('em-pass').value,
-    role:        document.getElementById('em-role').value,
-    unit:        document.getElementById('em-unit').value.trim(),
-    department:  document.getElementById('em-dept').value.trim(),
-    division:    document.getElementById('em-div').value.trim(),
+    role:               document.getElementById('em-role').value,
+    unit:               document.getElementById('em-unit').value.trim(),
+    department:         document.getElementById('em-dept').value.trim(),
+    division:           document.getElementById('em-div').value.trim(),
+    employee_type:      document.getElementById('em-emptype').value,
+    probation_start_date: document.getElementById('em-probation').value || null,
     leave_quotas,
   };
   let r;

@@ -13,24 +13,83 @@ module.exports = function (db) {
     return `${prefix}${String(Math.floor(Math.random() * 9000) + 1000)}`;
   }
 
-  const WORK_HOURS = 8; // hours per work day
+  // Reference working Saturday for monthly employees (alternate Saturdays)
+  // 2026-01-03 is assumed to be a working Saturday — adjust if needed
+  const WORKING_SAT_REF = new Date('2026-01-03T00:00:00');
 
-  function calcDays(start, end) {
-    return Math.floor((new Date(end) - new Date(start)) / 86400000) + 1;
+  function isWorkingSaturday(d) {
+    const ref = new Date(WORKING_SAT_REF.getFullYear(), WORKING_SAT_REF.getMonth(), WORKING_SAT_REF.getDate());
+    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diffDays = Math.round((target - ref) / 86400000);
+    return diffDays % 14 === 0;
   }
 
-  // Hours from full datetime strings (e.g. "2026-06-22T13:00")
-  function calcHours(startDt, endDt) {
-    return (new Date(endDt) - new Date(startDt)) / 3600000;
+  // Returns max work hours for a given date based on employee type
+  function getWorkHoursForDay(dateStr, empType, probStartStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    const dow = d.getDay(); // 0=Sun, 1=Mon … 6=Sat
+    if (dow === 0) return 0; // อาทิตย์ไม่ทำงาน
+
+    if (empType === 'daily') {
+      // รายวัน: จ-ส 8h (ทุกวัน)
+      return 8;
+    }
+
+    if (empType === 'housekeeping') {
+      const passedProbation = probStartStr
+        ? (new Date(dateStr + 'T00:00:00') - new Date(probStartStr + 'T00:00:00')) / 86400000 >= 120
+        : false;
+      if (passedProbation) {
+        // ผ่านทดลองงาน 120 วัน: จ-ศ 9h, ส 3h
+        if (dow <= 5) return 9;
+        return 3;
+      } else {
+        // ยังไม่ผ่านทดลองงาน: จ-ส 8h
+        return 8;
+      }
+    }
+
+    // monthly (default): จ-พฤ 9h, ศ 8h, ส 4h เว้นเสาร์
+    if (dow <= 4) return 9;
+    if (dow === 5) return 8;
+    return isWorkingSaturday(d) ? 4 : 0;
   }
 
-  // Convert hours → fractional days, rounded to nearest 0.5
-  function hoursToDays(h) {
-    const raw = h / WORK_HOURS;
-    return Math.max(0.5, Math.round(raw * 2) / 2);
+  // Calculate leave hours and days based on employee type
+  // For single-day: actual time range capped at max work hours for that day
+  // For multi-day: sum full work hours per day in range
+  function calcLeaveResult(startDate, endDate, startDt, endDt, empType, probStart) {
+    const start = new Date(startDate + 'T00:00:00');
+    const end   = new Date(endDate + 'T00:00:00');
+    let totalHours = 0;
+    let totalDays  = 0;
+
+    const cur = new Date(start);
+    while (cur <= end) {
+      const pad = n => String(n).padStart(2, '0');
+      const dateStr = `${cur.getFullYear()}-${pad(cur.getMonth()+1)}-${pad(cur.getDate())}`;
+      const maxH = getWorkHoursForDay(dateStr, empType, probStart);
+
+      if (maxH > 0) {
+        if (startDate === endDate) {
+          // ลาวันเดียว: ใช้เวลาจริง
+          const actualH = (new Date(endDt) - new Date(startDt)) / 3600000;
+          const h = Math.min(Math.max(0, actualH), maxH);
+          totalHours += h;
+          totalDays  += Math.max(0.5, Math.round((h / maxH) * 2) / 2);
+        } else {
+          // หลายวัน: นับเต็มวันทำงานต่อวัน
+          totalHours += maxH;
+          totalDays  += maxH < 5 ? 0.5 : 1; // เสาร์ 4h หรือ 3h = 0.5 วัน
+        }
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    return { hours: totalHours, days: Math.max(0.5, totalDays) };
   }
 
-  // Format days for display (1 → "1 วัน", 0.5 → "4 ชั่วโมง", 4 → "4 ชั่วโมง" if < 1 day)
+  // Format days for display
   function fmtDays(days, hours) {
     if (days >= 1) return `${days} วัน`;
     const h = Math.round(hours * 10) / 10;
@@ -57,8 +116,8 @@ module.exports = function (db) {
 
   // GET /api/leave/approvers — รายชื่อผู้อนุมัติแต่ละระดับ (2 ระดับ)
   router.get('/approvers', authenticate, (req, res) => {
-    const level1 = db.prepare(`SELECT id, employee_id, name, department, division, unit FROM users WHERE role IN ('unit_head','department_head') ORDER BY name`).all();
-    const level2 = db.prepare(`SELECT id, employee_id, name, department, division, unit FROM users WHERE role IN ('division_manager','hr_admin') ORDER BY name`).all();
+    const level1 = db.prepare(`SELECT id, employee_id, name, department, division, unit FROM users WHERE role IN ('unit_head','department_head','division_manager','hr_admin') ORDER BY name`).all();
+    const level2 = db.prepare(`SELECT id, employee_id, name, department, division, unit FROM users WHERE role IN ('department_head','division_manager','hr_admin') ORDER BY name`).all();
     res.json({ level1, level2 });
   });
 
@@ -82,15 +141,31 @@ module.exports = function (db) {
       return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
     }
 
+    // ตรวจสอบการลาย้อนหลัง — อนุโลมเฉพาะลาป่วย
+    const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
+    const startDateObj  = new Date(start_date + 'T00:00:00');
+    const isBackdated   = startDateObj < todayMidnight;
+    if (isBackdated) {
+      const sickType = db.prepare("SELECT id FROM leave_types WHERE name = 'ลาป่วย'").get();
+      if (!sickType || parseInt(leave_type_id) !== sickType.id) {
+        (req.files || []).forEach(f => fs.unlink(f.path, () => {}));
+        return res.status(400).json({ message: 'การลาย้อนหลังอนุโลมเฉพาะ "ลาป่วย" เท่านั้น ประเภทการลาอื่นๆ กรุณาติดต่อ HR Admin' });
+      }
+    }
+
+    // ดึงประเภทพนักงานสำหรับคำนวณชั่วโมงทำงาน
+    const userInfo  = db.prepare('SELECT employee_type, probation_start_date FROM users WHERE id = ?').get(req.user.id);
+    const empType   = userInfo?.employee_type || 'monthly';
+    const probStart = userInfo?.probation_start_date || null;
+
     // Use full datetime if provided (supports partial-day leave); fallback to date-only (whole day)
     const startDt = start_datetime || `${start_date}T09:00`;
     const endDt   = end_datetime   || `${end_date}T17:00`;
-    const hours = calcHours(startDt, endDt);
+    const { hours, days } = calcLeaveResult(start_date, end_date, startDt, endDt, empType, probStart);
     if (hours <= 0) {
       (req.files || []).forEach(f => fs.unlink(f.path, () => {}));
-      return res.status(400).json({ message: 'วันที่/เวลาไม่ถูกต้อง' });
+      return res.status(400).json({ message: 'วันที่/เวลาไม่ถูกต้อง หรือไม่มีวันทำงานในช่วงที่เลือก' });
     }
-    const days = hoursToDays(hours); // fractional days (e.g. 0.5 for 4h, 1 for 8h+)
 
     const year = new Date(start_date).getFullYear();
     const balance = db.prepare(`
@@ -113,9 +188,9 @@ module.exports = function (db) {
 
     const request_no = generateRequestNo();
     const result = db.prepare(`
-      INSERT INTO leave_requests (request_no, employee_id, leave_type_id, start_date, end_date, start_datetime, end_datetime, days, hours, reason)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(request_no, req.user.id, leave_type_id, start_date, end_date, startDt, endDt, days, hours, reason);
+      INSERT INTO leave_requests (request_no, employee_id, leave_type_id, start_date, end_date, start_datetime, end_datetime, days, hours, reason, is_backdated)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(request_no, req.user.id, leave_type_id, start_date, end_date, startDt, endDt, days, hours, reason, isBackdated ? 1 : 0);
     const leaveId = result.lastInsertRowid;
 
     const insApproval = db.prepare('INSERT INTO approvals (leave_request_id, level, approver_id) VALUES (?, ?, ?)');

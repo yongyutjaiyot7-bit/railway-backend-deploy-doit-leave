@@ -209,6 +209,10 @@ async function initDb() {
   try { sqlDb.run('ALTER TABLE leave_requests ADD COLUMN hours REAL DEFAULT 0'); } catch(e) {}
   try { sqlDb.run('ALTER TABLE leave_requests ADD COLUMN start_datetime TEXT DEFAULT ""'); } catch(e) {}
   try { sqlDb.run('ALTER TABLE leave_requests ADD COLUMN end_datetime TEXT DEFAULT ""'); } catch(e) {}
+  // Migration: employee type & probation for housekeeping; backdated flag for leave
+  try { sqlDb.run("ALTER TABLE users ADD COLUMN employee_type TEXT DEFAULT 'monthly'"); } catch(e) {}
+  try { sqlDb.run('ALTER TABLE users ADD COLUMN probation_start_date TEXT'); } catch(e) {}
+  try { sqlDb.run('ALTER TABLE leave_requests ADD COLUMN is_backdated INTEGER DEFAULT 0'); } catch(e) {}
 
   // Seed permissions
   const pCount = db.prepare('SELECT COUNT(*) as c FROM access_permissions').get();
