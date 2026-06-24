@@ -363,7 +363,7 @@
 <!-- LOGIN -->
 <div id="login-page">
   <div class="login-card">
-    <h1>🏢 ระบบลาออนไลน์<br>DOIT</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <p>กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน</p>
     <div id="login-alert"></div>
     <div class="form-group">
@@ -550,7 +550,7 @@
 <!-- APP -->
 <div id="app">
   <nav>
-    <h1>🏢 ระบบลาออนไลน์ บริษัท ดูอิท จำกัด</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <div id="nav-user">
       <span id="nav-name"></span>
       <button id="btn-install-pwa" onclick="installPWA()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;align-items:center;gap:5px">📲 ติดตั้งแอป</button>
@@ -1943,16 +1943,17 @@ function empGoPage(p) {
 // ====== REQUEST ======
 async function loadLeaveTypes() {
   const data = await api('GET', '/leave/types');
-  if (Array.isArray(data)) leaveTypesCache = data; // cache for requires_doc_over_days validation
+  if (!Array.isArray(data) || !data.length) return;
+  leaveTypesCache = data;
   const sel = document.getElementById('req-type');
   if (sel) {
     sel.innerHTML = data.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    // ลบ listener เก่าก่อนเพื่อป้องกันซ้ำ
+    sel.removeEventListener('change', updateLeaveDateMin);
     sel.addEventListener('change', updateLeaveDateMin);
   }
-  // cache sick leave id for backdating rule
   const sick = data.find(t => t.name === 'ลาป่วย');
   sickLeaveTypeId = sick ? sick.id : null;
-  // populate history filter
   const hSel = document.getElementById('hist-filter-type');
   if (hSel && hSel.options.length <= 1) data.forEach(t => { const o = new Option(t.name, t.name); hSel.add(o); });
 }
