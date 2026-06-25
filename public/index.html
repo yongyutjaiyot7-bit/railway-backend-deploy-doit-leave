@@ -367,7 +367,7 @@
 <!-- LOGIN -->
 <div id="login-page">
   <div class="login-card">
-    <h1>🏢 ระบบลาออนไลน์<br>DOIT</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <p>กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน</p>
     <div id="login-alert"></div>
     <div class="form-group">
@@ -554,7 +554,7 @@
 <!-- APP -->
 <div id="app">
   <nav>
-    <h1>🏢 ระบบลาออนไลน์ บริษัท ดูอิท จำกัด</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <div id="nav-user">
       <span id="nav-name"></span>
       <button id="btn-install-pwa" onclick="installPWA()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;align-items:center;gap:5px">📲 ติดตั้งแอป</button>
@@ -2306,7 +2306,14 @@ function initFlatpickr() {
     enableTime: true,
     dateFormat: 'd-m-Y H:i',
     time_24hr: true,
-    locale: 'th',
+    locale: {
+      ...flatpickr.l10ns.th,
+      firstDayOfWeek: 0,
+      weekdays: {
+        shorthand: ['อา','จ','อ','พ','พฤ','ศ','ส'],
+        longhand:  ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'],
+      },
+    },
     allowInput: false,
     // ไม่กำหนด minDate/maxDate — เพื่อให้ลาล่วงหน้าได้ไม่จำกัด
     onChange: () => calcReqDays(),
