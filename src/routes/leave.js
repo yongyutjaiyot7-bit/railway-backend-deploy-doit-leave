@@ -38,6 +38,11 @@ module.exports = function (db) {
     const d = new Date(dateStr + 'T12:00:00');
     const dow = d.getDay(); // 0=Sun, 1=Mon … 6=Sat
     if (dow === 0) return 0; // อาทิตย์ไม่ทำงาน
+    // วันหยุดประเพณีบริษัท
+    try {
+      const hol = db.prepare('SELECT id FROM company_holidays WHERE date=?').get(dateStr);
+      if (hol) return 0;
+    } catch(e) {}
 
     if (empType === 'daily') {
       // รายวัน: จ-พฤ 9:00-18:00 หักพัก 1h = 8h, ศ-ส 8:00-17:00 หักพัก 1h = 8h
@@ -553,6 +558,15 @@ module.exports = function (db) {
     if (department) { sql += ' AND u.department = ?'; params.push(department); }
     sql += ' ORDER BY lr.created_at DESC';
     res.json(db.prepare(sql).all(...params));
+  });
+
+  // GET /api/leave/company-holidays?year=YYYY — วันหยุดประเพณีบริษัท (ทุกคนเข้าได้)
+  router.get('/company-holidays', authenticate, (req, res) => {
+    const year = req.query.year || new Date().getFullYear();
+    try {
+      const rows = db.prepare('SELECT date, name FROM company_holidays WHERE date LIKE ? ORDER BY date').all(`${year}%`);
+      res.json(rows);
+    } catch(e) { res.json([]); }
   });
 
   // GET /api/leave/work-schedule?year=YYYY — ข้อมูลวันทำงาน/หยุดสำหรับปฏิทิน (ทุกคนเข้าได้)

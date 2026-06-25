@@ -215,6 +215,8 @@ async function initDb() {
   try { sqlDb.run('ALTER TABLE leave_requests ADD COLUMN is_backdated INTEGER DEFAULT 0'); } catch(e) {}
   // Migration: requires_doc_over_days — แนบเอกสารเมื่อลาเกิน N วัน (0 = ปิด)
   try { sqlDb.run('ALTER TABLE leave_types ADD COLUMN requires_doc_over_days INTEGER DEFAULT 0'); } catch(e) {}
+  // Migration: leave type code
+  try { sqlDb.run("ALTER TABLE leave_types ADD COLUMN code TEXT DEFAULT ''"); } catch(e) {}
   // Migration: per-user menu permissions
   sqlDb.run(`
     CREATE TABLE IF NOT EXISTS user_menu_permissions (
@@ -244,6 +246,18 @@ async function initDb() {
     insPerm.run('hr_admin',         1, 1, 1, 1, 1, 'HR Admin เข้าถึงได้ทุกส่วน');
   }
 
+  // ตารางวันหยุดประเพณีของบริษัท
+  sqlDb.run(`
+    CREATE TABLE IF NOT EXISTS company_holidays (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      name TEXT NOT NULL,
+      created_by INTEGER,
+      created_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(date)
+    )
+  `);
+
   // ตารางวันทำงาน/วันหยุดพิเศษ (เสาร์)
   sqlDb.run(`
     CREATE TABLE IF NOT EXISTS work_schedule (
@@ -256,15 +270,60 @@ async function initDb() {
     )
   `);
 
-  // Seed leave types
-  const count = db.prepare('SELECT COUNT(*) as c FROM leave_types').get();
-  if (!count || count.c === 0) {
-    const ins = db.prepare('INSERT INTO leave_types (name, max_days_per_year, requires_document) VALUES (?, ?, ?)');
-    ins.run('ลาป่วย', 30, 0);
-    ins.run('ลากิจ', 10, 0);
-    ins.run('ลาพักร้อน', 10, 0);
-    ins.run('ลาคลอด', 98, 1);
-    ins.run('ลาบวช', 15, 1);
+  // Seed วันหยุดประเพณี ปี 2026 (2569) — seed เฉพาะถ้ายังไม่มีข้อมูลปีนี้
+  const chCount = db.prepare("SELECT COUNT(*) as c FROM company_holidays WHERE date LIKE '2026%'").get();
+  if (!chCount || chCount.c === 0) {
+    const insHol = db.prepare('INSERT OR IGNORE INTO company_holidays (date, name) VALUES (?,?)');
+    insHol.run('2026-01-01', 'วันขึ้นปีใหม่');
+    insHol.run('2026-01-02', 'วันขึ้นปีใหม่ (วันหยุดพิเศษบริษัทฯ)');
+    insHol.run('2026-03-03', 'วันมาฆบูชา');
+    insHol.run('2026-04-13', 'วันสงกรานต์');
+    insHol.run('2026-04-14', 'วันสงกรานต์');
+    insHol.run('2026-04-15', 'วันสงกรานต์');
+    insHol.run('2026-04-16', 'วันสงกรานต์ (วันหยุดพิเศษบริษัทฯ)');
+    insHol.run('2026-04-17', 'วันจักรี (แลกหยุด)');
+    insHol.run('2026-05-01', 'วันแรงงาน');
+    insHol.run('2026-07-27', 'วันเฉลิมฯ วันแม่ (แลกหยุด)');
+    insHol.run('2026-07-28', 'วันเฉลิมพระชนมพรรษา ร.10');
+    insHol.run('2026-07-29', 'วันอาสาฬหบูชา');
+    insHol.run('2026-10-23', 'วันปิยมหาราช');
+    insHol.run('2026-12-28', '(ชดเชย) วันคล้ายวันพระบรมราชสมภพ ร.9 (แลกหยุด)');
+    insHol.run('2026-12-29', 'วันสิ้นปี (วันหยุดพิเศษบริษัทฯ)');
+    insHol.run('2026-12-30', 'วันสิ้นปี (วันหยุดพิเศษบริษัทฯ)');
+    insHol.run('2026-12-31', 'วันสิ้นปี');
+  }
+
+  // Leave types: ล้างและ seed ใหม่ทุกครั้งที่ code list เปลี่ยน — ตรวจด้วย B01
+  const correctTypes = [
+    ['01',  'ลาคลอด',                                98, 1, 0],
+    ['02',  'ลาเพื่อช่วยคู่สมรสคลอดบุตร',            15, 1, 0],
+    ['04',  'ลาฌาปนกิจ',                              3, 0, 0],
+    ['05',  'ลาสมรส',                                  3, 0, 0],
+    ['06',  'ลาบวช',                                  15, 1, 0],
+    ['07',  'ลาเพื่อการศึกษา',                        30, 1, 0],
+    ['08',  'ลาทำหมัน',                                3, 1, 0],
+    ['09',  'ลา (แลกวันหยุดนักขัตฤกษ์)',               1, 0, 0],
+    ['10',  'ลารักษาตัวเนื่องจากอุบัติเหตุในงาน',     30, 1, 0],
+    ['11',  'ลาป่วย (โควิด)',                          14, 1, 0],
+    ['12',  'ลาฝากครรภ์',                             12, 1, 0],
+    ['B01', 'ลากิจ (รายเดือน)',                       10, 0, 0],
+    ['B02', 'ลากิจ (รายวัน)',                         10, 0, 0],
+    ['B03', 'พักงาน',                                  0, 0, 0],
+    ['B4',  'ลากิจ (พิเศษ)',                           3, 0, 0],
+    ['S02', 'ลาป่วย',                                 30, 0, 3],
+    ['V03', 'ลาพักร้อน',                              10, 0, 0],
+  ];
+  const needReseed = !db.prepare("SELECT id FROM leave_types WHERE code='B01'").get();
+  if (needReseed) {
+    // ลบ leave_balances ก่อน (FK) แล้วล้าง leave_types
+    try { sqlDb.run('DELETE FROM leave_balances'); } catch(e) {}
+    try { sqlDb.run('DELETE FROM leave_types'); } catch(e) {}
+    const insLt = db.prepare('INSERT INTO leave_types (code,name,max_days_per_year,requires_document,requires_doc_over_days) VALUES (?,?,?,?,?)');
+    for (const row of correctTypes) insLt.run(...row);
+  } else {
+    // อัปเดตชื่อที่อาจผิดจาก seed เก่า
+    const upLt = db.prepare('UPDATE leave_types SET name=? WHERE code=?');
+    for (const [code, name] of correctTypes) upLt.run(name, code);
   }
 
   return db;

@@ -338,20 +338,21 @@ module.exports = function (db) {
 
   // POST /api/hr/leave-types
   router.post('/leave-types', (req, res) => {
-    const { name, max_days_per_year, requires_document, requires_doc_over_days } = req.body;
+    const { code, name, max_days_per_year, requires_document, requires_doc_over_days } = req.body;
     if (!name || !max_days_per_year) return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
-    const r = db.prepare('INSERT INTO leave_types (name,max_days_per_year,requires_document,requires_doc_over_days) VALUES (?,?,?,?)')
-      .run(name, Number(max_days_per_year), requires_document ? 1 : 0, requires_doc_over_days ? Number(requires_doc_over_days) : 0);
+    const r = db.prepare('INSERT INTO leave_types (code,name,max_days_per_year,requires_document,requires_doc_over_days) VALUES (?,?,?,?,?)')
+      .run(code||'', name, Number(max_days_per_year), requires_document ? 1 : 0, requires_doc_over_days ? Number(requires_doc_over_days) : 0);
     res.status(201).json({ message: 'เพิ่มประเภทการลาสำเร็จ', id: r.lastInsertRowid });
   });
 
   // PUT /api/hr/leave-types/:id
   router.put('/leave-types/:id', (req, res) => {
-    const { name, max_days_per_year, requires_document, requires_doc_over_days } = req.body;
+    const { code, name, max_days_per_year, requires_document, requires_doc_over_days } = req.body;
     const lt = db.prepare('SELECT * FROM leave_types WHERE id=?').get(req.params.id);
     if (!lt) return res.status(404).json({ message: 'ไม่พบประเภทการลา' });
-    db.prepare('UPDATE leave_types SET name=?,max_days_per_year=?,requires_document=?,requires_doc_over_days=? WHERE id=?')
+    db.prepare('UPDATE leave_types SET code=?,name=?,max_days_per_year=?,requires_document=?,requires_doc_over_days=? WHERE id=?')
       .run(
+        code !== undefined ? code : (lt.code||''),
         name||lt.name,
         max_days_per_year ? Number(max_days_per_year) : lt.max_days_per_year,
         requires_document !== undefined ? (requires_document?1:0) : lt.requires_document,
@@ -593,6 +594,99 @@ module.exports = function (db) {
     } catch (e) {
       res.status(500).json({ message: 'อ่านไฟล์ไม่ได้: ' + e.message });
     }
+  });
+
+  // ===== วันหยุดประเพณีบริษัท =====
+
+  // GET /api/hr/company-holidays?year=YYYY
+  router.get('/company-holidays', (req, res) => {
+    const year = req.query.year || new Date().getFullYear();
+    res.json(db.prepare('SELECT * FROM company_holidays WHERE date LIKE ? ORDER BY date').all(`${year}%`));
+  });
+
+  // POST /api/hr/company-holidays  { date, name }
+  router.post('/company-holidays', (req, res) => {
+    if (req.user.role !== 'hr_admin') return res.status(403).json({ message: 'เฉพาะ HR Admin เท่านั้น' });
+    const { date, name } = req.body;
+    if (!date || !name) return res.status(400).json({ message: 'กรุณากรอกวันที่และชื่อวันหยุด' });
+    try {
+      const r = db.prepare('INSERT OR REPLACE INTO company_holidays (date, name, created_by) VALUES (?,?,?)').run(date, name.trim(), req.user.id);
+      res.json({ message: 'บันทึกสำเร็จ', id: r.lastInsertRowid });
+    } catch(e) { res.status(500).json({ message: e.message }); }
+  });
+
+  // DELETE /api/hr/company-holidays/:id
+  router.delete('/company-holidays/:id', (req, res) => {
+    if (req.user.role !== 'hr_admin') return res.status(403).json({ message: 'เฉพาะ HR Admin เท่านั้น' });
+    db.prepare('DELETE FROM company_holidays WHERE id=?').run(req.params.id);
+    res.json({ message: 'ลบสำเร็จ' });
+  });
+
+  // POST /api/hr/company-holidays/import — นำเข้า Excel/CSV
+  router.post('/company-holidays/import', xlsUpload.single('file'), (req, res) => {
+    if (req.user.role !== 'hr_admin') return res.status(403).json({ message: 'เฉพาะ HR Admin เท่านั้น' });
+    if (!req.file) return res.status(400).json({ message: 'ไม่พบไฟล์' });
+    try {
+      const wb = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const dataRows = rows.slice(1).filter(r => r[0] && r[1]);
+
+      const ins = db.prepare('INSERT OR REPLACE INTO company_holidays (date, name, created_by) VALUES (?,?,?)');
+      let success = 0, failed = 0;
+      const errors = [];
+      dataRows.forEach((r, i) => {
+        try {
+          let dateVal = r[0];
+          // รองรับทั้ง Date object (cellDates), serial number, string
+          if (dateVal instanceof Date) {
+            const y = dateVal.getFullYear();
+            const m = String(dateVal.getMonth()+1).padStart(2,'0');
+            const d = String(dateVal.getDate()).padStart(2,'0');
+            dateVal = `${y}-${m}-${d}`;
+          } else {
+            // try parse string YYYY-MM-DD or DD/MM/YYYY or serial
+            dateVal = String(dateVal).trim();
+            if (/^\d+$/.test(dateVal)) {
+              // Excel serial
+              const jsDate = new Date((parseInt(dateVal) - 25569) * 86400000);
+              dateVal = jsDate.toISOString().slice(0,10);
+            } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateVal)) {
+              const [dd,mm,yyyy] = dateVal.split('/');
+              dateVal = `${yyyy}-${mm}-${dd}`;
+            }
+          }
+          const name = String(r[1]).trim();
+          if (!dateVal || !name) throw new Error('ข้อมูลไม่ครบ');
+          ins.run(dateVal, name, req.user.id);
+          success++;
+        } catch(e) {
+          failed++;
+          errors.push(`แถว ${i+2}: ${e.message}`);
+        }
+      });
+      res.json({ message: `นำเข้าสำเร็จ ${success} รายการ, ล้มเหลว ${failed} รายการ`, success, failed, errors });
+    } catch(e) {
+      res.status(500).json({ message: 'อ่านไฟล์ไม่ได้: ' + e.message });
+    }
+  });
+
+  // GET /api/hr/company-holidays/template — ดาวน์โหลด template
+  router.get('/company-holidays/template', (req, res) => {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['วันที่ (YYYY-MM-DD)', 'ชื่อวันหยุด'],
+      ['2026-01-01', 'วันขึ้นปีใหม่'],
+      ['2026-04-13', 'วันสงกรานต์'],
+      ['2026-04-14', 'วันสงกรานต์'],
+      ['', '--- ใส่รายการเพิ่มเติมต่อจากนี้ ---'],
+    ]);
+    ws['!cols'] = [{ wch: 20 }, { wch: 40 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'วันหยุด');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename="holiday_template.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
   });
 
   // ===== วันทำงาน/วันหยุดพิเศษ (เสาร์) =====

@@ -313,8 +313,10 @@
   .cal-day:hover { border-color:#bee3f8; box-shadow:0 2px 8px rgba(66,153,225,.1); }
   .cal-day.today { border-color: #4299e1; background: linear-gradient(135deg,#ebf8ff,#e6fffa); box-shadow:0 0 0 2px rgba(66,153,225,.25); }
   .cal-day.other-month { background: #f7fafc; opacity: .5; }
-  .cal-day.sat-work { background: #f0fff4; border-color: #9ae6b4; }
-  .cal-day.sat-off  { background: #fff5f5; }
+  .cal-day.sun-day      { background: #faf5ff; border-color: #d6bcfa; }
+  .cal-day.sat-work     { background: #f0fff4; border-color: #9ae6b4; }
+  .cal-day.sat-off      { background: #fffaf0; border-color: #fbd38d; }
+  .cal-day.company-holiday { background: #fff5f5; border-color: #fc8181; }
   .cal-day-num { font-size: 13px; font-weight: 700; color: #4a5568; margin-bottom: 5px; }
   .cal-day.today .cal-day-num { color: #fff; background:#4299e1; width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px; }
   .cal-event { font-size: 11px; padding: 2px 7px; border-radius: 5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
@@ -859,18 +861,18 @@
                 <span id="req-duration-text" style="font-size:22px;font-weight:800;color:#1e3a5f"></span>
               </div>
               <div style="display:flex;gap:16px;flex-wrap:wrap">
-                <div style="background:#fff;border-radius:10px;padding:12px 20px;text-align:center;border:1.5px solid #bee3f8;min-width:110px">
-                  <div style="font-size:11px;color:#718096;margin-bottom:4px">วันทั้งหมด</div>
-                  <div id="req-days-all" style="font-size:26px;font-weight:800;color:#1e3a5f">-</div>
-                  <div style="font-size:11px;color:#718096">วัน (รวมเสาร์-อาทิตย์)</div>
-                </div>
                 <div style="background:#fff;border-radius:10px;padding:12px 20px;text-align:center;border:1.5px solid #9ae6b4;min-width:110px">
-                  <div style="font-size:11px;color:#276749;margin-bottom:4px">วันทำงาน</div>
+                  <div style="font-size:11px;color:#276749;margin-bottom:4px">รวมวัน</div>
                   <div id="req-days-work" style="font-size:26px;font-weight:800;color:#276749">-</div>
-                  <div style="font-size:11px;color:#276749">วัน (ไม่นับเสาร์-อาทิตย์)</div>
+                  <div style="font-size:11px;color:#276749">วัน</div>
+                </div>
+                <div style="background:#fff;border-radius:10px;padding:12px 20px;text-align:center;border:1.5px solid #bee3f8;min-width:110px">
+                  <div style="font-size:11px;color:#2c5282;margin-bottom:4px">รวมชั่วโมง</div>
+                  <div id="req-hours-extra" style="font-size:26px;font-weight:800;color:#2c5282">-</div>
+                  <div style="font-size:11px;color:#2c5282">ชั่วโมง</div>
                 </div>
                 <div style="background:#fff;border-radius:10px;padding:12px 20px;text-align:center;border:1.5px solid #fbb6ce;min-width:110px">
-                  <div style="font-size:11px;color:#97266d;margin-bottom:4px">รวมเวลา</div>
+                  <div style="font-size:11px;color:#97266d;margin-bottom:4px">รวมนาที</div>
                   <div id="req-mins-total" style="font-size:26px;font-weight:800;color:#97266d">-</div>
                   <div style="font-size:11px;color:#97266d">นาที</div>
                 </div>
@@ -1005,6 +1007,10 @@
           <div class="cal-legend">
             <span><i style="background:#bee3f8;border:1px solid #90cdf4"></i> ลาของฉัน (อนุมัติแล้ว)</span>
             <span><i style="background:#fefcbf;border:1px solid #faf089"></i> รออนุมัติ</span>
+            <span><i style="background:#fff5f5;border:2px solid #fc8181"></i> 🎌 หยุดตามประเพณี</span>
+            <span><i style="background:#faf5ff;border:2px solid #d6bcfa"></i> อาทิตย์</span>
+            <span><i style="background:#f0fff4;border:2px solid #9ae6b4"></i> ✅ เสาร์ทำงาน</span>
+            <span><i style="background:#fffaf0;border:2px solid #fbd38d"></i> 🟠 เสาร์หยุด</span>
           </div>
         </div>
       </div>
@@ -1042,6 +1048,10 @@
             <span><i style="background:#bee3f8;border:1px solid #90cdf4"></i> ลาของฉัน (อนุมัติ)</span>
             <span><i style="background:#c6f6d5;border:1px solid #9ae6b4"></i> พนักงานคนอื่น</span>
             <span><i style="background:#fefcbf;border:1px solid #faf089"></i> รออนุมัติ</span>
+            <span><i style="background:#fff5f5;border:2px solid #fc8181"></i> 🎌 หยุดตามประเพณี</span>
+            <span><i style="background:#faf5ff;border:2px solid #d6bcfa"></i> อาทิตย์</span>
+            <span><i style="background:#f0fff4;border:2px solid #9ae6b4"></i> ✅ เสาร์ทำงาน</span>
+            <span><i style="background:#fffaf0;border:2px solid #fbd38d"></i> 🟠 เสาร์หยุด</span>
           </div>
         </div>
       </div>
@@ -1245,18 +1255,68 @@
       <div id="hrsec-calendar" style="display:none">
         <div class="card">
           <h2>📅 ปฏิทินการลาพนักงานทั้งหมด</h2>
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-            <button class="btn btn-sm btn-primary" onclick="hrCalNav(-1)">&#9664; เดือนก่อน</button>
-            <span id="hr-cal-title" style="font-size:16px;font-weight:700;color:#1e3a5f;min-width:160px;text-align:center"></span>
-            <button class="btn btn-sm btn-primary" onclick="hrCalNav(1)">เดือนถัดไป &#9654;</button>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;padding:14px 18px;background:linear-gradient(135deg,#1e3a5f,#2b6cb0);border-radius:14px;box-shadow:0 4px 16px rgba(30,58,95,.25)">
+            <button onclick="hrCalNav(-1)" style="border:none;background:rgba(255,255,255,.18);color:#fff;padding:7px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;backdrop-filter:blur(4px)" onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.18)'">&#9664; เดือนก่อน</button>
+            <span id="hr-cal-title" style="font-size:20px;font-weight:800;color:#fff;min-width:200px;text-align:center;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.2)"></span>
+            <button onclick="hrCalNav(1)" style="border:none;background:rgba(255,255,255,.18);color:#fff;padding:7px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;backdrop-filter:blur(4px)" onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.18)'">เดือนถัดไป &#9654;</button>
             <div id="hr-cal-legend" style="display:flex;gap:10px;flex-wrap:wrap;margin-left:auto"></div>
           </div>
           <div id="hr-cal-grid" style="overflow-x:auto"></div>
         </div>
       </div>
 
-      <!-- WORK SCHEDULE (เสาร์ทำงาน/หยุด) -->
+      <!-- WORK SCHEDULE (เสาร์ทำงาน/หยุด + วันหยุดประเพณี) -->
       <div id="hrsec-workschedule" style="display:none">
+
+        <!-- วันหยุดประเพณีบริษัท -->
+        <div class="card">
+          <h2>🎌 ประกาศวันหยุดตามประเพณีของบริษัท</h2>
+          <p style="font-size:13px;color:#718096;margin-bottom:16px">กำหนดวันหยุดประเพณี เช่น วันสงกรานต์ วันปีใหม่ วันชดเชย ฯลฯ วันหยุดเหล่านี้จะไม่ถูกนับเป็นวันลา และจะแสดงในปฏิทินพนักงานทุกคน</p>
+
+          <div class="section-header"><span>➕ เพิ่มวันหยุดประเพณี</span></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+            <div class="form-group">
+              <label>📅 วันที่</label>
+              <input type="date" id="ch-date" style="width:180px">
+            </div>
+            <div class="form-group">
+              <label>🎌 ชื่อวันหยุด</label>
+              <input type="text" id="ch-name" placeholder="เช่น วันสงกรานต์, วันชดเชยวันแรงงาน" style="width:280px">
+            </div>
+            <button class="btn btn-primary" onclick="addCompanyHoliday()">➕ บันทึก</button>
+          </div>
+
+          <!-- Import from Excel -->
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f7fafc;border-radius:10px;border:1.5px dashed #cbd5e0;margin-bottom:20px;flex-wrap:wrap">
+            <span style="font-size:13px;color:#4a5568;font-weight:600">📥 นำเข้าจาก Excel</span>
+            <input type="file" id="ch-import-file" accept=".xlsx,.xls,.csv" style="font-size:13px;flex:1;min-width:0" onchange="previewChImport()">
+            <button class="btn btn-sm" style="background:#ebf4ff;color:#2b6cb0;white-space:nowrap" onclick="downloadChTemplate()">📄 ดาวน์โหลด Template</button>
+          </div>
+          <!-- Import preview -->
+          <div id="ch-import-preview" style="display:none;margin-bottom:16px">
+            <div style="font-size:13px;color:#4a5568;font-weight:600;margin-bottom:8px">ตัวอย่างข้อมูลที่จะนำเข้า (<span id="ch-import-count">0</span> รายการ)</div>
+            <div class="table-wrap" style="max-height:220px;overflow-y:auto">
+              <table><thead><tr><th>#</th><th>วันที่</th><th>ชื่อวันหยุด</th></tr></thead>
+              <tbody id="ch-import-tbody"></tbody></table>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button class="btn btn-success" id="btn-do-ch-import" onclick="doChImport()">✅ นำเข้าข้อมูล</button>
+              <button class="btn btn-sm" style="background:#f0f4f8;color:#4a5568" onclick="clearChImport()">✖ ยกเลิก</button>
+            </div>
+          </div>
+
+          <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+            <span>📋 รายการวันหยุดประเพณี</span>
+            <select id="ch-year" onchange="loadCompanyHolidaysHr()" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:13px"></select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>วันที่</th><th>วัน</th><th>ชื่อวันหยุด</th><th style="text-align:center">จัดการ</th></tr></thead>
+              <tbody id="ch-tbody"><tr><td colspan="4" class="empty">กำลังโหลด...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="card">
           <h2>📆 จัดการวันทำงาน/วันหยุดพิเศษ (วันเสาร์)</h2>
           <p style="font-size:13px;color:#718096;margin-bottom:16px">กำหนดวันเสาร์ที่ทำงานหรือหยุดพิเศษ นอกเหนือจากรูปแบบ "เสาร์เว้นเสาร์" ค่าเริ่มต้น ระบบจะนำไปแสดงในปฏิทินของพนักงานทุกคน</p>
@@ -1296,6 +1356,8 @@
           </div>
         </div>
 
+        </div>
+
         <div class="card">
           <h2>ℹ️ รูปแบบวันทำงานเสาร์ (ค่าเริ่มต้น)</h2>
           <p style="font-size:13px;color:#4a5568;line-height:1.8">
@@ -1315,15 +1377,15 @@
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end">
             <div class="form-group">
               <label>🔍 ค้นหาพนักงาน</label>
-              <input id="emp-search" placeholder="ชื่อ / รหัส / อีเมล" style="width:220px" oninput="loadEmployees()">
+              <input id="hr-emp-search" placeholder="ชื่อ / รหัส / อีเมล" style="width:220px" oninput="loadEmployees()">
             </div>
             <div class="form-group">
               <label>🏢 แผนก</label>
-              <input id="emp-filter-dept" placeholder="ทุกแผนก" style="width:150px" oninput="loadEmployees()">
+              <input id="hr-emp-filter-dept" placeholder="ทุกแผนก" style="width:150px" oninput="loadEmployees()">
             </div>
             <div class="form-group">
               <label>👤 บทบาท</label>
-              <select id="emp-filter-role" onchange="loadEmployees()" style="width:180px">
+              <select id="hr-emp-filter-role" onchange="loadEmployees()" style="width:180px">
                 <option value="">ทุกบทบาท</option>
                 <option value="employee">พนักงาน</option>
                 <option value="unit_head">หัวหน้าหน่วยงาน</option>
@@ -1542,6 +1604,10 @@
           <div class="section-header"><span>➕ เพิ่มประเภทการลาใหม่</span></div>
           <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px;padding:16px;background:linear-gradient(135deg,#f7fafc,#edf2f7);border-radius:10px;border:1px solid #e2e8f0">
             <div class="form-group">
+              <label>🔖 รหัสลา</label>
+              <input id="lt-code" placeholder="เช่น S02, V03" style="width:100px">
+            </div>
+            <div class="form-group">
               <label>🏷️ ชื่อประเภทการลา <span style="color:#c53030">*</span></label>
               <input id="lt-name" placeholder="เช่น ลาป่วย, ลากิจ" style="width:200px">
             </div>
@@ -1567,13 +1633,14 @@
           <div class="section-header"><span>📋 รายการประเภทการลาทั้งหมด</span></div>
           <div class="table-wrap"><table>
             <thead><tr>
+              <th style="text-align:center">รหัสลา</th>
               <th>ชื่อประเภทการลา</th>
               <th style="text-align:center">โควต้าวันลา/ปี</th>
               <th style="text-align:center">ต้องแนบเอกสาร</th>
               <th style="text-align:center">ลาเกิน (วัน) แนบเอกสาร</th>
               <th style="text-align:center">จัดการ</th>
             </tr></thead>
-            <tbody id="lt-tbody"><tr><td colspan="5" class="empty">กำลังโหลด...</td></tr></tbody>
+            <tbody id="lt-tbody"><tr><td colspan="6" class="empty">กำลังโหลด...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -1596,6 +1663,8 @@ let currentApprovalId = null;
 const WORKING_SAT_REF = new Date('2026-01-03T00:00:00');
 // Cache: { 'YYYY-MM-DD': 'working_sat'|'holiday_sat' }
 let workScheduleCache = {};
+// Cache: { 'YYYY-MM-DD': 'ชื่อวันหยุด' }
+let companyHolidaysCache = {};
 
 async function loadWorkScheduleCache(year) {
   try {
@@ -1603,6 +1672,16 @@ async function loadWorkScheduleCache(year) {
     if (Array.isArray(rows)) rows.forEach(r => { workScheduleCache[r.date] = r.type; });
   } catch(e) {}
 }
+
+async function loadCompanyHolidaysCache(year) {
+  try {
+    const rows = await api('GET', `/leave/company-holidays?year=${year}`);
+    if (Array.isArray(rows)) rows.forEach(r => { companyHolidaysCache[r.date] = r.name; });
+  } catch(e) {}
+}
+
+function isCompanyHoliday(dateStr) { return !!companyHolidaysCache[dateStr]; }
+function companyHolidayName(dateStr) { return companyHolidaysCache[dateStr] || 'วันหยุด'; }
 
 function isWorkingSaturday(d) {
   const pad = n => String(n).padStart(2,'0');
@@ -1619,6 +1698,7 @@ function getWorkHoursForDayFE(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   const dow = d.getDay();
   if (dow === 0) return 0;
+  if (isCompanyHoliday(dateStr)) return 0; // วันหยุดประเพณีบริษัท
   if (empType === 'daily') {
     // จ-พฤ 9:00-18:00 หักพัก 1h = 8h, ศ-ส 8:00-17:00 หักพัก 1h = 8h
     return 8;
@@ -1738,6 +1818,7 @@ function showApp() {
   loadLeaveTypes();
   loadHistory();
   loadWorkScheduleCache(curYear);
+  loadCompanyHolidaysCache(curYear);
 
   // activate หน้าหลัก + re-render chart (HR) หลัง browser paint 1 เฟรม
   requestAnimationFrame(() => {
@@ -2118,7 +2199,7 @@ async function loadLeaveTypes() {
   leaveTypesCache = data;
   const sel = document.getElementById('req-type');
   if (sel) {
-    sel.innerHTML = data.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    sel.innerHTML = data.map(t => `<option value="${t.id}">${t.code ? `[${t.code}] ` : ''}${t.name}</option>`).join('');
     sel.removeEventListener('change', updateLeaveDateMin);
     sel.addEventListener('change', updateLeaveDateMin);
   } else {
@@ -2130,8 +2211,7 @@ async function loadLeaveTypes() {
   if (hSel && hSel.options.length <= 1) data.forEach(t => { const o = new Option(t.name, t.name); hSel.add(o); });
 }
 
-// Adjust flatpickr minDate based on selected leave type
-// ลาป่วย → อนุญาตย้อนหลัง 30 วัน, อื่นๆ → วันนี้
+// ลาล่วงหน้าได้ไม่จำกัด; ย้อนหลัง: ลาป่วย 30 วัน, อื่นๆ ไม่อนุญาต
 function updateLeaveDateMin() {
   if (!fpStart || !fpEnd) return;
   const selectedId = parseInt(document.getElementById('req-type')?.value);
@@ -2140,7 +2220,6 @@ function updateLeaveDateMin() {
   const minD = isSick ? new Date(today.getTime() - 30 * 86400000) : today;
   fpStart.set('minDate', minD);
   fpEnd.set('minDate', minD);
-  // ถ้าเลือกวันไว้แล้วและเป็นวันก่อน minD ให้ clear
   if (!isSick) {
     const sv = fpStart.selectedDates[0];
     if (sv && sv < today) { fpStart.clear(); fpEnd.clear(); }
@@ -2229,15 +2308,13 @@ function initFlatpickr() {
     time_24hr: true,
     locale: 'th',
     allowInput: false,
-    minDate: today,
+    // ไม่กำหนด minDate/maxDate — เพื่อให้ลาล่วงหน้าได้ไม่จำกัด
     onChange: () => calcReqDays(),
   };
   fpStart = flatpickr('#req-start', {
     ...opts,
     onChange: (sel) => {
       enforceMinDate(fpStart, sel);
-      const minD = getMinDate();
-      if (sel[0] && sel[0] >= minD && fpEnd) fpEnd.set('minDate', sel[0]);
       applyTimeRange(fpStart, dateStrFromDate(sel[0]));
       enforceTimeRange(fpStart, sel);
       calcReqDays();
@@ -2250,8 +2327,6 @@ function initFlatpickr() {
   fpEnd = flatpickr('#req-end', {
     ...opts,
     onChange: (sel) => {
-      const minD = getMinDate();
-      const minEnd = (fpStart?.selectedDates[0] && fpStart.selectedDates[0] >= minD) ? fpStart.selectedDates[0] : minD;
       enforceMinDate(fpEnd, sel);
       applyTimeRange(fpEnd, dateStrFromDate(sel[0]));
       enforceTimeRange(fpEnd, sel);
@@ -2282,18 +2357,59 @@ function calcLeaveResultFE(startDateStr, endDateStr, startDtStr, endDtStr) {
   let totalHours = 0, totalDays = 0;
   const cur = new Date(start);
   const pad = n => String(n).padStart(2, '0');
+  const empType = user?.employee_type || 'monthly';
+
+  // เวลาเลิกงานแต่ละวัน (นาทีนับจาก 00:00)
+  function workEndMin(dow) {
+    if (empType === 'monthly') {
+      if (dow <= 4) return 18 * 60; // จ-พฤ 18:00
+      if (dow === 5) return 17 * 60; // ศ 17:00
+      return 12 * 60;               // ส 12:00
+    }
+    return 18 * 60;
+  }
+  const WORK_START_MIN = 8 * 60; // 08:00
+
+  // คำนวนชั่วโมงจริงในช่วง fromMin-toMin หักพัก 12:00-13:00 ถ้าผ่าน
+  function calcRangeHours(fromMin, toMin, maxH) {
+    let mins = Math.max(0, toMin - fromMin);
+    const lS = 12 * 60, lE = 13 * 60;
+    if (fromMin < lE && toMin > lS)
+      mins -= Math.max(0, Math.min(toMin, lE) - Math.max(fromMin, lS));
+    return Math.min(Math.max(0, mins / 60), maxH);
+  }
+
   while (cur <= end) {
     const ds = `${cur.getFullYear()}-${pad(cur.getMonth()+1)}-${pad(cur.getDate())}`;
     const maxH = getWorkHoursForDayFE(ds);
+    const dow  = cur.getDay();
     if (maxH > 0) {
       if (startDateStr === endDateStr) {
+        // วันเดียว: คำนวนจากเวลาจริง
         const actualH = (new Date(endDtStr) - new Date(startDtStr)) / 3600000;
         const h = Math.min(Math.max(0, actualH), maxH);
         totalHours += h;
         totalDays  += Math.max(0.5, Math.round((h / maxH) * 2) / 2);
       } else {
-        totalHours += maxH;
-        totalDays  += maxH < 5 ? 0.5 : 1;
+        const isFirst = ds === startDateStr;
+        const isLast  = ds === endDateStr;
+        if (!isFirst && !isLast) {
+          // วันกลาง: เต็มวัน
+          totalHours += maxH;
+          totalDays  += maxH < 5 ? 0.5 : 1;
+        } else if (isFirst) {
+          // วันแรก: จาก start_time ถึง work_end
+          const st = new Date(startDtStr);
+          const h  = calcRangeHours(st.getHours() * 60 + st.getMinutes(), workEndMin(dow), maxH);
+          totalHours += h;
+          totalDays  += h > 0 ? Math.max(0.5, Math.round((h / maxH) * 2) / 2) : 0;
+        } else {
+          // วันสุดท้าย: จาก 08:00 ถึง end_time
+          const et = new Date(endDtStr);
+          const h  = calcRangeHours(WORK_START_MIN, et.getHours() * 60 + et.getMinutes(), maxH);
+          totalHours += h;
+          totalDays  += h > 0 ? Math.max(0.5, Math.round((h / maxH) * 2) / 2) : 0;
+        }
       }
     }
     cur.setDate(cur.getDate() + 1);
@@ -2319,9 +2435,9 @@ function calcReqDays() {
   if (end <= start) {
     document.getElementById('req-days').textContent = '';
     document.getElementById('req-duration-text').textContent = '⚠️ กรุณาตรวจสอบวันที่และเวลา';
-    document.getElementById('req-days-all').textContent  = '-';
-    document.getElementById('req-days-work').textContent = '-';
-    document.getElementById('req-mins-total').textContent = '-';
+    document.getElementById('req-days-work').textContent  = '-';
+    document.getElementById('req-hours-extra').textContent = '-';
+    document.getElementById('req-mins-total').textContent  = '-';
     document.getElementById('req-duration-detail').textContent = 'วันที่สิ้นสุดต้องอยู่หลังวันที่เริ่มลา';
     return;
   }
@@ -2329,29 +2445,27 @@ function calcReqDays() {
   const startDateStr = sv.slice(0, 10);
   const endDateStr   = ev.slice(0, 10);
   const { hours: workHours, days: workDays } = calcLeaveResultFE(startDateStr, endDateStr, sv, ev);
-  const totalMin = Math.round(workHours * 60);
-  const dispH    = Math.floor(workHours);
-  const dispM    = Math.round((workHours - dispH) * 60);
 
-  const parts = [];
-  if (workDays >= 1) parts.push(`${workDays} วัน`);
-  else { if (dispH > 0) parts.push(`${dispH} ชั่วโมง`); if (dispM > 0) parts.push(`${dispM} นาที`); }
-  const summaryText = parts.join(' ') || `${workHours.toFixed(1)} ชั่วโมง`;
+  // สูตร: ใช้ 8 ชม./วัน เป็นฐาน
+  // วัน = floor(hours / 8)  |  ชม.เหลือ = floor(hours % 8)  |  นาที = round(decimal * 60)
+  const HOURS_PER_DAY = 8;
+  const fullDays      = Math.floor(workHours / HOURS_PER_DAY);
+  const remainHours   = workHours - fullDays * HOURS_PER_DAY;
+  const extraH        = Math.floor(remainHours);
+  const extraMin      = Math.round((remainHours - extraH) * 60);
 
-  const isPartialDay = workDays < 1;
-  if (isPartialDay) {
-    document.getElementById('req-days').textContent = `รวม ${summaryText} (ลาไม่เต็มวัน)`;
-    document.getElementById('req-duration-text').textContent = `⏰ ลาไม่เต็มวัน ${summaryText} (เทียบ ${workDays} วัน)`;
-    document.getElementById('req-days-all').textContent  = workDays;
-    document.getElementById('req-days-work').textContent = workDays;
-    document.getElementById('req-mins-total').textContent = totalMin.toLocaleString();
-  } else {
-    document.getElementById('req-days').textContent = `รวม ${workDays} วันทำงาน (${workHours.toFixed(0)} ชม.)`;
-    document.getElementById('req-duration-text').textContent = `${workDays} วัน / ${workHours.toFixed(0)} ชั่วโมงทำงาน`;
-    document.getElementById('req-days-all').textContent  = workDays;
-    document.getElementById('req-days-work').textContent = workDays;
-    document.getElementById('req-mins-total').textContent = totalMin.toLocaleString();
-  }
+  const isPartialDay = workHours < HOURS_PER_DAY;
+  const summaryParts = [];
+  if (fullDays > 0) summaryParts.push(`${fullDays} วัน`);
+  if (extraH   > 0) summaryParts.push(`${extraH} ชั่วโมง`);
+  if (extraMin > 0) summaryParts.push(`${extraMin} นาที`);
+  const summaryText = summaryParts.join(' ') || `${workHours.toFixed(1)} ชั่วโมง`;
+
+  document.getElementById('req-days').textContent = `รวม ${summaryText}`;
+  document.getElementById('req-duration-text').textContent = `${fullDays} วัน / ${extraH} ชม. ${extraMin} นาที  (${workHours.toFixed(2)} ชม.)`;
+  document.getElementById('req-days-work').textContent  = fullDays;
+  document.getElementById('req-hours-extra').textContent = extraH;
+  document.getElementById('req-mins-total').textContent  = extraMin;
 
   const fmt = dt => {
     const d = new Date(dt);
@@ -2910,7 +3024,7 @@ function hrTab(name) {
   if (name === 'perm')          { loadUserPerms(); loadPermissions(); }
   if (name === 'approver')      loadDeptApprovers();
   if (name === 'leavetype')     loadLeaveTypesHr();
-  if (name === 'workschedule')  loadWorkScheduleHr();
+  if (name === 'workschedule')  { loadCompanyHolidaysHr(); loadWorkScheduleHr(); }
 }
 
 // ===== IMPORT EXCEL =====
@@ -3004,7 +3118,7 @@ async function loadHrCalendar() {
 
   // fetch leave data for this month (approved only)
   const y = hrCalYear, m = String(hrCalMonth + 1).padStart(2, '0');
-  await loadWorkScheduleCache(hrCalYear);
+  await Promise.all([loadWorkScheduleCache(hrCalYear), loadCompanyHolidaysCache(hrCalYear)]);
   const data = await api('GET', `/hr/leave-records?status=approved&year=${y}&month=${m}`);
   hrCalData = Array.isArray(data) ? data : [];
 
@@ -3031,10 +3145,10 @@ function renderHrCalGrid() {
   const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
   document.getElementById('hr-cal-title').textContent = `${THAI_MONTHS[hrCalMonth]} ${hrCalYear + 543}`;
 
-  const firstDay = new Date(hrCalYear, hrCalMonth, 1).getDay(); // 0=Sun
+  const firstDay = new Date(hrCalYear, hrCalMonth, 1).getDay();
   const daysInMonth = new Date(hrCalYear, hrCalMonth + 1, 0).getDate();
+  const today = new Date();
 
-  // build day→events map
   const dayMap = {};
   hrCalData.forEach(r => {
     const start = new Date(r.start_date + 'T00:00:00');
@@ -3049,8 +3163,12 @@ function renderHrCalGrid() {
   });
 
   const DOW = ['อา','จ','อ','พ','พฤ','ศ','ส'];
-  let html = `<table style="width:100%;border-collapse:collapse;min-width:560px">
-    <thead><tr>${DOW.map((d,i)=>`<th style="padding:8px 4px;text-align:center;font-size:12px;font-weight:700;color:${i===0?'#e53e3e':i===6?'#3182ce':'#4a5568'};background:#f7fafc;border:1px solid #e2e8f0">${d}</th>`).join('')}</tr></thead>
+  const dowColors = ['#e53e3e','#4a5568','#4a5568','#4a5568','#4a5568','#4a5568','#3182ce'];
+  const dowBg    = ['#fff5f5','#f7fafc','#f7fafc','#f7fafc','#f7fafc','#f7fafc','#ebf8ff'];
+
+  let html = `<div style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);border:1px solid #e2e8f0">
+  <table style="width:100%;border-collapse:collapse;min-width:600px">
+    <thead><tr>${DOW.map((d,i)=>`<th style="padding:12px 6px;text-align:center;font-size:13px;font-weight:800;color:${dowColors[i]};background:${dowBg[i]};border-bottom:2px solid #e2e8f0;letter-spacing:.5px">${d}</th>`).join('')}</tr></thead>
     <tbody>`;
 
   let day = 1;
@@ -3059,40 +3177,70 @@ function renderHrCalGrid() {
     html += '<tr>';
     for (let col = 0; col < 7; col++) {
       const cellDay = (row === 0 && col < firstDay) ? null : day <= daysInMonth ? day++ : null;
-      const isToday = cellDay && hrCalYear === new Date().getFullYear() && hrCalMonth === new Date().getMonth() && cellDay === new Date().getDate();
+      const isToday = cellDay && hrCalYear === today.getFullYear() && hrCalMonth === today.getMonth() && cellDay === today.getDate();
       const isSun = col === 0, isSat = col === 6;
       const events = cellDay ? (dayMap[cellDay] || []) : [];
-      // limit display to first 3 events, show +N more
       const visible = events.slice(0, 3);
       const extra = events.length - visible.length;
-      // คำนวณ background สำหรับเสาร์
-      let satCellBg = '', satLabel = '';
-      if (cellDay && isSat) {
+
+      let cellBg = '', cellBorder = '', holBanner = '', dayLabel = '';
+      if (cellDay) {
         const pad = n => String(n).padStart(2,'0');
         const dStr = `${hrCalYear}-${pad(hrCalMonth+1)}-${pad(cellDay)}`;
-        const ws = workScheduleCache[dStr];
-        if (ws === 'working_sat')      { satCellBg = 'background:#e6fffa;'; satLabel = `<span style="font-size:9px;background:#38a169;color:#fff;border-radius:3px;padding:1px 4px;margin-left:4px">ทำงาน</span>`; }
-        else if (ws === 'holiday_sat') { satCellBg = 'background:#fff5f5;'; satLabel = `<span style="font-size:9px;background:#e53e3e;color:#fff;border-radius:3px;padding:1px 4px;margin-left:4px">หยุด</span>`; }
-        else {
-          const dObj = new Date(hrCalYear, hrCalMonth, cellDay);
-          if (isWorkingSaturday(dObj)) { satCellBg = 'background:#e6fffa;'; satLabel = `<span style="font-size:9px;background:#38a169;color:#fff;border-radius:3px;padding:1px 4px;margin-left:4px">ทำงาน</span>`; }
-          else                          { satLabel = `<span style="font-size:9px;color:#a0aec0;border-radius:3px;padding:1px 4px;margin-left:4px">หยุด</span>`; }
+        if (isCompanyHoliday(dStr)) {
+          cellBg = 'background:linear-gradient(160deg,#fff5f5,#fff0f0);';
+          cellBorder = 'border-left:4px solid #fc8181;';
+          holBanner = `<div style="font-size:9px;background:linear-gradient(90deg,#e53e3e,#c53030);color:#fff;border-radius:6px;padding:2px 7px;margin-bottom:5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 3px rgba(229,62,62,.3)">🎌 ${companyHolidayName(dStr)}</div>`;
+        } else if (isSun) {
+          cellBg = 'background:linear-gradient(160deg,#faf5ff,#f5eeff);';
+          cellBorder = 'border-left:4px solid #b794f4;';
+        } else if (isSat) {
+          const ws = workScheduleCache[dStr];
+          const working = ws ? ws === 'working_sat' : isWorkingSaturday(new Date(hrCalYear, hrCalMonth, cellDay));
+          if (working) {
+            cellBg = 'background:linear-gradient(160deg,#f0fff4,#e6ffed);';
+            cellBorder = 'border-left:4px solid #68d391;';
+            dayLabel = `<span style="font-size:9px;font-weight:700;color:#276749;background:#c6f6d5;border-radius:5px;padding:1px 6px;margin-left:5px">✓ ทำงาน</span>`;
+          } else {
+            cellBg = 'background:linear-gradient(160deg,#fffaf0,#fff5e6);';
+            cellBorder = 'border-left:4px solid #f6ad55;';
+            dayLabel = `<span style="font-size:9px;font-weight:700;color:#c05621;background:#feebc8;border-radius:5px;padding:1px 6px;margin-left:5px">หยุด</span>`;
+          }
+        } else {
+          cellBg = 'background:#fff;';
         }
       }
-      html += `<td style="vertical-align:top;padding:4px;border:1px solid #e2e8f0;min-height:70px;${isToday?'background:#ebf8ff;':satCellBg}${!cellDay?'background:#f9fafb;':''}">`;
+
+      const numColor = isSun ? '#9f7aea' : isSat ? '#4299e1' : '#2d3748';
+      const emptyBg  = 'background:#f9fafb;';
+      const todayExtra = isToday ? 'box-shadow:inset 0 0 0 2px #4299e1;background:linear-gradient(160deg,#ebf8ff,#e0f2fe)!important;' : '';
+
+      html += `<td style="vertical-align:top;padding:6px;border:1px solid #edf2f7;min-height:90px;${cellDay ? (isToday ? 'background:linear-gradient(160deg,#ebf8ff,#dbeafe);border-left:4px solid #4299e1;' : cellBg + cellBorder) : emptyBg}${!cellDay?'':''}">`;
       if (cellDay) {
-        html += `<div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${isToday?'#2b6cb0':isSun?'#e53e3e':isSat?'#3182ce':'#2d3748'};margin-bottom:3px">${cellDay}${satLabel}</div>`;
+        const numStyle = isToday
+          ? `display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#2b6cb0,#4299e1);color:#fff;font-size:13px;font-weight:800;box-shadow:0 2px 6px rgba(66,153,225,.4)`
+          : `font-size:13px;font-weight:700;color:${numColor}`;
+        html += `<div style="display:flex;align-items:center;margin-bottom:5px"><span style="${numStyle}">${cellDay}</span>${dayLabel}</div>`;
+        html += holBanner;
         visible.forEach(ev => {
           const color = hrCalTypeColors[ev.leave_type_name] || '#718096';
-          html += `<div title="${ev.employee_name} — ${ev.leave_type_name}" style="font-size:10px;background:${color};color:#fff;border-radius:3px;padding:1px 4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:default">${ev.employee_name}</div>`;
+          html += `<div title="${ev.employee_name} — ${ev.leave_type_name}" style="font-size:10px;font-weight:600;background:${color};color:#fff;border-radius:5px;padding:2px 7px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:default;box-shadow:0 1px 3px rgba(0,0,0,.15)">${ev.employee_name}</div>`;
         });
-        if (extra > 0) html += `<div style="font-size:10px;color:#718096;margin-top:1px">+${extra} เพิ่มเติม</div>`;
+        if (extra > 0) html += `<div style="font-size:10px;color:#a0aec0;font-weight:600;margin-top:2px;padding:1px 4px;background:#f7fafc;border-radius:4px;display:inline-block">+${extra} อื่นๆ</div>`;
       }
       html += '</td>';
     }
     html += '</tr>';
   }
-  html += '</tbody></table>';
+  html += '</tbody></table></div>';
+  html += `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12px;align-items:center;padding:10px 14px;background:#f7fafc;border-radius:10px;border:1px solid #e2e8f0">
+    <span style="font-weight:700;color:#4a5568">ความหมายสี:</span>
+    <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#fff5f5,#fff0f0);border:2px solid #fc8181"></span><span style="color:#742a2a;font-weight:600">🎌 หยุดตามประเพณี</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#faf5ff,#f5eeff);border:2px solid #b794f4"></span><span style="color:#553c9a;font-weight:600">อาทิตย์</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#f0fff4,#e6ffed);border:2px solid #68d391"></span><span style="color:#276749;font-weight:600">✓ เสาร์ทำงาน</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#fffaf0,#fff5e6);border:2px solid #f6ad55"></span><span style="color:#c05621;font-weight:600">เสาร์หยุด</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#ebf8ff,#dbeafe);border:2px solid #4299e1"></span><span style="color:#2b6cb0;font-weight:600">วันนี้</span></span>
+  </div>`;
   document.getElementById('hr-cal-grid').innerHTML = html;
 }
 
@@ -3100,9 +3248,9 @@ let hrEmpData = [];
 let hrEmpPage = 1;
 
 async function loadEmployees() {
-  const search = document.getElementById('emp-search').value;
-  const dept   = document.getElementById('emp-filter-dept').value;
-  const role   = document.getElementById('emp-filter-role').value;
+  const search = (document.getElementById('hr-emp-search')?.value || '').trim();
+  const dept   = (document.getElementById('hr-emp-filter-dept')?.value || '').trim();
+  const role   = (document.getElementById('hr-emp-filter-role')?.value || '').trim();
   let url = '/hr/employees?';
   if (search) url += `search=${encodeURIComponent(search)}&`;
   if (dept)   url += `department=${encodeURIComponent(dept)}&`;
@@ -3494,9 +3642,11 @@ async function loadLeaveTypesHr() {
   if (!Array.isArray(data)) return;
   tbody.innerHTML = data.map(lt => {
     const overDays = lt.requires_doc_over_days || 0;
+    const code = lt.code || '';
     return `<tr>
-    <td><input id="ltname-${lt.id}" value="${lt.name}" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:140px"></td>
-    <td style="text-align:center"><input type="number" id="ltdays-${lt.id}" value="${lt.max_days_per_year}" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:80px;text-align:center" min="1"></td>
+    <td style="text-align:center"><input id="ltcode-${lt.id}" value="${code}" placeholder="เช่น S02" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:72px;text-align:center;font-weight:700;color:#2b6cb0"></td>
+    <td><input id="ltname-${lt.id}" value="${lt.name}" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:200px"></td>
+    <td style="text-align:center"><input type="number" id="ltdays-${lt.id}" value="${lt.max_days_per_year}" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:80px;text-align:center" min="0"></td>
     <td style="text-align:center"><label class="toggle"><input type="checkbox" id="ltdoc-${lt.id}" ${lt.requires_document ? 'checked' : ''}><span class="slider"></span></label></td>
     <td style="text-align:center">
       <div style="display:flex;align-items:center;justify-content:center;gap:8px">
@@ -3525,6 +3675,7 @@ async function saveLeaveType() {
   const overToggle = document.getElementById('lt-over-toggle');
   const overVal = parseInt(document.getElementById('lt-over-days').value) || 0;
   const r = await api('POST', '/hr/leave-types', {
+    code: document.getElementById('lt-code').value.trim(),
     name: document.getElementById('lt-name').value.trim(),
     max_days_per_year: parseInt(document.getElementById('lt-days').value),
     requires_document: parseInt(document.getElementById('lt-doc').value),
@@ -3532,6 +3683,7 @@ async function saveLeaveType() {
   });
   if (r.error) return swalError(r.error);
   swalSuccess(r.message, () => loadLeaveTypesHr());
+  document.getElementById('lt-code').value = '';
   document.getElementById('lt-name').value = '';
   document.getElementById('lt-days').value = '';
   document.getElementById('lt-over-days').value = '';
@@ -3542,6 +3694,7 @@ async function updateLeaveType(id) {
   const overEnabled = document.getElementById(`ltover-toggle-${id}`)?.checked;
   const overVal = parseInt(document.getElementById(`ltover-${id}`)?.value) || 3;
   const r = await api('PUT', `/hr/leave-types/${id}`, {
+    code: document.getElementById(`ltcode-${id}`)?.value.trim() || '',
     name: document.getElementById(`ltname-${id}`).value.trim(),
     max_days_per_year: parseInt(document.getElementById(`ltdays-${id}`).value),
     requires_document: document.getElementById(`ltdoc-${id}`).checked ? 1 : 0,
@@ -3557,6 +3710,126 @@ async function deleteLeaveType(id, name) {
     if (r.error) return swalError(r.error);
     swalSuccess('ลบประเภทการลาสำเร็จ', () => loadLeaveTypesHr());
   });
+}
+
+// ====== COMPANY HOLIDAYS ======
+// cache name lookup: date→name
+let _chNameCache = {};
+async function loadCompanyHolidaysHr() {
+  const selYear = document.getElementById('ch-year');
+  if (!selYear) return;
+  if (!selYear.options.length) {
+    const curY = new Date().getFullYear();
+    for (let y = curY - 1; y <= curY + 2; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = `ปี ${y + 543}`;
+      if (y === curY) opt.selected = true;
+      selYear.appendChild(opt);
+    }
+  }
+  const year = selYear.value || new Date().getFullYear();
+  const rows = await api('GET', `/hr/company-holidays?year=${year}`);
+  const tbody = document.getElementById('ch-tbody');
+  _chNameCache = {};
+  if (!Array.isArray(rows) || rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">ยังไม่มีวันหยุดประเพณีในปีนี้</td></tr>';
+    return;
+  }
+  rows.forEach(r => { _chNameCache[r.date] = r.name; });
+  const THAI_MON_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  tbody.innerHTML = rows.map(r => {
+    const d = new Date(r.date + 'T12:00:00');
+    const thaiDate = `${d.getDate()} ${THAI_MON_SHORT[d.getMonth()]} ${d.getFullYear()+543}`;
+    return `<tr>
+      <td><b>${thaiDate}</b></td>
+      <td>${THAI_DOW[d.getDay()]}</td>
+      <td><span style="background:#fed7d7;color:#742a2a;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:700">🎌 ${r.name}</span></td>
+      <td style="text-align:center"><button class="btn btn-sm btn-danger" onclick="deleteCompanyHoliday(${r.id},'${r.name}')">ลบ</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function addCompanyHoliday() {
+  const date = document.getElementById('ch-date').value;
+  const name = document.getElementById('ch-name').value.trim();
+  if (!date) return swalError('กรุณาเลือกวันที่');
+  if (!name) return swalError('กรุณาระบุชื่อวันหยุด');
+  const r = await api('POST', '/hr/company-holidays', { date, name });
+  if (r.error) return swalError(r.error);
+  swalSuccess('บันทึกสำเร็จ', async () => {
+    document.getElementById('ch-date').value = '';
+    document.getElementById('ch-name').value = '';
+    companyHolidaysCache = {};
+    await loadCompanyHolidaysCache(new Date().getFullYear());
+    loadCompanyHolidaysHr();
+  });
+}
+
+async function deleteCompanyHoliday(id, name) {
+  swalConfirm(`ยืนยันการลบวันหยุด "${name}"?`, async () => {
+    const r = await api('DELETE', `/hr/company-holidays/${id}`);
+    if (r.error) return swalError(r.error);
+    swalSuccess('ลบสำเร็จ', async () => {
+      companyHolidaysCache = {};
+      await loadCompanyHolidaysCache(new Date().getFullYear());
+      loadCompanyHolidaysHr();
+    });
+  });
+}
+
+async function downloadChTemplate() {
+  const resp = await fetch('/api/hr/company-holidays/template', { headers: { 'Authorization': 'Bearer ' + token } });
+  if (!resp.ok) return swalError('ดาวน์โหลดไม่สำเร็จ');
+  const blob = await resp.blob();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'holiday_template.xlsx'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function previewChImport() {
+  const file = document.getElementById('ch-import-file').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const dataRows = rows.slice(1).filter(r => r[0] && r[1]);
+      document.getElementById('ch-import-count').textContent = dataRows.length;
+      document.getElementById('ch-import-tbody').innerHTML = dataRows.map((r, i) => {
+        let dateVal = r[0] instanceof Date
+          ? `${r[0].getFullYear()}-${String(r[0].getMonth()+1).padStart(2,'0')}-${String(r[0].getDate()).padStart(2,'0')}`
+          : String(r[0]);
+        return `<tr><td>${i+1}</td><td>${dateVal}</td><td>${r[1]}</td></tr>`;
+      }).join('') || '<tr><td colspan="3" class="empty">ไม่พบข้อมูล</td></tr>';
+      document.getElementById('ch-import-preview').style.display = dataRows.length ? '' : 'none';
+    } catch(e) { swalError('อ่านไฟล์ไม่ได้: ' + e.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function doChImport() {
+  const file = document.getElementById('ch-import-file').files[0];
+  if (!file) return;
+  const btn = document.getElementById('btn-do-ch-import');
+  btn.disabled = true; btn.textContent = '⏳ กำลังนำเข้า...';
+  const fd = new FormData(); fd.append('file', file);
+  const resp = await fetch('/api/hr/company-holidays/import', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+  const r = await resp.json();
+  btn.textContent = '✅ นำเข้าข้อมูล'; btn.disabled = false;
+  if (r.failed === 0) {
+    swalSuccess(r.message, async () => { clearChImport(); companyHolidaysCache = {}; await loadCompanyHolidaysCache(new Date().getFullYear()); loadCompanyHolidaysHr(); });
+  } else {
+    const errText = r.errors && r.errors.length ? '\n• ' + r.errors.join('\n• ') : '';
+    Swal.fire({ icon: r.success > 0 ? 'warning' : 'error', title: r.success > 0 ? 'นำเข้าบางส่วนสำเร็จ' : 'นำเข้าไม่สำเร็จ', text: r.message + errText, confirmButtonColor: '#1e3a5f' })
+      .then(async () => { if (r.success > 0) { clearChImport(); companyHolidaysCache = {}; await loadCompanyHolidaysCache(new Date().getFullYear()); loadCompanyHolidaysHr(); }});
+  }
+}
+
+function clearChImport() {
+  const f = document.getElementById('ch-import-file');
+  if (f) f.value = '';
+  document.getElementById('ch-import-preview').style.display = 'none';
 }
 
 // ====== WORK SCHEDULE ======
@@ -3683,7 +3956,7 @@ function moveMonth({ year, month }, delta) {
 async function loadCalMy() {
   const { year, month } = calMyCur;
   document.getElementById('cal-my-title').textContent = `${THAI_MONTHS[month-1]} ${year + 543}`;
-  await loadWorkScheduleCache(year);
+  await Promise.all([loadWorkScheduleCache(year), loadCompanyHolidaysCache(year)]);
   const events = await api('GET', `/leave/calendar?year=${year}&month=${month}`);
   renderCalendar('cal-my-head', 'cal-my-body', year, month, Array.isArray(events) ? events : [], true);
 }
@@ -3691,7 +3964,7 @@ async function loadCalMy() {
 async function loadCalAll() {
   const { year, month } = calAllCur;
   document.getElementById('cal-all-title').textContent = `${THAI_MONTHS[month-1]} ${year + 543}`;
-  await loadWorkScheduleCache(year);
+  await Promise.all([loadWorkScheduleCache(year), loadCompanyHolidaysCache(year)]);
   const events = await api('GET', `/leave/calendar?year=${year}&month=${month}`);
   renderCalendar('cal-all-head', 'cal-all-body', year, month, Array.isArray(events) ? events : [], false);
 }
@@ -3730,19 +4003,40 @@ function renderCalendar(headId, bodyId, year, month, events, myOnly) {
     const isToday = dateStr === todayStr;
     const dayEvents = eventMap[dateStr] || [];
     const dow = new Date(year, month-1, d).getDay();
+    const isSunDay = dow === 0;
     const isSatDay = dow === 6;
-    // เสาร์: ตรวจ cache หรือ pattern
-    let satClass = '', satBadge = '';
-    if (isSatDay) {
+    const isHoliday = isCompanyHoliday(dateStr);
+
+    // กำหนด class และ badge ตามลำดับความสำคัญ: หยุดประเพณี > อาทิตย์ > เสาร์ทำงาน/หยุด
+    let dayClass = '', dayBadge = '';
+    if (isHoliday) {
+      dayClass = ' company-holiday';
+      // badge จะแสดงผ่าน holidayRow ด้านล่าง
+    } else if (isSunDay) {
+      dayClass = ' sun-day';
+    } else if (isSatDay) {
       const ws = workScheduleCache[dateStr];
-      if (ws === 'working_sat')      { satClass = ' sat-work'; satBadge = `<span style="font-size:9px;background:#38a169;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px">ทำงาน</span>`; }
-      else if (ws === 'holiday_sat') { satClass = ' sat-off';  satBadge = `<span style="font-size:9px;background:#e53e3e;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px">หยุด</span>`; }
-      else {
+      if (ws === 'working_sat') {
+        dayClass = ' sat-work';
+        dayBadge = `<span style="font-size:9px;background:#276749;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px">✅ ทำงาน</span>`;
+      } else if (ws === 'holiday_sat') {
+        dayClass = ' sat-off';
+        dayBadge = `<span style="font-size:9px;background:#c05621;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px">🟠 หยุด</span>`;
+      } else {
         const dObj = new Date(year, month-1, d);
-        if (isWorkingSaturday(dObj)) { satClass = ' sat-work'; satBadge = `<span style="font-size:9px;background:#38a169;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px">ทำงาน</span>`; }
-        else                          { satClass = ' sat-off';  satBadge = `<span style="font-size:9px;color:#a0aec0;padding:1px 5px;margin-left:4px">หยุด</span>`; }
+        if (isWorkingSaturday(dObj)) {
+          dayClass = ' sat-work';
+          dayBadge = `<span style="font-size:9px;background:#276749;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px">✅ ทำงาน</span>`;
+        } else {
+          dayClass = ' sat-off';
+          dayBadge = `<span style="font-size:9px;background:#c05621;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px">🟠 หยุด</span>`;
+        }
       }
     }
+
+    const holidayRow = isHoliday
+      ? `<div style="font-size:10px;background:#e53e3e;color:#fff;border-radius:4px;padding:2px 5px;margin-bottom:2px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🎌 ${companyHolidayName(dateStr)}</div>`
+      : '';
     const evHtml = dayEvents.map(ev => {
       const isMine = ev.employee_id === (user && user.id) || String(ev.employee_id) === String(user && user.id);
       const isPending = ['pending','approved_l1'].includes(ev.status);
@@ -3750,7 +4044,7 @@ function renderCalendar(headId, bodyId, year, month, events, myOnly) {
       const label = myOnly ? ev.leave_type_name : ev.employee_name;
       return `<div class="cal-event ${cls}" onmouseenter="showTooltip(event,${JSON.stringify(JSON.stringify(ev))})" onmouseleave="hideTooltip()">${label}</div>`;
     }).join('');
-    cells += `<div class="cal-day${isToday?' today':''}${satClass}"><div class="cal-day-num">${d}${satBadge}</div>${evHtml}</div>`;
+    cells += `<div class="cal-day${isToday?' today':''}${dayClass}"><div class="cal-day-num">${d}${dayBadge}</div>${holidayRow}${evHtml}</div>`;
   }
   // next month fill
   const total = firstDay + daysInMonth;
