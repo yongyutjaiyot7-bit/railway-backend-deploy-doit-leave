@@ -244,6 +244,18 @@ async function initDb() {
     insPerm.run('hr_admin',         1, 1, 1, 1, 1, 'HR Admin เข้าถึงได้ทุกส่วน');
   }
 
+  // ตารางวันทำงาน/วันหยุดพิเศษ (เสาร์)
+  sqlDb.run(`
+    CREATE TABLE IF NOT EXISTS work_schedule (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT UNIQUE NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('working_sat','holiday_sat')),
+      note TEXT DEFAULT '',
+      created_by INTEGER,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
   // Seed leave types
   const count = db.prepare('SELECT COUNT(*) as c FROM leave_types').get();
   if (!count || count.c === 0) {

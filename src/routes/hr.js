@@ -595,5 +595,40 @@ module.exports = function (db) {
     }
   });
 
+  // ===== วันทำงาน/วันหยุดพิเศษ (เสาร์) =====
+
+  // GET /api/hr/work-schedule?year=YYYY
+  router.get('/work-schedule', (req, res) => {
+    const year = req.query.year || new Date().getFullYear();
+    const rows = db.prepare(`SELECT * FROM work_schedule WHERE date LIKE ? ORDER BY date`).all(`${year}%`);
+    res.json(rows);
+  });
+
+  // POST /api/hr/work-schedule  { date, type, note }
+  router.post('/work-schedule', (req, res) => {
+    if (req.user.role !== 'hr_admin') return res.status(403).json({ message: 'เฉพาะ HR Admin เท่านั้น' });
+    const { date, type, note } = req.body;
+    if (!date || !['working_sat','holiday_sat'].includes(type)) {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
+    // ตรวจว่าเป็นวันเสาร์
+    const d = new Date(date + 'T12:00:00');
+    if (d.getDay() !== 6) return res.status(400).json({ message: 'กำหนดได้เฉพาะวันเสาร์เท่านั้น' });
+    try {
+      const r = db.prepare(`INSERT OR REPLACE INTO work_schedule (date, type, note, created_by) VALUES (?,?,?,?)`)
+        .run(date, type, note || '', req.user.id);
+      res.json({ message: 'บันทึกสำเร็จ', id: r.lastInsertRowid });
+    } catch(e) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // DELETE /api/hr/work-schedule/:id
+  router.delete('/work-schedule/:id', (req, res) => {
+    if (req.user.role !== 'hr_admin') return res.status(403).json({ message: 'เฉพาะ HR Admin เท่านั้น' });
+    db.prepare('DELETE FROM work_schedule WHERE id=?').run(req.params.id);
+    res.json({ message: 'ลบสำเร็จ' });
+  });
+
   return router;
 };

@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { authenticate, authorize, authorizeOrPerm } = require('../middleware/auth');
 const { upload, UPLOAD_DIR } = require('../middleware/upload');
+const notifier = require('../utils/notifier');
 
 module.exports = function (db) {
   const router = express.Router();
@@ -18,6 +19,14 @@ module.exports = function (db) {
   const WORKING_SAT_REF = new Date('2026-01-03T00:00:00');
 
   function isWorkingSaturday(d) {
+    const pad = n => String(n).padStart(2,'0');
+    const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    // ตรวจ DB ก่อน — override pattern
+    try {
+      const row = db.prepare('SELECT type FROM work_schedule WHERE date=?').get(dateStr);
+      if (row) return row.type === 'working_sat';
+    } catch(e) {}
+    // fallback: alternating pattern
     const ref = new Date(WORKING_SAT_REF.getFullYear(), WORKING_SAT_REF.getMonth(), WORKING_SAT_REF.getDate());
     const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     const diffDays = Math.round((target - ref) / 86400000);
@@ -216,6 +225,21 @@ module.exports = function (db) {
     (req.files || []).forEach(f => insFile.run(leaveId, f.filename, f.originalname, f.mimetype, f.size));
 
     res.status(201).json({ message: 'ยื่นคำขอลาสำเร็จ', request_no, leave_request_id: leaveId, days, hours, attachments: (req.files||[]).length });
+
+    // แจ้งเตือนผู้อนุมัติระดับ 1 (fire-and-forget)
+    try {
+      const approver1 = db.prepare('SELECT name, email FROM users WHERE id = ?').get(parseInt(approver1_id));
+      if (approver1) {
+        notifier.notifyApproverNewRequest({
+          approverEmail: approver1.email,
+          approverName:  approver1.name,
+          employeeName:  req.user.name,
+          leaveType:     leaveTypeMeta?.name || '',
+          startDate: start_date, endDate: end_date, days, hours, reason,
+          requestNo: request_no,
+        }).catch(e => console.error('[NOTIFY submit]', e.message));
+      }
+    } catch(e) { console.error('[NOTIFY submit]', e.message); }
   });
 
   // POST /api/leave/request/:id/attachments — เพิ่มไฟล์แนบภายหลัง
@@ -403,6 +427,46 @@ module.exports = function (db) {
       }
 
       res.json({ message: action === 'approve' ? 'อนุมัติสำเร็จ' : 'ปฏิเสธสำเร็จ' });
+
+      // แจ้งเตือน (fire-and-forget)
+      try {
+        const emp  = db.prepare('SELECT name, email FROM users WHERE id = ?').get(lr.employee_id);
+        const lt2  = db.prepare('SELECT name FROM leave_types WHERE id = ?').get(lr.leave_type_id);
+        const ltName = lt2?.name || '';
+        if (action === 'reject') {
+          // แจ้งพนักงานว่าถูกปฏิเสธ
+          if (emp) notifier.notifyEmployeeApprovalResult({
+            employeeEmail: emp.email, employeeName: emp.name,
+            approverName: req.user.name, action: 'reject',
+            leaveType: ltName, startDate: lr.start_date, endDate: lr.end_date,
+            days: lr.days, hours: lr.hours, comment: comment || '',
+            requestNo: lr.request_no,
+          }).catch(e => console.error('[NOTIFY reject]', e.message));
+        } else {
+          // ดึงสถานะใหม่จาก DB
+          const updatedLr = db.prepare('SELECT status FROM leave_requests WHERE id = ?').get(lr.id);
+          if (updatedLr?.status === 'approved') {
+            // อนุมัติครบแล้ว → แจ้งพนักงาน
+            if (emp) notifier.notifyEmployeeApprovalResult({
+              employeeEmail: emp.email, employeeName: emp.name,
+              approverName: req.user.name, action: 'approve',
+              leaveType: ltName, startDate: lr.start_date, endDate: lr.end_date,
+              days: lr.days, hours: lr.hours, comment: comment || '',
+              requestNo: lr.request_no,
+            }).catch(e => console.error('[NOTIFY approve]', e.message));
+          } else if (updatedLr?.status === 'approved_l1') {
+            // ผ่านระดับ 1 → แจ้งผู้อนุมัติระดับ 2
+            const ap2 = db.prepare('SELECT u.name, u.email FROM approvals a JOIN users u ON u.id=a.approver_id WHERE a.leave_request_id=? AND a.level=2').get(lr.id);
+            if (ap2) notifier.notifyApproverLevel2({
+              approverEmail: ap2.email, approverName: ap2.name,
+              employeeName: emp?.name || '', leaveType: ltName,
+              startDate: lr.start_date, endDate: lr.end_date,
+              days: lr.days, hours: lr.hours, reason: lr.reason,
+              requestNo: lr.request_no,
+            }).catch(e => console.error('[NOTIFY level2]', e.message));
+          }
+        }
+      } catch(e) { console.error('[NOTIFY approve]', e.message); }
     } catch (e) {
       console.error('approve error:', e);
       res.status(500).json({ message: 'เกิดข้อผิดพลาด: ' + e.message });
@@ -489,6 +553,15 @@ module.exports = function (db) {
     if (department) { sql += ' AND u.department = ?'; params.push(department); }
     sql += ' ORDER BY lr.created_at DESC';
     res.json(db.prepare(sql).all(...params));
+  });
+
+  // GET /api/leave/work-schedule?year=YYYY — ข้อมูลวันทำงาน/หยุดสำหรับปฏิทิน (ทุกคนเข้าได้)
+  router.get('/work-schedule', authenticate, (req, res) => {
+    const year = req.query.year || new Date().getFullYear();
+    try {
+      const rows = db.prepare('SELECT date, type, note FROM work_schedule WHERE date LIKE ? ORDER BY date').all(`${year}%`);
+      res.json(rows);
+    } catch(e) { res.json([]); }
   });
 
   return router;

@@ -313,6 +313,8 @@
   .cal-day:hover { border-color:#bee3f8; box-shadow:0 2px 8px rgba(66,153,225,.1); }
   .cal-day.today { border-color: #4299e1; background: linear-gradient(135deg,#ebf8ff,#e6fffa); box-shadow:0 0 0 2px rgba(66,153,225,.25); }
   .cal-day.other-month { background: #f7fafc; opacity: .5; }
+  .cal-day.sat-work { background: #f0fff4; border-color: #9ae6b4; }
+  .cal-day.sat-off  { background: #fff5f5; }
   .cal-day-num { font-size: 13px; font-weight: 700; color: #4a5568; margin-bottom: 5px; }
   .cal-day.today .cal-day-num { color: #fff; background:#4299e1; width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px; }
   .cal-event { font-size: 11px; padding: 2px 7px; border-radius: 5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
@@ -1219,6 +1221,7 @@
         <button class="btn btn-sm" id="hrtab-perm" onclick="hrTab('perm')" style="background:#f0f4f8;color:#4a5568">🔐 สิทธิ์การเข้าถึง</button>
         <button class="btn btn-sm" id="hrtab-approver" onclick="hrTab('approver')" style="background:#f0f4f8;color:#4a5568">✅ ผู้อนุมัติต่อแผนก</button>
         <button class="btn btn-sm" id="hrtab-leavetype" onclick="hrTab('leavetype')" style="background:#f0f4f8;color:#4a5568">📋 ประเภทการลา</button>
+        <button class="btn btn-sm" id="hrtab-workschedule" onclick="hrTab('workschedule')" style="background:#f0f4f8;color:#4a5568">📆 วันทำงาน/หยุด</button>
       </div>
 
       <!-- DASHBOARD -->
@@ -1249,6 +1252,58 @@
             <div id="hr-cal-legend" style="display:flex;gap:10px;flex-wrap:wrap;margin-left:auto"></div>
           </div>
           <div id="hr-cal-grid" style="overflow-x:auto"></div>
+        </div>
+      </div>
+
+      <!-- WORK SCHEDULE (เสาร์ทำงาน/หยุด) -->
+      <div id="hrsec-workschedule" style="display:none">
+        <div class="card">
+          <h2>📆 จัดการวันทำงาน/วันหยุดพิเศษ (วันเสาร์)</h2>
+          <p style="font-size:13px;color:#718096;margin-bottom:16px">กำหนดวันเสาร์ที่ทำงานหรือหยุดพิเศษ นอกเหนือจากรูปแบบ "เสาร์เว้นเสาร์" ค่าเริ่มต้น ระบบจะนำไปแสดงในปฏิทินของพนักงานทุกคน</p>
+
+          <div class="section-header"><span>➕ เพิ่มวันพิเศษ</span></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px">
+            <div class="form-group">
+              <label>📅 วันที่ (วันเสาร์เท่านั้น)</label>
+              <input type="date" id="ws-date" style="width:180px">
+            </div>
+            <div class="form-group">
+              <label>ประเภท</label>
+              <select id="ws-type" style="width:200px">
+                <option value="working_sat">✅ เสาร์ทำงาน</option>
+                <option value="holiday_sat">🔴 เสาร์หยุด</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>หมายเหตุ</label>
+              <input type="text" id="ws-note" placeholder="เช่น หยุดชดเชย, เสาร์พิเศษ" style="width:220px">
+            </div>
+            <button class="btn btn-primary" onclick="addWorkSchedule()">➕ บันทึก</button>
+          </div>
+
+          <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+            <span>📋 รายการวันพิเศษ</span>
+            <select id="ws-year" onchange="loadWorkScheduleHr()" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:13px">
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>วันที่</th><th>วัน</th><th>ประเภท</th><th>หมายเหตุ</th><th style="text-align:center">จัดการ</th>
+              </tr></thead>
+              <tbody id="ws-tbody"><tr><td colspan="5" class="empty">กำลังโหลด...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>ℹ️ รูปแบบวันทำงานเสาร์ (ค่าเริ่มต้น)</h2>
+          <p style="font-size:13px;color:#4a5568;line-height:1.8">
+            ระบบใช้รูปแบบ <b>"เสาร์เว้นเสาร์"</b> โดยอ้างอิงจากวันที่ <b>3 มกราคม 2569</b> เป็น <b>เสาร์ทำงาน</b><br>
+            วันเสาร์ที่เพิ่มในรายการด้านบนจะ <b>override</b> รูปแบบนี้เฉพาะวันนั้น ๆ<br>
+            <span style="color:#e53e3e">🔴 เสาร์หยุด</span> = วันหยุด ไม่นับชั่วโมงทำงาน &nbsp;|&nbsp;
+            <span style="color:#38a169">✅ เสาร์ทำงาน</span> = วันทำงาน นับ 4 ชั่วโมง (พนักงานรายเดือน)
+          </p>
         </div>
       </div>
 
@@ -1539,7 +1594,20 @@ let currentApprovalId = null;
 // ====== WORK HOURS CALCULATION (mirrors backend) ======
 // Reference working Saturday for monthly employees (เสาร์เว้นเสาร์)
 const WORKING_SAT_REF = new Date('2026-01-03T00:00:00');
+// Cache: { 'YYYY-MM-DD': 'working_sat'|'holiday_sat' }
+let workScheduleCache = {};
+
+async function loadWorkScheduleCache(year) {
+  try {
+    const rows = await api('GET', `/leave/work-schedule?year=${year}`);
+    if (Array.isArray(rows)) rows.forEach(r => { workScheduleCache[r.date] = r.type; });
+  } catch(e) {}
+}
+
 function isWorkingSaturday(d) {
+  const pad = n => String(n).padStart(2,'0');
+  const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  if (workScheduleCache[dateStr]) return workScheduleCache[dateStr] === 'working_sat';
   const ref = new Date(WORKING_SAT_REF.getFullYear(), WORKING_SAT_REF.getMonth(), WORKING_SAT_REF.getDate());
   const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const diff = Math.round((target - ref) / 86400000);
@@ -1669,6 +1737,7 @@ function showApp() {
   if (_lmYear)  _lmYear.value  = curYear;
   loadLeaveTypes();
   loadHistory();
+  loadWorkScheduleCache(curYear);
 
   // activate หน้าหลัก + re-render chart (HR) หลัง browser paint 1 เฟรม
   requestAnimationFrame(() => {
@@ -2826,7 +2895,7 @@ let currentEmpId = null;
 let leaveTypesCache = [];
 
 function hrTab(name) {
-  ['dash','calendar','emp','import','perm','approver','leavetype'].forEach(t => {
+  ['dash','calendar','emp','import','perm','approver','leavetype','workschedule'].forEach(t => {
     document.getElementById(`hrsec-${t}`).style.display = 'none';
     const btn = document.getElementById(`hrtab-${t}`);
     if (btn) { btn.style.background = '#f0f4f8'; btn.style.color = '#4a5568'; btn.style.boxShadow = 'none'; }
@@ -2835,12 +2904,13 @@ function hrTab(name) {
   document.getElementById(`hrtab-${name}`).style.background = 'linear-gradient(135deg,#1e3a5f,#2b6cb0)';
   document.getElementById(`hrtab-${name}`).style.color = '#fff';
   document.getElementById(`hrtab-${name}`).style.boxShadow = '0 2px 6px rgba(30,58,95,.3)';
-  if (name === 'dash')      loadHrStats();
-  if (name === 'calendar')  loadHrCalendar();
-  if (name === 'emp')       loadEmployees();
-  if (name === 'perm')      { loadUserPerms(); loadPermissions(); }
-  if (name === 'approver')  loadDeptApprovers();
-  if (name === 'leavetype') loadLeaveTypesHr();
+  if (name === 'dash')          loadHrStats();
+  if (name === 'calendar')      loadHrCalendar();
+  if (name === 'emp')           loadEmployees();
+  if (name === 'perm')          { loadUserPerms(); loadPermissions(); }
+  if (name === 'approver')      loadDeptApprovers();
+  if (name === 'leavetype')     loadLeaveTypesHr();
+  if (name === 'workschedule')  loadWorkScheduleHr();
 }
 
 // ===== IMPORT EXCEL =====
@@ -2934,6 +3004,7 @@ async function loadHrCalendar() {
 
   // fetch leave data for this month (approved only)
   const y = hrCalYear, m = String(hrCalMonth + 1).padStart(2, '0');
+  await loadWorkScheduleCache(hrCalYear);
   const data = await api('GET', `/hr/leave-records?status=approved&year=${y}&month=${m}`);
   hrCalData = Array.isArray(data) ? data : [];
 
@@ -2994,9 +3065,23 @@ function renderHrCalGrid() {
       // limit display to first 3 events, show +N more
       const visible = events.slice(0, 3);
       const extra = events.length - visible.length;
-      html += `<td style="vertical-align:top;padding:4px;border:1px solid #e2e8f0;min-height:70px;${isToday?'background:#ebf8ff;':''}${!cellDay?'background:#f9fafb;':''}">`;
+      // คำนวณ background สำหรับเสาร์
+      let satCellBg = '', satLabel = '';
+      if (cellDay && isSat) {
+        const pad = n => String(n).padStart(2,'0');
+        const dStr = `${hrCalYear}-${pad(hrCalMonth+1)}-${pad(cellDay)}`;
+        const ws = workScheduleCache[dStr];
+        if (ws === 'working_sat')      { satCellBg = 'background:#e6fffa;'; satLabel = `<span style="font-size:9px;background:#38a169;color:#fff;border-radius:3px;padding:1px 4px;margin-left:4px">ทำงาน</span>`; }
+        else if (ws === 'holiday_sat') { satCellBg = 'background:#fff5f5;'; satLabel = `<span style="font-size:9px;background:#e53e3e;color:#fff;border-radius:3px;padding:1px 4px;margin-left:4px">หยุด</span>`; }
+        else {
+          const dObj = new Date(hrCalYear, hrCalMonth, cellDay);
+          if (isWorkingSaturday(dObj)) { satCellBg = 'background:#e6fffa;'; satLabel = `<span style="font-size:9px;background:#38a169;color:#fff;border-radius:3px;padding:1px 4px;margin-left:4px">ทำงาน</span>`; }
+          else                          { satLabel = `<span style="font-size:9px;color:#a0aec0;border-radius:3px;padding:1px 4px;margin-left:4px">หยุด</span>`; }
+        }
+      }
+      html += `<td style="vertical-align:top;padding:4px;border:1px solid #e2e8f0;min-height:70px;${isToday?'background:#ebf8ff;':satCellBg}${!cellDay?'background:#f9fafb;':''}">`;
       if (cellDay) {
-        html += `<div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${isToday?'#2b6cb0':isSun?'#e53e3e':isSat?'#3182ce':'#2d3748'};margin-bottom:3px">${cellDay}</div>`;
+        html += `<div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${isToday?'#2b6cb0':isSun?'#e53e3e':isSat?'#3182ce':'#2d3748'};margin-bottom:3px">${cellDay}${satLabel}</div>`;
         visible.forEach(ev => {
           const color = hrCalTypeColors[ev.leave_type_name] || '#718096';
           html += `<div title="${ev.employee_name} — ${ev.leave_type_name}" style="font-size:10px;background:${color};color:#fff;border-radius:3px;padding:1px 4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:default">${ev.employee_name}</div>`;
@@ -3474,6 +3559,76 @@ async function deleteLeaveType(id, name) {
   });
 }
 
+// ====== WORK SCHEDULE ======
+const THAI_DOW = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+
+async function loadWorkScheduleHr() {
+  const selYear = document.getElementById('ws-year');
+  if (!selYear) return;
+  // ป้อนตัวเลือกปี ถ้ายังไม่มี
+  if (!selYear.options.length) {
+    const curY = new Date().getFullYear();
+    for (let y = curY - 1; y <= curY + 2; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = `ปี ${y + 543}`;
+      if (y === curY) opt.selected = true;
+      selYear.appendChild(opt);
+    }
+  }
+  const year = selYear.value || new Date().getFullYear();
+  const rows = await api('GET', `/hr/work-schedule?year=${year}`);
+  const tbody = document.getElementById('ws-tbody');
+  if (!Array.isArray(rows) || rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">ยังไม่มีรายการวันพิเศษในปีนี้</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const d = new Date(r.date + 'T12:00:00');
+    const thaiDate = `${d.getDate()} ${['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][d.getMonth()]} ${d.getFullYear()+543}`;
+    const typeLabel = r.type === 'working_sat'
+      ? '<span style="background:#c6f6d5;color:#22543d;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:700">✅ เสาร์ทำงาน</span>'
+      : '<span style="background:#fed7d7;color:#742a2a;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:700">🔴 เสาร์หยุด</span>';
+    return `<tr>
+      <td><b>${thaiDate}</b></td>
+      <td>${THAI_DOW[d.getDay()]}</td>
+      <td>${typeLabel}</td>
+      <td style="font-size:13px;color:#718096">${r.note || '—'}</td>
+      <td style="text-align:center"><button class="btn btn-sm btn-danger" onclick="deleteWorkSchedule(${r.id},'${r.date}')">ลบ</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function addWorkSchedule() {
+  const date = document.getElementById('ws-date').value;
+  const type = document.getElementById('ws-type').value;
+  const note = document.getElementById('ws-note').value.trim();
+  if (!date) return swalError('กรุณาเลือกวันที่');
+  const d = new Date(date + 'T12:00:00');
+  if (d.getDay() !== 6) return swalError('กำหนดได้เฉพาะวันเสาร์เท่านั้น');
+  const r = await api('POST', '/hr/work-schedule', { date, type, note });
+  if (r.error) return swalError(r.error);
+  swalSuccess('บันทึกสำเร็จ', async () => {
+    document.getElementById('ws-date').value = '';
+    document.getElementById('ws-note').value = '';
+    await loadWorkScheduleHr();
+    // reload cache
+    workScheduleCache = {};
+    await loadWorkScheduleCache(new Date().getFullYear());
+  });
+}
+
+async function deleteWorkSchedule(id, date) {
+  swalConfirm(`ยืนยันการลบวันพิเศษ ${date}?`, async () => {
+    const r = await api('DELETE', `/hr/work-schedule/${id}`);
+    if (r.error) return swalError(r.error);
+    swalSuccess('ลบสำเร็จ', async () => {
+      await loadWorkScheduleHr();
+      workScheduleCache = {};
+      await loadWorkScheduleCache(new Date().getFullYear());
+    });
+  });
+}
+
 // ====== EXPORT ======
 function exportFile(type) {
   const year = document.getElementById('rpt-year').value || new Date().getFullYear();
@@ -3528,6 +3683,7 @@ function moveMonth({ year, month }, delta) {
 async function loadCalMy() {
   const { year, month } = calMyCur;
   document.getElementById('cal-my-title').textContent = `${THAI_MONTHS[month-1]} ${year + 543}`;
+  await loadWorkScheduleCache(year);
   const events = await api('GET', `/leave/calendar?year=${year}&month=${month}`);
   renderCalendar('cal-my-head', 'cal-my-body', year, month, Array.isArray(events) ? events : [], true);
 }
@@ -3535,6 +3691,7 @@ async function loadCalMy() {
 async function loadCalAll() {
   const { year, month } = calAllCur;
   document.getElementById('cal-all-title').textContent = `${THAI_MONTHS[month-1]} ${year + 543}`;
+  await loadWorkScheduleCache(year);
   const events = await api('GET', `/leave/calendar?year=${year}&month=${month}`);
   renderCalendar('cal-all-head', 'cal-all-body', year, month, Array.isArray(events) ? events : [], false);
 }
@@ -3572,6 +3729,20 @@ function renderCalendar(headId, bodyId, year, month, events, myOnly) {
     const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = dateStr === todayStr;
     const dayEvents = eventMap[dateStr] || [];
+    const dow = new Date(year, month-1, d).getDay();
+    const isSatDay = dow === 6;
+    // เสาร์: ตรวจ cache หรือ pattern
+    let satClass = '', satBadge = '';
+    if (isSatDay) {
+      const ws = workScheduleCache[dateStr];
+      if (ws === 'working_sat')      { satClass = ' sat-work'; satBadge = `<span style="font-size:9px;background:#38a169;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px">ทำงาน</span>`; }
+      else if (ws === 'holiday_sat') { satClass = ' sat-off';  satBadge = `<span style="font-size:9px;background:#e53e3e;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px">หยุด</span>`; }
+      else {
+        const dObj = new Date(year, month-1, d);
+        if (isWorkingSaturday(dObj)) { satClass = ' sat-work'; satBadge = `<span style="font-size:9px;background:#38a169;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px">ทำงาน</span>`; }
+        else                          { satClass = ' sat-off';  satBadge = `<span style="font-size:9px;color:#a0aec0;padding:1px 5px;margin-left:4px">หยุด</span>`; }
+      }
+    }
     const evHtml = dayEvents.map(ev => {
       const isMine = ev.employee_id === (user && user.id) || String(ev.employee_id) === String(user && user.id);
       const isPending = ['pending','approved_l1'].includes(ev.status);
@@ -3579,7 +3750,7 @@ function renderCalendar(headId, bodyId, year, month, events, myOnly) {
       const label = myOnly ? ev.leave_type_name : ev.employee_name;
       return `<div class="cal-event ${cls}" onmouseenter="showTooltip(event,${JSON.stringify(JSON.stringify(ev))})" onmouseleave="hideTooltip()">${label}</div>`;
     }).join('');
-    cells += `<div class="cal-day${isToday?' today':''}"><div class="cal-day-num">${d}</div>${evHtml}</div>`;
+    cells += `<div class="cal-day${isToday?' today':''}${satClass}"><div class="cal-day-num">${d}${satBadge}</div>${evHtml}</div>`;
   }
   // next month fill
   const total = firstDay + daysInMonth;
