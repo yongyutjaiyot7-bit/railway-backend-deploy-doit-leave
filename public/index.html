@@ -526,7 +526,7 @@
 <!-- LOGIN -->
 <div id="login-page">
   <div class="login-card">
-    <h1>🏢 ระบบลาออนไลน์<br>DOIT</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <p>กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน</p>
     <div id="login-alert"></div>
     <div class="form-group">
@@ -797,7 +797,7 @@
 <!-- APP -->
 <div id="app">
   <nav>
-    <h1>🏢 ระบบลาออนไลน์ บริษัท ดูอิท จำกัด</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <div id="nav-user">
       <span id="nav-name"></span>
       <button id="btn-install-pwa" onclick="installPWA()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;align-items:center;gap:5px">📲 ติดตั้งแอป</button>
@@ -3059,8 +3059,10 @@ let rptAllData = [];
 let rptPage = 1;
 const RPT_PAGE_SIZE = 30;
 
+function isValidDateStr(d) { return d && /^\d{4}-\d{2}-\d{2}$/.test(d); }
 function fmtDate(d) {
   if (!d) return '';
+  if (!isValidDateStr(d)) return '⚠️ วันที่ผิดพลาด';
   const [y, m, day] = d.split('-');
   return `${day}-${m}-${y}`;
 }
@@ -3394,7 +3396,7 @@ async function loadLeaveRecords() {
       <td>${r.employee_name}<br><span style="font-size:11px;color:#718096">${r.emp_code}</span></td>
       <td style="font-size:12px">${r.department}</td>
       <td style="font-size:12px">${r.leave_type_name}</td>
-      <td style="font-size:12px">${fmtDate(r.start_date)}<br>${r.end_date!==r.start_date?fmtDate(r.end_date):''}</td>
+      <td style="font-size:12px">${isValidDateStr(r.start_date) ? fmtDate(r.start_date) + (r.end_date!==r.start_date?'<br>'+fmtDate(r.end_date):'') : '<span style="color:#c53030;font-weight:700;font-size:11px">⚠️ วันที่ผิดพลาด<br>กรุณากดแก้ไข</span>'}</td>
       <td style="text-align:center">${fmtDuration(r.days, r.hours)}</td>
       <td>${statusBadge(r.status)}</td>
       <td>${lmApprovalCell(r.approvals,1)}</td>
@@ -3413,12 +3415,20 @@ function openEditLeave(rJson) {
   document.getElementById('edit-leave-alert').innerHTML = '';
   document.getElementById('el-type').value   = r.leave_type_id;
   document.getElementById('el-status').value = r.status;
-  document.getElementById('el-start').value  = r.start_date;
-  document.getElementById('el-end').value    = r.end_date;
+  // ถ้าวันที่เสีย (เช่น undefined-...) ให้ clear ออกและแจ้งเตือน
+  const isValidDate = (s) => s && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const startVal = isValidDate(r.start_date) ? r.start_date : '';
+  const endVal   = isValidDate(r.end_date)   ? r.end_date   : '';
+  document.getElementById('el-start').value  = startVal;
+  document.getElementById('el-end').value    = endVal;
   document.getElementById('el-reason').value = r.reason;
-  const todayStr = new Date().toISOString().split('T')[0];
-  document.getElementById('el-start').min = todayStr;
-  document.getElementById('el-end').min   = todayStr;
+  // HR Admin ต้องย้อนหลังได้ — ไม่ lock min date
+  document.getElementById('el-start').min = '';
+  document.getElementById('el-end').min   = '';
+  if (!startVal || !endVal) {
+    document.getElementById('edit-leave-alert').innerHTML =
+      '<div class="alert alert-error" style="font-size:13px">⚠️ วันที่มีข้อผิดพลาด กรุณาเลือกวันที่เริ่มลาและสิ้นสุดใหม่</div>';
+  }
   // load checker (level 1) and approver (level 2) dropdowns with current values
   const lvl1 = r.approvals ? r.approvals.find(a => a.level === 1) : null;
   const lvl2 = r.approvals ? r.approvals.find(a => a.level === 2) : null;
@@ -3688,25 +3698,13 @@ async function submitAddLeave() {
   const status = document.getElementById('al-status').value;
   const alertEl = document.getElementById('add-leave-alert');
 
-  // แปลง dd/mm/yyyy HH:mm → YYYY-MM-DD และ YYYY-MM-DD HH:mm
-  const toISO = (dt) => {
-    if (!dt) return '';
-    const [datePart] = dt.split(' ');
-    const [d, m, y] = datePart.split('/');
-    return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  };
-  const toISODT = (dt) => {
-    if (!dt) return '';
-    const [datePart, timePart = '00:00'] = dt.split(' ');
-    const [d, m, y] = datePart.split('/');
-    return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')} ${timePart}`;
-  };
-  const startVal = fpAlStart?.input.value || '';
-  const endVal   = fpAlEnd?.input.value   || '';
-  const start    = toISO(startVal);
-  const end      = toISO(endVal);
-  const startDT  = toISODT(startVal);
-  const endDT    = toISODT(endVal);
+  // อ่านวันที่+เวลาจาก alGetISO (date flatpickr + time select)
+  const startISOfull = alGetISO('start');  // "YYYY-MM-DDThh:mm"
+  const endISOfull   = alGetISO('end');
+  const start   = startISOfull ? startISOfull.slice(0, 10) : '';
+  const end     = endISOfull   ? endISOfull.slice(0, 10)   : '';
+  const startDT = startISOfull || '';
+  const endDT   = endISOfull   || '';
 
   if (!empid || !typeId || !start || !end) {
     alertEl.innerHTML = '<div class="alert alert-error">กรุณากรอกข้อมูลให้ครบ (รหัสพนักงาน, ประเภทลา, วันที่)</div>';

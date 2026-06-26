@@ -550,8 +550,8 @@ module.exports = function (db) {
     if (status)        { sql += ' AND lr.status = ?';                  params.push(status); }
     if (department)    { sql += ' AND u.department = ?';               params.push(department); }
     if (leave_type_id) { sql += ' AND lr.leave_type_id = ?';           params.push(leave_type_id); }
-    if (year)          { sql += " AND strftime('%Y',lr.start_date)=?"; params.push(year); }
-    if (month)         { sql += " AND strftime('%m',lr.start_date)=?"; params.push(String(month).padStart(2,'0')); }
+    if (year)  { sql += " AND (strftime('%Y',lr.start_date)=? OR strftime('%Y',lr.created_at)=?)"; params.push(year,year); }
+    if (month) { sql += " AND (strftime('%m',lr.start_date)=? OR (strftime('%Y',lr.start_date) IS NULL AND strftime('%m',lr.created_at)=?))"; params.push(String(month).padStart(2,'0'),String(month).padStart(2,'0')); }
     if (search)        { sql += ' AND (u.name LIKE ? OR u.employee_id LIKE ? OR lr.request_no LIKE ?)'; const s=`%${search}%`; params.push(s,s,s); }
     sql += ' ORDER BY lr.created_at DESC LIMIT 300';
     const rows = db.prepare(sql).all(...params);
