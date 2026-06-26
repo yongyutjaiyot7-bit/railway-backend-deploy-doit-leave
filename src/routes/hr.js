@@ -536,7 +536,7 @@ module.exports = function (db) {
   router.get('/leave-records', (req, res) => {
     const { status, department, leave_type_id, year, month, search } = req.query;
     let sql = `
-      SELECT lr.id, lr.request_no, lr.start_date, lr.end_date, lr.days, lr.hours, lr.reason,
+      SELECT lr.id, lr.request_no, lr.start_date, lr.end_date, lr.start_datetime, lr.end_datetime, lr.days, lr.hours, lr.reason,
              lr.status, lr.created_at, lr.updated_at,
              lt.name as leave_type_name, lt.id as leave_type_id,
              u.name as employee_name, u.employee_id as emp_code,
@@ -571,10 +571,11 @@ module.exports = function (db) {
   router.put('/leave-records/:id', (req, res) => {
     const lr = db.prepare('SELECT * FROM leave_requests WHERE id=?').get(req.params.id);
     if (!lr) return res.status(404).json({ message: 'ไม่พบคำขอลา' });
-    const { start_date, end_date, reason, status, leave_type_id, checker_id, approver_id } = req.body;
-    const days = start_date && end_date ? Math.floor((new Date(end_date)-new Date(start_date))/86400000)+1 : lr.days;
-    db.prepare(`UPDATE leave_requests SET start_date=?,end_date=?,days=?,reason=?,status=?,leave_type_id=?,updated_at=datetime('now') WHERE id=?`)
-      .run(start_date||lr.start_date, end_date||lr.end_date, days, reason||lr.reason, status||lr.status, leave_type_id||lr.leave_type_id, lr.id);
+    const { start_date, end_date, start_datetime, end_datetime, reason, status, leave_type_id, checker_id, approver_id, days: reqDays, hours: reqHours } = req.body;
+    const newDays  = reqDays  != null ? Number(reqDays)  : lr.days;
+    const newHours = reqHours != null ? Number(reqHours) : (lr.hours || 0);
+    db.prepare(`UPDATE leave_requests SET start_date=?,end_date=?,start_datetime=?,end_datetime=?,days=?,hours=?,reason=?,status=?,leave_type_id=?,updated_at=datetime('now') WHERE id=?`)
+      .run(start_date||lr.start_date, end_date||lr.end_date, start_datetime||lr.start_datetime||null, end_datetime||lr.end_datetime||null, newDays, newHours, reason||lr.reason, status||lr.status, leave_type_id||lr.leave_type_id, lr.id);
 
     // helper: upsert approval level
     const upsertApproval = (level, userId) => {
