@@ -24,112 +24,250 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap');
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Sarabun', 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; font-size: 15px; }
+  body { font-family: 'Sarabun', 'Segoe UI', sans-serif; background: #eef2f7; color: #1a202c; font-size: 15px; line-height: 1.6; }
 
-  /* NAV */
-  nav { background: linear-gradient(90deg,#1e3a5f,#2b5797); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; height: 60px; box-shadow: 0 3px 10px rgba(0,0,0,.25); position: sticky; top: 0; z-index: 100; }
-  nav h1 { font-size: 19px; font-weight: 700; letter-spacing: .5px; display:flex;align-items:center;gap:8px; }
+  /* ===== NAV ===== */
+  nav {
+    background: linear-gradient(90deg,#0f2744,#1a4a8a,#1565c0);
+    color: #fff; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; height: 62px;
+    box-shadow: 0 4px 16px rgba(15,39,68,.4); position: sticky; top: 0; z-index: 100;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  nav h1 { font-size: 19px; font-weight: 800; letter-spacing: .4px; display:flex;align-items:center;gap:9px; text-shadow:0 1px 3px rgba(0,0,0,.3); }
   #nav-user { font-size: 13px; display: flex; align-items: center; gap: 14px; }
-  #nav-name { background:rgba(255,255,255,.12);padding:5px 12px;border-radius:20px;font-size:13px; }
-  #btn-logout { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; padding: 7px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; transition:.15s; }
-  #btn-logout:hover { background: rgba(255,255,255,.28); }
+  #nav-name { background:rgba(255,255,255,.15);padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid rgba(255,255,255,.2); }
+  #btn-logout { background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.35); color: #fff; padding: 7px 17px; border-radius: 9px; cursor: pointer; font-size: 13px; font-weight:600; transition:.15s; font-family:inherit; }
+  #btn-logout:hover { background: rgba(255,255,255,.25); transform:translateY(-1px); }
 
-  /* TABS */
-  #tabs { display: flex; gap: 0; background: #fff; border-bottom: 2px solid #e2e8f0; padding: 0 20px; overflow-x: auto; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-  .tab { padding: 15px 20px; cursor: pointer; font-size: 14px; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; color: #718096; transition: all .15s; font-weight: 500; }
-  .tab:hover { color: #2b6cb0; background: #f7faff; }
-  .tab.active { color: #1e3a5f; border-bottom-color: #2b6cb0; font-weight: 700; background: #f0f7ff; }
+  /* ===== TABS ===== */
+  #tabs { display: flex; gap: 0; background: #fff; border-bottom: 2px solid #dde3ec; padding: 0 24px; overflow-x: auto; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+  .tab { padding: 16px 22px; cursor: pointer; font-size: 14px; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; color: #64748b; transition: all .18s; font-weight: 600; letter-spacing:.1px; }
+  .tab:hover { color: #1a4a8a; background: #f0f7ff; }
+  .tab.active { color: #0f2744; border-bottom-color: #1565c0; font-weight: 800; background: linear-gradient(180deg,#f0f7ff,#e8f0fc); }
 
-  /* LAYOUT */
-  main { max-width: 100%; margin: 0; padding: 20px 32px; }
+  /* ===== LAYOUT ===== */
+  main { max-width: 100%; margin: 0; padding: 22px 34px; }
   .page { display: none; }
   .page.active { display: block; }
 
-  /* CARD */
-  .card { background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.07); padding: 28px; margin-bottom: 22px; border: 1px solid #edf2f7; }
-  .card h2 { font-size: 16px; color: #1e3a5f; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #ebf4ff; display:flex;align-items:center;gap:8px;font-weight:700; }
+  /* ===== CARD ===== */
+  .card {
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04);
+    padding: 28px; margin-bottom: 22px;
+    border: 1px solid #e2e9f3;
+    transition: box-shadow .2s;
+  }
+  .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.1); }
+  .card h2 { font-size: 16px; color: #0f2744; margin-bottom: 20px; padding-bottom: 13px; border-bottom: 2px solid #e8f0fc; display:flex;align-items:center;gap:9px;font-weight:800; }
 
-  /* SECTION HEADER inside card */
-  .section-header { display:flex;align-items:center;gap:8px;padding:10px 14px;background:linear-gradient(90deg,#ebf4ff,#f7fafc);border-radius:8px;margin:20px 0 14px;border-left:4px solid #2b6cb0; }
-  .section-header span { font-size:13px;font-weight:700;color:#2c5282; }
+  /* ===== DATE-TIME PICKER CARDS ===== */
+  .dt-grid { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+  .dt-card {
+    border-radius:16px;padding:14px 16px 12px;
+    border:2px solid #bee3f8;
+    background:linear-gradient(145deg,#f0f7ff 0%,#e8f4fd 100%);
+    transition:border-color .2s,box-shadow .2s;
+    position:relative;
+  }
+  .dt-card.dt-end {
+    border-color:#b2f5ea;
+    background:linear-gradient(145deg,#f0fff4 0%,#e6fffa 100%);
+  }
+  .dt-card:focus-within { box-shadow:0 0 0 3px rgba(59,130,246,.18); }
+  .dt-card.dt-end:focus-within { box-shadow:0 0 0 3px rgba(56,178,172,.18); border-color:#81e6d9; }
+  .dt-card-title {
+    font-size:14px;font-weight:800;letter-spacing:.3px;
+    color:#2b6cb0;margin-bottom:10px;display:flex;align-items:center;gap:6px;
+  }
+  .dt-card.dt-end .dt-card-title { color:#276749; }
+  .dt-card-badge {
+    display:inline-flex;align-items:center;justify-content:center;
+    width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:800;
+    background:#2b6cb0;color:#fff;flex-shrink:0;
+  }
+  .dt-card.dt-end .dt-card-badge { background:#276749; }
+  .dt-inner {
+    background:#fff;border-radius:12px;overflow:hidden;
+    border:1.5px solid #e2e8f0;display:flex;flex-direction:column;
+  }
+  .dt-date-row {
+    display:flex;align-items:center;gap:0;padding:0;
+    cursor:pointer;transition:background .15s;
+    border-bottom:1.5px solid #e2e8f0;
+  }
+  .dt-date-row:hover { background:#f7faff; }
+  .dt-card.dt-end .dt-date-row:hover { background:#f0fff4; }
+  .dt-date-icon {
+    padding:11px 12px;font-size:20px;flex-shrink:0;
+    border-right:1.5px solid #e2e8f0;background:#f7faff;
+  }
+  .dt-card.dt-end .dt-date-icon { background:#f0fff4; }
+  .dt-date-meta { flex:1;padding:9px 12px;min-width:0; }
+  .dt-date-hint { font-size:10px;color:#a0aec0;font-weight:600;letter-spacing:.3px; }
+  .dt-date-val {
+    font-size:14px;font-weight:700;color:#1e3a5f;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;
+  }
+  .dt-date-val.placeholder { font-size:13px;font-weight:500;color:#cbd5e0; }
+  .dt-date-input-hidden {
+    position:absolute;opacity:0;pointer-events:none;width:0;height:0;
+  }
+  .dt-open-btn {
+    padding:0 14px;font-size:18px;background:none;border:none;
+    cursor:pointer;color:#3182ce;flex-shrink:0;transition:color .15s,transform .1s;
+    align-self:stretch;display:flex;align-items:center;border-left:1.5px solid #e2e8f0;
+  }
+  .dt-open-btn:hover { color:#1a5caa;transform:scale(1.1); }
+  .dt-card.dt-end .dt-open-btn { color:#38a169; }
+  .dt-card.dt-end .dt-open-btn:hover { color:#276749; }
+  .dt-time-row {
+    display:flex;align-items:center;gap:6px;padding:10px 12px;
+    background:#fafcff;
+  }
+  .dt-card.dt-end .dt-time-row { background:#f6fffc; }
+  .dt-time-icon { font-size:16px;flex-shrink:0; }
+  .dt-time-label { font-size:11px;font-weight:700;color:#718096;flex-shrink:0;margin-right:4px; }
+  .dt-sel-h,.dt-sel-m {
+    border:1.5px solid #bee3f8;border-radius:8px;
+    padding:5px 8px;font-size:15px;font-weight:700;color:#1e3a5f;
+    background:#fff;cursor:pointer;outline:none;transition:border-color .15s,box-shadow .15s;
+    appearance:none;-webkit-appearance:none;text-align:center;
+  }
+  .dt-card.dt-end .dt-sel-h,.dt-card.dt-end .dt-sel-m {
+    border-color:#b2f5ea;
+  }
+  .dt-sel-h:focus,.dt-sel-m:focus {
+    border-color:#3182ce;box-shadow:0 0 0 2px rgba(49,130,206,.2);
+  }
+  .dt-card.dt-end .dt-sel-h:focus,.dt-card.dt-end .dt-sel-m:focus {
+    border-color:#38a169;box-shadow:0 0 0 2px rgba(56,161,105,.2);
+  }
+  .dt-sel-h { width:58px; }
+  .dt-sel-m { width:58px; }
+  .dt-colon { font-size:18px;font-weight:800;color:#4a5568; }
+  .dt-unit { font-size:12px;color:#718096;font-weight:700;margin-left:2px; }
+  @media(max-width:600px) {
+    .dt-grid { grid-template-columns:1fr; }
+  }
 
-  /* FORM */
+  /* ===== SECTION HEADER ===== */
+  .section-header {
+    display:flex;align-items:center;gap:9px;padding:11px 16px;
+    background: linear-gradient(90deg,#e8f0fc,#f0f7ff);
+    border-radius:10px;margin:20px 0 16px;border-left:4px solid #1565c0;
+    box-shadow: 0 1px 4px rgba(21,101,192,.1);
+  }
+  .section-header span { font-size:13px;font-weight:700;color:#1a4a8a; }
+
+  /* ===== FORM ===== */
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
   .form-group { display: flex; flex-direction: column; gap: 7px; }
   .form-group.full { grid-column: 1/-1; }
-  label { font-size: 13px; font-weight: 700; color: #2d3748; display:flex;align-items:center;gap:5px; }
-  input, select, textarea { border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 10px 13px; font-size: 14px; font-family: inherit; transition: all .15s; background: #fff; color:#2d3748; }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66,153,225,.15); background:#fafcff; }
-  input:read-only { background:#f7fafc;color:#718096; }
+  label { font-size: 13px; font-weight: 700; color: #1e3a5f; display:flex;align-items:center;gap:5px; letter-spacing:.1px; }
+  input, select, textarea {
+    border: 1.5px solid #d1dae6; border-radius: 10px; padding: 10px 14px;
+    font-size: 14px; font-family: inherit; transition: all .18s;
+    background: #f8fafd; color:#1a202c; font-weight:500;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: #1565c0;
+    box-shadow: 0 0 0 3px rgba(21,101,192,.14); background:#fff;
+  }
+  input:read-only { background:#f0f4f8;color:#64748b; }
   input.field-error { border-color: #e53e3e !important; box-shadow: 0 0 0 3px rgba(229,62,62,.15) !important; }
-  .field-error-msg { font-size: 12px; color: #e53e3e; margin-top: 4px; display: none; }
+  .field-error-msg { font-size: 12px; color: #e53e3e; margin-top: 4px; display: none; font-weight:600; }
   .field-error-msg.show { display: block; }
-  input.field-ok { border-color: #48bb78 !important; box-shadow: 0 0 0 3px rgba(72,187,120,.12) !important; }
+  input.field-ok { border-color: #38a169 !important; box-shadow: 0 0 0 3px rgba(56,161,105,.12) !important; }
   select { appearance:auto; cursor:pointer; }
   textarea { resize: vertical; min-height: 90px; }
 
-  /* BUTTON */
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; border-radius: 9px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; transition: all .15s; }
-  .btn-primary { background: linear-gradient(135deg,#1e3a5f,#2b6cb0); color: #fff; box-shadow:0 2px 6px rgba(30,58,95,.3); }
-  .btn-primary:hover { background: linear-gradient(135deg,#2a4d7f,#3182ce); transform:translateY(-1px); box-shadow:0 4px 12px rgba(30,58,95,.35); }
-  .btn-success { background: linear-gradient(135deg,#276749,#38a169); color: #fff; box-shadow:0 2px 6px rgba(39,103,73,.3); }
-  .btn-success:hover { background: linear-gradient(135deg,#2f855a,#48bb78); transform:translateY(-1px); }
-  .btn-danger { background: linear-gradient(135deg,#c53030,#e53e3e); color: #fff; box-shadow:0 2px 6px rgba(197,48,48,.3); }
-  .btn-danger:hover { background: linear-gradient(135deg,#9b2c2c,#c53030); transform:translateY(-1px); }
-  .btn-sm { padding: 6px 13px; font-size: 12px; border-radius:7px; }
-  .btn:disabled { opacity: .5; cursor: default; transform:none!important; }
+  /* ===== BUTTON ===== */
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px; font-weight: 700; font-family: inherit; transition: all .18s; letter-spacing:.1px; }
+  .btn-primary { background: linear-gradient(135deg,#0f2744,#1565c0); color: #fff; box-shadow:0 3px 10px rgba(15,39,68,.35); }
+  .btn-primary:hover { background: linear-gradient(135deg,#1a3a6b,#1976d2); transform:translateY(-2px); box-shadow:0 6px 18px rgba(15,39,68,.4); }
+  .btn-success { background: linear-gradient(135deg,#1b5e20,#2e7d32); color: #fff; box-shadow:0 3px 10px rgba(27,94,32,.3); }
+  .btn-success:hover { background: linear-gradient(135deg,#2e7d32,#43a047); transform:translateY(-2px); box-shadow:0 6px 16px rgba(27,94,32,.35); }
+  .btn-danger { background: linear-gradient(135deg,#b71c1c,#c62828); color: #fff; box-shadow:0 3px 10px rgba(183,28,28,.3); }
+  .btn-danger:hover { background: linear-gradient(135deg,#c62828,#d32f2f); transform:translateY(-2px); box-shadow:0 6px 16px rgba(183,28,28,.35); }
+  .btn-sm { padding: 6px 13px; font-size: 12px; border-radius:8px; }
+  .btn:disabled { opacity: .5; cursor: default; transform:none!important; box-shadow:none!important; }
 
-  /* TABLE */
-  .table-wrap { overflow-x: auto; border-radius:10px; border:1px solid #e8edf3; }
+  /* ===== TABLE ===== */
+  .table-wrap { overflow-x: auto; border-radius:12px; border:1px solid #dde3ec; box-shadow:0 2px 8px rgba(0,0,0,.05); }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { background: linear-gradient(135deg,#ebf4ff,#dbeafe); color: #1e3a5f; font-weight: 700; padding: 12px 16px; text-align: left; font-size:13px; border-bottom:2px solid #bee3f8; }
-  td { padding: 11px 16px; border-bottom: 1px solid #f0f4f8; vertical-align: middle; }
+  th { background: linear-gradient(135deg,#dbeafe,#e8f0fc); color: #0f2744; font-weight: 800; padding: 13px 16px; text-align: left; font-size:13px; border-bottom:2px solid #bfcfe8; letter-spacing:.15px; }
+  td { padding: 12px 16px; border-bottom: 1px solid #edf2f9; vertical-align: middle; color:#1e293b; }
   tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { background: #f0f7ff; }
-  tbody tr:nth-child(even) td { background: #fafcff; }
-  tbody tr:nth-child(even):hover td { background: #eaf4ff; }
+  tbody tr { transition: background .14s; }
+  tbody tr:hover td { background: #eef5ff; }
+  tbody tr:nth-child(even) td { background: #f8fafd; }
+  tbody tr:nth-child(even):hover td { background: #e8f0fc; }
 
-  /* BADGE */
-  .badge { display: inline-flex; align-items:center; gap:4px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-  .badge-pending   { background: #fefcbf; color: #744210; }
-  .badge-l1        { background: #bee3f8; color: #2a4365; }
-  .badge-l2        { background: #b2f5ea; color: #234e52; }
-  .badge-approved  { background: #c6f6d5; color: #22543d; }
-  .badge-rejected  { background: #fed7d7; color: #742a2a; }
-  .badge-cancelled { background: #e2e8f0; color: #4a5568; }
+  /* ===== BADGE ===== */
+  .badge { display: inline-flex; align-items:center; gap:4px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing:.1px; }
+  .badge-pending   { background: #fffbeb; color: #92400e; border:1px solid #fde68a; }
+  .badge-l1        { background: #dbeafe; color: #1e3a8a; border:1px solid #bfdbfe; }
+  .badge-l2        { background: #d1fae5; color: #065f46; border:1px solid #a7f3d0; }
+  .badge-approved  { background: #dcfce7; color: #14532d; border:1px solid #86efac; }
+  .badge-rejected  { background: #fee2e2; color: #7f1d1d; border:1px solid #fca5a5; }
+  .badge-cancelled { background: #f1f5f9; color: #475569; border:1px solid #cbd5e1; }
 
-  /* ALERT */
-  .alert { padding: 12px 16px; border-radius: 9px; margin-bottom: 16px; font-size: 14px; display:flex;align-items:center;gap:8px; }
-  .alert-success { background: #f0fff4; color: #22543d; border:1px solid #9ae6b4; }
-  .alert-error   { background: #fff5f5; color: #742a2a; border:1px solid #feb2b2; }
+  /* ===== ALERT ===== */
+  .alert { padding: 13px 18px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; display:flex;align-items:center;gap:9px; font-weight:600; }
+  .alert-success { background: #f0fdf4; color: #14532d; border:1.5px solid #86efac; }
+  .alert-error   { background: #fff1f2; color: #7f1d1d; border:1.5px solid #fca5a5; }
 
-  /* LOGIN PAGE */
-  #login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #1e3a5f 0%, #2b6cb0 100%); }
-  .login-card { background: #fff; border-radius: 18px; padding: 44px 40px; width: 400px; box-shadow: 0 24px 64px rgba(0,0,0,.3); }
-  .login-card h1 { text-align: center; font-size: 23px; color: #1e3a5f; margin-bottom: 6px; }
-  .login-card p { text-align: center; color: #718096; font-size: 13px; margin-bottom: 28px; }
+  /* ===== LOGIN PAGE ===== */
+  #login-page {
+    display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    background: linear-gradient(135deg,#0a1628 0%,#0f2744 40%,#1565c0 100%);
+    position:relative; overflow:hidden;
+  }
+  #login-page::before {
+    content:''; position:absolute; width:600px; height:600px; border-radius:50%;
+    background:radial-gradient(circle,rgba(21,101,192,.25),transparent 70%);
+    top:-150px; right:-150px; pointer-events:none;
+  }
+  .login-card {
+    background: #fff; border-radius: 20px; padding: 46px 42px; width: 410px;
+    box-shadow: 0 32px 80px rgba(0,0,0,.4); position:relative;
+    border-top: 4px solid #1565c0;
+  }
+  .login-card h1 { text-align: center; font-size: 24px; color: #0f2744; margin-bottom: 6px; font-weight:800; }
+  .login-card p { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 28px; font-weight:500; }
   .login-card .form-group { margin-bottom: 16px; }
 
-  /* BALANCE GRID */
-  .balance-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
-  .balance-item { background: linear-gradient(135deg,#ebf8ff,#dbeafe); border-radius: 12px; padding: 18px; text-align: center; border:1px solid #bee3f8; }
-  .balance-item .type-name { font-size: 13px; color: #2c5282; font-weight: 700; margin-bottom: 8px; }
-  .balance-item .days { font-size: 30px; font-weight: 800; color: #1e3a5f; }
-  .balance-item .sub { font-size: 12px; color: #718096; margin-top:4px; }
+  /* ===== BALANCE GRID ===== */
+  .balance-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 14px; }
+  .balance-item {
+    background: linear-gradient(135deg,#e8f4ff,#dbeafe);
+    border-radius: 14px; padding: 20px; text-align: center;
+    border:1px solid #bfdbfe;
+    box-shadow: 0 2px 8px rgba(21,101,192,.1);
+    transition: transform .18s, box-shadow .18s;
+  }
+  .balance-item:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(21,101,192,.18); }
+  .balance-item .type-name { font-size: 13px; color: #1e3a8a; font-weight: 700; margin-bottom: 10px; }
+  .balance-item .days { font-size: 32px; font-weight: 800; color: #0f2744; }
+  .balance-item .sub { font-size: 12px; color: #64748b; margin-top:5px; font-weight:500; }
 
-  /* APPROVAL STEPS */
-  .steps { display: flex; gap: 0; margin-bottom: 4px; }
-  .step { flex: 1; text-align: center; font-size: 11px; padding: 4px 2px; border-top: 3px solid #e2e8f0; color: #718096; }
-  .step.done  { border-color: #48bb78; color: #276749; }
-  .step.active { border-color: #4299e1; color: #2b6cb0; }
-  .step.fail  { border-color: #fc8181; color: #c53030; }
+  /* ===== APPROVAL STEPS ===== */
+  .steps { display: flex; gap: 2px; margin-bottom: 4px; flex-wrap: wrap; }
+  .step { flex: 1; min-width: 60px; text-align: center; font-size: 11px; padding: 5px 4px; border-top: 3px solid #e2e8f0; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; font-weight:600; }
+  .step.done  { border-color: #22c55e; color: #14532d; }
+  .step.active { border-color: #3b82f6; color: #1e3a8a; }
+  .step.fail  { border-color: #f87171; color: #7f1d1d; }
 
-  /* CHART */
+  /* ===== CHART ===== */
   .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
   .chart-grid.full { grid-template-columns: 1fr; }
-  .chart-card { background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.07); padding: 22px; border:1px solid #edf2f7; }
-  .chart-card h3 { font-size: 14px; font-weight: 700; color: #1e3a5f; margin-bottom: 14px; }
+  .chart-card { background: #fff; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.07); padding: 22px; border:1px solid #e2e9f3; }
+  .chart-card h3 { font-size: 14px; font-weight: 700; color: #0f2744; margin-bottom: 14px; }
   .chart-wrap { position: relative; height: 240px; }
   .dash-year { display:flex;align-items:center;gap:10px;margin-bottom:18px; }
   @media(max-width:700px) { .chart-grid { grid-template-columns: 1fr; } }
@@ -143,22 +281,22 @@
   /* ===== BOTTOM NAV ===== */
   #bottom-nav {
     display:none; position:fixed; bottom:0; left:0; right:0;
-    background:#fff; border-top:1px solid #e2e8f0;
-    box-shadow:0 -4px 16px rgba(0,0,0,.1); z-index:500;
+    background:#fff; border-top:1px solid #dde3ec;
+    box-shadow:0 -4px 20px rgba(0,0,0,.12); z-index:500;
     padding-bottom:env(safe-area-inset-bottom);
     padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right);
   }
-  #bottom-nav .bnav-inner { display:flex; justify-content:space-around; align-items:center; height:58px; }
+  #bottom-nav .bnav-inner { display:flex; justify-content:space-around; align-items:center; height:60px; }
   .bnav-item {
     display:flex; flex-direction:column; align-items:center; gap:3px; flex:1; padding:8px 2px;
-    cursor:pointer; color:#718096; font-size:10px; font-weight:600; border:none; background:none;
+    cursor:pointer; color:#94a3b8; font-size:10px; font-weight:700; border:none; background:none;
     font-family:inherit; -webkit-tap-highlight-color:transparent;
-    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+    user-select:none; -webkit-user-select:none; touch-action:manipulation; transition:color .15s;
   }
-  .bnav-item .bnav-icon { font-size:22px; line-height:1; }
-  .bnav-item.active { color:#1e3a5f; }
-  .bnav-item.active .bnav-icon { transform:scale(1.15); }
-  .bnav-item:active { opacity:0.65; }
+  .bnav-item .bnav-icon { font-size:23px; line-height:1; }
+  .bnav-item.active { color:#0f2744; }
+  .bnav-item.active .bnav-icon { transform:scale(1.18); filter:drop-shadow(0 2px 4px rgba(21,101,192,.3)); }
+  .bnav-item:active { opacity:0.6; }
   @media(max-width:768px) { #bottom-nav { display:block; } }
 
   /* ===== MOBILE RESPONSIVE — ทุกหน้า ===== */
@@ -272,15 +410,21 @@
     [style*="display:flex"][style*="gap:10px"][style*="align-items:center"] { flex-wrap:wrap !important; }
   }
 
-    /* STATS CARDS */
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 16px; margin-bottom: 22px; }
-  .stat-card { background: #fff; border-radius: 14px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,.07); border-top: 4px solid #4299e1; border:1px solid #edf2f7;border-top-width:4px; }
-  .stat-card .val { font-size: 34px; font-weight: 800; color: #1e3a5f; }
-  .stat-card .lbl { font-size: 12px; color: #718096; margin-top: 4px; }
-  .stat-card.green { border-top-color: #48bb78; } .stat-card.green .val { color: #276749; }
-  .stat-card.yellow { border-top-color: #ecc94b; } .stat-card.yellow .val { color: #744210; }
-  .stat-card.red { border-top-color: #fc8181; } .stat-card.red .val { color: #c53030; }
-  .stat-card.purple { border-top-color: #9f7aea; } .stat-card.purple .val { color: #553c9a; }
+    /* ===== STATS CARDS ===== */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px,1fr)); gap: 16px; margin-bottom: 22px; }
+  .stat-card {
+    background: #fff; border-radius: 16px; padding: 22px; text-align: center;
+    box-shadow: 0 3px 12px rgba(0,0,0,.08); border:1px solid #e2e9f3;
+    border-top: 4px solid #3b82f6;
+    transition: transform .18s, box-shadow .18s;
+  }
+  .stat-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.12); }
+  .stat-card .val { font-size: 36px; font-weight: 800; color: #0f2744; }
+  .stat-card .lbl { font-size: 12px; color: #64748b; margin-top: 5px; font-weight:600; }
+  .stat-card.green { border-top-color: #22c55e; } .stat-card.green .val { color: #14532d; }
+  .stat-card.yellow { border-top-color: #f59e0b; } .stat-card.yellow .val { color: #78350f; }
+  .stat-card.red { border-top-color: #ef4444; } .stat-card.red .val { color: #7f1d1d; }
+  .stat-card.purple { border-top-color: #a855f7; } .stat-card.purple .val { color: #4c1d95; }
 
   /* PERMISSION TABLE */
   .perm-table input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; }
@@ -292,49 +436,64 @@
   input:checked + .slider { background: #48bb78; }
   input:checked + .slider:before { transform: translateX(20px); }
 
-  /* MODAL */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; backdrop-filter:blur(2px); }
+  /* ===== MODAL ===== */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(10,22,40,.55); z-index: 200; align-items: center; justify-content: center; backdrop-filter:blur(3px); }
   .modal-overlay.open { display: flex; }
-  .modal { background: #fff; border-radius: 16px; padding: 30px; width: 460px; max-width: 95vw; box-shadow: 0 24px 64px rgba(0,0,0,.3); }
-  .modal h3 { font-size: 17px; color: #1e3a5f; margin-bottom: 18px; padding-bottom:12px; border-bottom:2px solid #ebf4ff; display:flex;align-items:center;gap:8px; }
-  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+  .modal { background: #fff; border-radius: 18px; padding: 32px; width: 460px; max-width: 95vw; box-shadow: 0 28px 80px rgba(0,0,0,.35); border-top:3px solid #1565c0; }
+  .modal h3 { font-size: 17px; color: #0f2744; margin-bottom: 20px; padding-bottom:13px; border-bottom:2px solid #e8f0fc; display:flex;align-items:center;gap:9px; font-weight:800; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 
   #app { display: none; }
-  .empty { text-align: center; color: #a0aec0; padding: 40px 0; font-size: 14px; }
+  .empty { text-align: center; color: #94a3b8; padding: 44px 0; font-size: 14px; font-weight:500; }
 
-  /* CALENDAR */
+  /* ===== CALENDAR ===== */
   .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .cal-nav h3 { font-size: 17px; font-weight: 700; color: #1e3a5f; }
-  .cal-nav button { background: #ebf4ff; border: 1px solid #bee3f8; color: #1e3a5f; padding: 7px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition:.15s; }
-  .cal-nav button:hover { background: #bee3f8; }
+  .cal-nav h3 { font-size: 17px; font-weight: 800; color: #0f2744; }
+  .cal-nav button { background: #e8f0fc; border: 1.5px solid #bfcfe8; color: #0f2744; padding: 7px 18px; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 700; transition:.15s; font-family:inherit; }
+  .cal-nav button:hover { background: #bfdbfe; box-shadow:0 2px 8px rgba(21,101,192,.15); }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .cal-head { text-align: center; font-size: 12px; font-weight: 700; color: #2c5282; padding: 9px 0; background: linear-gradient(135deg,#ebf4ff,#dbeafe); border-radius: 8px; }
-  .cal-day { min-height: 90px; background: #fff; border: 1.5px solid #e8edf3; border-radius: 10px; padding: 8px; transition:.1s; }
-  .cal-day:hover { border-color:#bee3f8; box-shadow:0 2px 8px rgba(66,153,225,.1); }
-  .cal-day.today { border-color: #4299e1; background: linear-gradient(135deg,#ebf8ff,#e6fffa); box-shadow:0 0 0 2px rgba(66,153,225,.25); }
-  .cal-day.other-month { background: #f7fafc; opacity: .5; }
-  .cal-day.sun-day      { background: #faf5ff; border-color: #d6bcfa; }
-  .cal-day.sat-work     { background: #f0fff4; border-color: #9ae6b4; }
-  .cal-day.sat-off      { background: #fffaf0; border-color: #fbd38d; }
-  .cal-day.company-holiday { background: #fff5f5; border-color: #fc8181; }
-  .cal-day-num { font-size: 13px; font-weight: 700; color: #4a5568; margin-bottom: 5px; }
-  .cal-day.today .cal-day-num { color: #fff; background:#4299e1; width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px; }
-  .cal-event { font-size: 11px; padding: 2px 7px; border-radius: 5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .cal-head { text-align: center; font-size: 12px; font-weight: 800; color: #1e3a8a; padding: 9px 0; background: linear-gradient(135deg,#dbeafe,#e8f0fc); border-radius: 8px; }
+  .cal-day { min-height: 90px; background: #fff; border: 1.5px solid #e2e9f3; border-radius: 10px; padding: 8px; transition:.14s; }
+  .cal-day:hover { border-color:#bfdbfe; box-shadow:0 3px 10px rgba(21,101,192,.12); }
+  .cal-day.today { border-color: #1565c0; background: linear-gradient(135deg,#eff6ff,#e8f0fc); box-shadow:0 0 0 3px rgba(21,101,192,.2); }
+  .cal-day.other-month { background: #f8fafd; opacity: .5; }
+  .cal-day.sun-day      { background: #fdf4ff; border-color: #d8b4fe; }
+  .cal-day.sat-work     { background: #f0fdf4; border-color: #86efac; }
+  .cal-day.sat-off      { background: #fffbeb; border-color: #fde68a; }
+  .cal-day.company-holiday { background: #fff1f2; border-color: #fca5a5; }
+  .cal-day-num { font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px; }
+  .cal-day.today .cal-day-num { color: #fff; background:#1565c0; width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800; }
+  .cal-event { font-size: 11px; padding: 2px 8px; border-radius: 6px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; font-weight:600; }
   .cal-event:hover { opacity: .8; }
-  .cal-event.ev-mine    { background: #bee3f8; color: #2a4365; }
-  .cal-event.ev-other   { background: #c6f6d5; color: #22543d; }
-  .cal-event.ev-pending { background: #fefcbf; color: #744210; }
-  .cal-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; font-size: 12px; align-items: center; }
+  .cal-event.ev-mine    { background: #bfdbfe; color: #1e3a8a; }
+  .cal-event.ev-other   { background: #bbf7d0; color: #14532d; }
+  .cal-event.ev-pending { background: #fef9c3; color: #78350f; }
+  .cal-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; font-size: 12px; align-items: center; font-weight:600; }
   .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
   .cal-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
   .cal-filter { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; }
 
-  /* FILE UPLOAD */
-  .file-drop { border: 2px dashed #bee3f8; border-radius: 10px; padding: 18px; background: #f0f7ff; text-align:center; cursor:pointer; transition:.15s; }
-  .file-drop:hover { border-color:#4299e1; background:#ebf8ff; }
+  /* ===== FILE UPLOAD ===== */
+  .file-drop { border: 2px dashed #bfdbfe; border-radius: 12px; padding: 22px; background: #f0f7ff; text-align:center; cursor:pointer; transition:.18s; }
+  .file-drop:hover { border-color:#1565c0; background:#e8f0fc; box-shadow:0 0 0 4px rgba(21,101,192,.08); }
 
   /* TOOLTIP */
-  .tooltip-box { position: fixed; background: #1a202c; color: #fff; font-size: 12px; padding: 8px 12px; border-radius: 8px; z-index: 999; pointer-events: none; display: none; line-height: 1.7; max-width: 220px; }
+  .tooltip-box {
+    position: fixed; z-index: 9999; pointer-events: none; display: none;
+    background: #fff; color: #1e293b;
+    border-radius: 14px; padding: 14px 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.2), 0 2px 8px rgba(0,0,0,.1);
+    border: 1px solid #e2e9f3;
+    min-width: 200px; max-width: 260px;
+    font-size: 13px; line-height: 1.7;
+    animation: tooltipFade .12s ease;
+  }
+  @keyframes tooltipFade { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+  .tip-name { font-size:14px; font-weight:800; color:#0f2744; margin-bottom:8px; display:flex; align-items:center; gap:7px; }
+  .tip-name::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--tip-color,#1565c0); flex-shrink:0; }
+  .tip-row { display:flex; align-items:center; gap:8px; font-size:12px; color:#475569; margin-bottom:3px; font-weight:500; }
+  .tip-row b { color:#1e293b; font-weight:700; }
+  .tip-status { display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-top:6px; }
 
   @media(max-width:1200px) {
     #emp-stat-grid-row { grid-template-columns: repeat(2,1fr) !important; }
@@ -367,7 +526,7 @@
 <!-- LOGIN -->
 <div id="login-page">
   <div class="login-card">
-    <h1>🏢 ระบบลาออนไลน์<br>DOIT</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <p>กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน</p>
     <div id="login-alert"></div>
     <div class="form-group">
@@ -415,7 +574,7 @@
           <option value="employee">พนักงาน</option>
           <option value="unit_head">หัวหน้าหน่วยงาน</option>
           <option value="department_head">หัวหน้าแผนก / ผู้จัดการแผนก</option>
-          <option value="division_manager">ผู้จัดการฝ่าย</option>
+          <option value="division_manager">ผู้จัดการ</option>
           <option value="hr_admin">HR Admin</option>
         </select>
       </div>
@@ -477,7 +636,7 @@
           <option value="employee">พนักงาน</option>
           <option value="unit_head">หัวหน้าหน่วยงาน</option>
           <option value="department_head">หัวหน้าแผนก</option>
-          <option value="division_manager">ผู้จัดการฝ่าย</option>
+          <option value="division_manager">ผู้จัดการ</option>
           <option value="hr_admin">HR Admin</option>
         </select>
       </div>
@@ -526,6 +685,8 @@
       <div class="form-group"><label>วันที่เริ่มลา</label><input type="date" id="el-start" min=""></div>
       <div class="form-group"><label>วันที่สิ้นสุด</label><input type="date" id="el-end" min=""></div>
       <div class="form-group full"><label>เหตุผล</label><textarea id="el-reason"></textarea></div>
+      <div class="form-group full"><label>👤 ผู้ตรวจสอบ (ระดับ 1)</label><select id="el-checker"><option value="">— ไม่เปลี่ยนแปลง —</option></select></div>
+      <div class="form-group full"><label>👤 ผู้อนุมัติ (ระดับ 2)</label><select id="el-approver"><option value="">— ไม่เปลี่ยนแปลง —</option></select></div>
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeEditLeaveModal()" style="background:#e2e8f0">ยกเลิก</button>
@@ -551,10 +712,92 @@
   </div>
 </div>
 
+<!-- ADD LEAVE RECORD MODAL (HR) -->
+<div class="modal-overlay" id="add-leave-modal">
+  <div class="modal" style="width:580px;max-height:90vh;overflow-y:auto">
+    <h3>➕ เพิ่มบันทึกการลา (HR Admin)</h3>
+    <p style="font-size:13px;color:#718096;margin-bottom:14px">บันทึกประวัติการลาย้อนหลังหรือเพิ่มข้อมูลจากกระดาษ — สถานะจะถูกตั้งเป็น "อนุมัติแล้ว" อัตโนมัติ</p>
+    <div id="add-leave-alert"></div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>👤 รหัสพนักงาน <span style="color:#c53030">*</span></label>
+        <input id="al-empid" placeholder="เช่น 610996" oninput="alLookupEmp()">
+        <div id="al-emp-name" style="font-size:12px;color:#276749;margin-top:4px;font-weight:600"></div>
+      </div>
+      <div class="form-group">
+        <label>🏷️ ประเภทการลา <span style="color:#c53030">*</span></label>
+        <select id="al-type"></select>
+      </div>
+      <div class="form-group">
+        <label>📅 วันที่เริ่มลา <span style="color:#c53030">*</span></label>
+        <div style="display:flex;align-items:center;gap:0">
+          <input type="text" id="al-start-date" placeholder="dd-mm-yyyy" autocomplete="off" readonly
+            style="border-radius:9px 0 0 9px;flex:1;min-width:0;border:1.5px solid #e2e8f0;padding:10px 13px;font-size:14px;background:#fff;cursor:pointer">
+          <input type="time" id="al-start-time" value="08:00" step="60"
+            style="width:110px;border:1.5px solid #e2e8f0;border-left:none;padding:10px 8px;font-size:14px;background:#fff;outline:none"
+            onchange="alCalcDuration()" oninput="alCalcDuration()">
+          <button type="button" onclick="fpAlStart && fpAlStart.open()"
+            style="border:1.5px solid #e2e8f0;border-left:none;border-radius:0 9px 9px 0;background:#f7fafc;padding:10px 12px;cursor:pointer;font-size:14px">🗓️</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>📅 วันที่สิ้นสุด <span style="color:#c53030">*</span></label>
+        <div style="display:flex;align-items:center;gap:0">
+          <input type="text" id="al-end-date" placeholder="dd-mm-yyyy" autocomplete="off" readonly
+            style="border-radius:9px 0 0 9px;flex:1;min-width:0;border:1.5px solid #e2e8f0;padding:10px 13px;font-size:14px;background:#fff;cursor:pointer">
+          <input type="time" id="al-end-time" value="17:00" step="60"
+            style="width:110px;border:1.5px solid #e2e8f0;border-left:none;padding:10px 8px;font-size:14px;background:#fff;outline:none"
+            onchange="alCalcDuration()" oninput="alCalcDuration()">
+          <button type="button" onclick="fpAlEnd && fpAlEnd.open()"
+            style="border:1.5px solid #e2e8f0;border-left:none;border-radius:0 9px 9px 0;background:#f7fafc;padding:10px 12px;cursor:pointer;font-size:14px">🗓️</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>📊 จำนวนวัน <span style="color:#c53030">*</span></label>
+        <input id="al-days" type="number" min="0" step="0.5" placeholder="คำนวณอัตโนมัติหรือกรอกเอง">
+        <div id="al-calc-info" style="font-size:11px;color:#4a9580;margin-top:3px"></div>
+      </div>
+      <div class="form-group">
+        <label>⏱ ชั่วโมง <span id="al-hpd-label" style="font-size:11px;color:#718096">(คำนวณจากประเภทพนักงาน)</span></label>
+        <input id="al-hours" type="number" min="0" step="0.5" placeholder="คำนวณอัตโนมัติหรือกรอกเอง">
+      </div>
+      <div class="form-group full">
+        <label>📌 สถานะ</label>
+        <select id="al-status">
+          <option value="approved">อนุมัติแล้ว</option>
+          <option value="pending">รอตรวจสอบ</option>
+          <option value="rejected">ปฏิเสธ</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>👤 ผู้ตรวจสอบ (ระดับ 1)</label>
+        <select id="al-checker"><option value="">— ไม่ระบุ (ใช้บัญชีที่ล็อกอิน) —</option></select>
+      </div>
+      <div class="form-group full">
+        <label>👤 ผู้อนุมัติ (ระดับ 2)</label>
+        <select id="al-approver"><option value="">— ไม่ระบุ —</option></select>
+      </div>
+      <div class="form-group full">
+        <label>💬 เหตุผลการลา</label>
+        <input id="al-reason" placeholder="ระบุเหตุผล">
+      </div>
+      <div class="form-group full">
+        <label>📎 ไฟล์แนบ (ถ้ามี, สูงสุด 5 ไฟล์)</label>
+        <input type="file" id="al-files" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx" style="padding:6px">
+        <div id="al-files-info" style="font-size:11px;color:#718096;margin-top:4px"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeAddLeaveModal()" style="background:#e2e8f0">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitAddLeave()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- APP -->
 <div id="app">
   <nav>
-    <h1>🏢 ระบบลาออนไลน์ บริษัท ดูอิท จำกัด</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <div id="nav-user">
       <span id="nav-name"></span>
       <button id="btn-install-pwa" onclick="installPWA()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;align-items:center;gap:5px">📲 ติดตั้งแอป</button>
@@ -823,35 +1066,63 @@
           <div class="form-group">
             <label>🏢 หน่วยงาน / แผนก <span style="color:#c53030">*</span></label>
             <select id="req-dept">
-              <option value="">-- เลือกหน่วยงาน/แผนก --</option>
+              <option value="">-- เลือกหน่วยงาน --</option>
             </select>
           </div>
         </div>
 
         <div class="section-header" style="margin-top:18px"><span>📅 ช่วงเวลาที่ต้องการลา</span></div>
-        <div id="req-date-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
-          <div class="form-group">
-            <label>📅 วันที่เริ่มลา <span style="color:#c53030">*</span></label>
-            <div style="display:flex;gap:0">
-              <input type="text" id="req-start" placeholder="dd-mm-yyyy HH:MM" autocomplete="off"
-                style="border-radius:9px 0 0 9px;flex:1;min-width:0;border:1.5px solid #e2e8f0;padding:10px 13px;font-size:14px;background:#fff;cursor:pointer">
-              <button type="button" onclick="fpStart && fpStart.open()"
-                style="border:1.5px solid #e2e8f0;border-left:none;border-radius:0 9px 9px 0;padding:0 14px;background:linear-gradient(135deg,#ebf4ff,#dbeafe);cursor:pointer;color:#2b6cb0;font-size:18px;flex-shrink:0;transition:.15s"
-                onmouseover="this.style.background='#bee3f8'" onmouseout="this.style.background='linear-gradient(135deg,#ebf4ff,#dbeafe)'">
-                🗓️
-              </button>
+        <div id="req-date-grid" class="dt-grid" style="gap:14px">
+          <!-- วันที่เริ่มลา -->
+          <div class="dt-card" id="dt-start-card">
+            <div class="dt-card-title">
+              <span class="dt-card-badge">1</span>
+              วันที่เริ่มลา <span style="color:#c53030;font-weight:900">*</span>
+            </div>
+            <div class="dt-inner">
+              <div class="dt-date-row" onclick="fpStart && fpStart.open()">
+                <div class="dt-date-icon">📅</div>
+                <div class="dt-date-meta">
+                  <div class="dt-date-hint">แตะ / คลิก เพื่อเลือกวันที่</div>
+                  <div id="req-start-date-label" class="dt-date-val placeholder">ยังไม่ได้เลือกวัน</div>
+                </div>
+                <input type="text" id="req-start-date" autocomplete="off" readonly class="dt-date-input-hidden">
+                <button type="button" class="dt-open-btn" tabindex="-1">🗓️</button>
+              </div>
+              <div class="dt-time-row">
+                <span class="dt-time-icon">🕐</span>
+                <span class="dt-time-label">เวลาเริ่ม</span>
+                <select id="req-start-hour" class="dt-sel-h" onchange="calcReqDays()"></select>
+                <span class="dt-colon">:</span>
+                <select id="req-start-min" class="dt-sel-m" onchange="calcReqDays()"></select>
+                <span class="dt-unit">น.</span>
+              </div>
             </div>
           </div>
-          <div class="form-group">
-            <label>📅 วันที่สิ้นสุด <span style="color:#c53030">*</span></label>
-            <div style="display:flex;gap:0">
-              <input type="text" id="req-end" placeholder="dd-mm-yyyy HH:MM" autocomplete="off"
-                style="border-radius:9px 0 0 9px;flex:1;min-width:0;border:1.5px solid #e2e8f0;padding:10px 13px;font-size:14px;background:#fff;cursor:pointer">
-              <button type="button" onclick="fpEnd && fpEnd.open()"
-                style="border:1.5px solid #e2e8f0;border-left:none;border-radius:0 9px 9px 0;padding:0 14px;background:linear-gradient(135deg,#ebf4ff,#dbeafe);cursor:pointer;color:#2b6cb0;font-size:18px;flex-shrink:0;transition:.15s"
-                onmouseover="this.style.background='#bee3f8'" onmouseout="this.style.background='linear-gradient(135deg,#ebf4ff,#dbeafe)'">
-                🗓️
-              </button>
+          <!-- วันที่สิ้นสุด -->
+          <div class="dt-card dt-end" id="dt-end-card">
+            <div class="dt-card-title">
+              <span class="dt-card-badge">2</span>
+              วันที่สิ้นสุด <span style="color:#c53030;font-weight:900">*</span>
+            </div>
+            <div class="dt-inner">
+              <div class="dt-date-row" onclick="fpEnd && fpEnd.open()">
+                <div class="dt-date-icon">📅</div>
+                <div class="dt-date-meta">
+                  <div class="dt-date-hint">แตะ / คลิก เพื่อเลือกวันที่</div>
+                  <div id="req-end-date-label" class="dt-date-val placeholder">ยังไม่ได้เลือกวัน</div>
+                </div>
+                <input type="text" id="req-end-date" autocomplete="off" readonly class="dt-date-input-hidden">
+                <button type="button" class="dt-open-btn" tabindex="-1">🗓️</button>
+              </div>
+              <div class="dt-time-row">
+                <span class="dt-time-icon">🕐</span>
+                <span class="dt-time-label">เวลาสิ้นสุด</span>
+                <select id="req-end-hour" class="dt-sel-h" onchange="calcReqDays()"></select>
+                <span class="dt-colon">:</span>
+                <select id="req-end-min" class="dt-sel-m" onchange="calcReqDays()"></select>
+                <span class="dt-unit">น.</span>
+              </div>
             </div>
           </div>
           <div id="req-duration-box" style="display:none;grid-column:1/-1">
@@ -907,7 +1178,7 @@
             <select id="req-approver1"><option value="">-- เลือกผู้ตรวจสอบ --</option></select>
           </div>
           <div class="form-group">
-            <label>👤 ระดับอนุมัติ (ผู้จัดการฝ่ายขึ้นไป) <span style="color:#c53030">*</span></label>
+            <label>👤 ระดับอนุมัติ (ผู้จัดการขึ้นไป) <span style="color:#c53030">*</span></label>
             <select id="req-approver3"><option value="">-- เลือกผู้อนุมัติระดับ 2 --</option></select>
           </div>
         </div>
@@ -966,11 +1237,12 @@
                 <th>ช่วงวันที่ลา</th>
                 <th style="text-align:center">จำนวน</th>
                 <th>สถานะ</th>
-                <th>ขั้นตอนการอนุมัติ</th>
+                <th>ผู้ตรวจสอบ</th>
+                <th>ผู้อนุมัติ</th>
                 <th style="text-align:center">จัดการ</th>
               </tr>
             </thead>
-            <tbody id="history-tbody"><tr><td colspan="7" class="empty">กำลังโหลด...</td></tr></tbody>
+            <tbody id="history-tbody"><tr><td colspan="8" class="empty">กำลังโหลด...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1108,34 +1380,51 @@
         <h2>📊 รายงานการลา</h2>
 
         <div class="section-header"><span>🔍 ตัวกรองรายงาน</span></div>
-        <div style="display:flex;gap:14px;margin-bottom:16px;align-items:flex-end;flex-wrap:wrap">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:12px;align-items:end">
           <div class="form-group">
-            <label>📅 ปีที่ต้องการดูรายงาน</label>
-            <input type="number" id="rpt-year" style="width:120px">
+            <label>📅 ปี</label>
+            <input type="number" id="rpt-year" style="width:100%" placeholder="ปี">
           </div>
           <div class="form-group">
-            <label>🏢 แผนก <span style="color:#a0aec0;font-weight:400">(เว้นว่างเพื่อดูทุกแผนก)</span></label>
-            <input id="rpt-dept" placeholder="ทุกแผนก" style="width:180px">
+            <label>🏢 แผนก</label>
+            <input id="rpt-dept" placeholder="ทุกแผนก" style="width:100%">
           </div>
-          <button class="btn btn-primary" onclick="loadReport()">🔍 ดูรายงาน</button>
+          <div class="form-group">
+            <label>👤 ชื่อ / รหัสพนักงาน</label>
+            <input id="rpt-emp" placeholder="ค้นหาพนักงาน" style="width:100%" oninput="rptPage=1;renderReport()">
+          </div>
+          <div class="form-group">
+            <label>📋 ประเภทการลา</label>
+            <select id="rpt-type" style="width:100%" onchange="rptPage=1;renderReport()">
+              <option value="">ทุกประเภท</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>📌 สถานะ</label>
+            <select id="rpt-status" style="width:100%" onchange="rptPage=1;renderReport()">
+              <option value="">ทุกสถานะ</option>
+              <option value="pending">รอตรวจสอบ</option>
+              <option value="approved_l1">รอระดับอนุมัติ</option>
+              <option value="approved">อนุมัติแล้ว</option>
+              <option value="rejected">ปฏิเสธ</option>
+            </select>
+          </div>
+          <div class="form-group" style="align-self:end">
+            <button class="btn btn-primary" style="width:100%" onclick="loadReport()">🔍 ดูรายงาน</button>
+          </div>
         </div>
+
+        <div id="rpt-summary" style="display:none;margin-bottom:12px;padding:10px 14px;background:#ebf8ff;border-radius:8px;border:1px solid #bee3f8;font-size:13px;color:#2c5282"></div>
 
         <div class="section-header"><span>📤 ส่งออกรายงาน</span></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;padding:14px;background:linear-gradient(135deg,#f7fafc,#edf2f7);border-radius:10px;align-items:center;border:1px solid #e2e8f0">
-          <span style="font-size:13px;font-weight:600;color:#4a5568;margin-right:4px">รูปแบบ:</span>
-          <button class="btn btn-sm" style="background:linear-gradient(135deg,#1d6f42,#276749);color:#fff;box-shadow:0 2px 6px rgba(29,111,66,.3)" onclick="exportFile('excel')">
-            📊 Excel (.xlsx)
-          </button>
-          <button class="btn btn-sm" style="background:linear-gradient(135deg,#155e75,#0987a0);color:#fff;box-shadow:0 2px 6px rgba(21,94,117,.3)" onclick="exportFile('xlsm')">
-            ⚡ Excel Macro (.xlsm)
-          </button>
-          <button class="btn btn-sm" style="background:linear-gradient(135deg,#c53030,#e53e3e);color:#fff;box-shadow:0 2px 6px rgba(197,48,48,.3)" onclick="exportFile('pdf')">
-            📄 PDF (พิมพ์)
-          </button>
-          <span style="font-size:12px;color:#a0aec0;margin-left:6px">ข้อมูลจะถูก export ตามปีและแผนกที่เลือกด้านบน</span>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;background:linear-gradient(135deg,#f7fafc,#edf2f7);border-radius:10px;align-items:center;border:1px solid #e2e8f0">
+          <span style="font-size:13px;font-weight:600;color:#4a5568;margin-right:4px">ส่งออกทั้งหมด:</span>
+          <button class="btn btn-sm" style="background:linear-gradient(135deg,#1d6f42,#276749);color:#fff" onclick="exportReport('csv')">📊 CSV</button>
+          <button class="btn btn-sm" style="background:linear-gradient(135deg,#c53030,#e53e3e);color:#fff" onclick="exportReport('print')">🖨️ พิมพ์</button>
+          <span style="font-size:12px;color:#a0aec0;margin-left:6px">ส่งออกตามตัวกรองที่เลือก • คลิก 📄 ในแต่ละแถวเพื่อ export รายบุคคล</span>
         </div>
 
-        <div class="table-wrap">
+        <div class="table-wrap" style="overflow-x:auto">
           <table>
             <thead>
               <tr>
@@ -1145,19 +1434,24 @@
                 <th>ฝ่าย</th>
                 <th>ประเภทการลา</th>
                 <th>ช่วงวันที่ลา</th>
-                <th>จำนวน</th>
+                <th style="text-align:center">วัน</th>
                 <th>สถานะ</th>
+                <th style="text-align:center">Export</th>
               </tr>
             </thead>
-            <tbody id="report-tbody"><tr><td colspan="8" class="empty">กดปุ่ม "ดูรายงาน" เพื่อโหลดข้อมูล</td></tr></tbody>
+            <tbody id="report-tbody"><tr><td colspan="9" class="empty">กดปุ่ม "ดูรายงาน" เพื่อโหลดข้อมูล</td></tr></tbody>
           </table>
         </div>
+        <div id="rpt-pagination" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap"></div>
       </div>
     </div>
     <!-- LEAVE MANAGEMENT (HR) -->
     <div class="page" id="page-leave-mgmt">
       <div class="card">
-        <h2>📂 จัดการข้อมูลการลาทั้งหมด</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+          <h2 style="margin:0">📂 จัดการข้อมูลการลาทั้งหมด</h2>
+          <button class="btn btn-primary" onclick="openAddLeaveModal()" style="font-size:13px">➕ เพิ่มบันทึกการลา</button>
+        </div>
 
         <div class="section-header"><span>🔍 ค้นหาและกรอง</span></div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px;align-items:end">
@@ -1182,7 +1476,7 @@
           </div>
           <div class="form-group">
             <label>📅 ปี</label>
-            <input type="number" id="lm-year" oninput="loadLeaveRecords()">
+            <input type="number" id="lm-year" placeholder="ทุกปี" oninput="loadLeaveRecords()">
           </div>
           <div class="form-group">
             <label>📆 เดือน</label>
@@ -1210,10 +1504,11 @@
               <th>ช่วงวันที่</th>
               <th>จำนวน</th>
               <th>สถานะ</th>
-              <th>ขั้นตอน</th>
+              <th>ผู้ตรวจสอบ</th>
+              <th>ผู้อนุมัติ</th>
               <th style="text-align:center">จัดการ</th>
             </tr></thead>
-            <tbody id="lm-tbody"><tr><td colspan="9" class="empty">กำลังโหลด...</td></tr></tbody>
+            <tbody id="lm-tbody"><tr><td colspan="10" class="empty">กำลังโหลด...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1390,7 +1685,7 @@
                 <option value="employee">พนักงาน</option>
                 <option value="unit_head">หัวหน้าหน่วยงาน</option>
                 <option value="department_head">หัวหน้าแผนก</option>
-                <option value="division_manager">ผู้จัดการฝ่าย</option>
+                <option value="division_manager">ผู้จัดการ</option>
                 <option value="hr_admin">HR Admin</option>
               </select>
             </div>
@@ -1411,12 +1706,13 @@
               <th>รหัสพนักงาน</th>
               <th>ชื่อ-นามสกุล</th>
               <th>อีเมล</th>
-              <th>บทบาท</th>
-              <th>แผนก</th>
               <th>หน่วยงาน</th>
+              <th>แผนก</th>
+              <th>ฝ่าย</th>
+              <th>บทบาท</th>
               <th style="text-align:center">จัดการ</th>
             </tr></thead>
-            <tbody id="emp-tbody"><tr><td colspan="7" class="empty">กำลังโหลด...</td></tr></tbody>
+            <tbody id="emp-tbody"><tr><td colspan="8" class="empty">กำลังโหลด...</td></tr></tbody>
           </table></div>
           <div id="hr-emp-pagination" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:14px"></div>
         </div>
@@ -1486,37 +1782,38 @@
         <div class="card" style="margin-bottom:22px">
           <h2>👤 สิทธิ์เข้าถึงเฉพาะรายบุคคล</h2>
           <p style="font-size:13px;color:#718096;margin-bottom:16px">กำหนดว่าพนักงานแต่ละคนสามารถเห็นเมนูและเข้าถึงส่วนใดของระบบได้บ้าง (นอกเหนือจากสิทธิ์ตามบทบาท)</p>
-          <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end">
+          <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
             <div class="form-group">
               <label>🔍 ค้นหาพนักงาน</label>
-              <input id="up-search" placeholder="ชื่อ / รหัส / แผนก" style="width:220px" oninput="filterUserPerms()">
+              <input id="up-search" placeholder="ชื่อ / รหัส / แผนก" style="width:220px" oninput="filterUserPerms(true)">
             </div>
             <div class="form-group">
               <label>🏢 แผนก</label>
-              <input id="up-dept" placeholder="ทุกแผนก" style="width:150px" oninput="filterUserPerms()">
+              <input id="up-dept" placeholder="ทุกแผนก" style="width:150px" oninput="filterUserPerms(true)">
             </div>
           </div>
-          <div class="table-wrap" style="overflow-x:auto">
+          <div class="table-wrap" style="overflow-x:auto;border-radius:12px;border:1.5px solid #e2e8f0;box-shadow:0 2px 12px rgba(0,0,0,.06)">
             <table id="up-table" style="min-width:900px">
               <thead>
-                <tr><td colspan="9" style="background:#fffbeb;color:#744210;font-size:12px;padding:6px 10px;border-bottom:1px solid #fbd38d">
+                <tr><td colspan="9" style="background:linear-gradient(90deg,#fffbeb,#fefce8);color:#744210;font-size:12px;padding:8px 14px;border-bottom:1px solid #fbd38d;font-weight:600">
                   ⚠️ เมนู พนักงาน / นำเข้า Excel / สิทธิ์การเข้าถึง / ผู้อนุมัติต่อแผนก / ประเภทการลา — เฉพาะ HR Admin เท่านั้น
                 </td></tr>
-                <tr>
-                  <th style="min-width:130px">พนักงาน</th>
-                  <th style="min-width:80px">รหัส</th>
-                  <th style="min-width:80px">แผนก</th>
-                  <th style="text-align:center;min-width:90px" title="เปิด/ปิด HR Panel ในเมนูหลัก">เข้าถึง<br>HR Panel</th>
-                  <th style="text-align:center;min-width:90px" title="ดู Dashboard ภาพรวมการลา">Dashboard<br>ภาพรวม</th>
-                  <th style="text-align:center;min-width:90px" title="ดูปฏิทินการลาพนักงานทั้งหมด">ปฏิทิน<br>การลา</th>
-                  <th style="text-align:center;min-width:90px" title="ดูรายการลาทั้งหมด (เมนูจัดการการลา)">รายการลา<br>ทั้งหมด</th>
-                  <th style="text-align:center;min-width:80px" title="ดูรายงาน">รายงาน</th>
-                  <th style="text-align:center;min-width:70px" title="Export ข้อมูล">Export</th>
+                <tr style="background:linear-gradient(135deg,#dbeafe,#eff6ff);border-bottom:2px solid #93c5fd">
+                  <th style="min-width:140px;color:#1e3a5f;border-bottom:none;padding:13px 14px;font-size:13px">👤 พนักงาน</th>
+                  <th style="min-width:80px;color:#374151;border-bottom:none;padding:13px 14px;font-size:13px">🪪 รหัส</th>
+                  <th style="min-width:80px;color:#374151;border-bottom:none;padding:13px 14px;font-size:13px">🏢 แผนก</th>
+                  <th style="text-align:center;min-width:90px;color:#1d4ed8;border-bottom:none;padding:13px 8px;font-size:12px;font-weight:700" title="เปิด/ปิด HR Panel ในเมนูหลัก">🖥️<br><span style="color:#1e3a5f">HR Panel</span></th>
+                  <th style="text-align:center;min-width:90px;color:#0369a1;border-bottom:none;padding:13px 8px;font-size:12px;font-weight:700" title="ดู Dashboard ภาพรวมการลา">📊<br><span style="color:#1e3a5f">Dashboard</span></th>
+                  <th style="text-align:center;min-width:90px;color:#0369a1;border-bottom:none;padding:13px 8px;font-size:12px;font-weight:700" title="ดูปฏิทินการลาพนักงานทั้งหมด">📅<br><span style="color:#1e3a5f">ปฏิทิน</span></th>
+                  <th style="text-align:center;min-width:90px;color:#0369a1;border-bottom:none;padding:13px 8px;font-size:12px;font-weight:700" title="ดูรายการลาทั้งหมด">📂<br><span style="color:#1e3a5f">รายการลา</span></th>
+                  <th style="text-align:center;min-width:80px;color:#0369a1;border-bottom:none;padding:13px 8px;font-size:12px;font-weight:700" title="ดูรายงาน">📈<br><span style="color:#1e3a5f">รายงาน</span></th>
+                  <th style="text-align:center;min-width:70px;color:#0369a1;border-bottom:none;padding:13px 8px;font-size:12px;font-weight:700" title="Export ข้อมูล">📤<br><span style="color:#1e3a5f">Export</span></th>
                 </tr>
               </thead>
               <tbody id="up-tbody"><tr><td colspan="9" class="empty">กำลังโหลด...</td></tr></tbody>
             </table>
           </div>
+          <div id="up-pagination" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap"></div>
         </div>
 
         <div class="card">
@@ -1537,16 +1834,16 @@
           </div>
 
           <div class="section-header"><span>📋 รายการบทบาทและสิทธิ์</span></div>
-          <div class="table-wrap perm-table"><table>
-            <thead><tr>
-              <th>บทบาท</th>
-              <th style="text-align:center">ดูคำขอทั้งหมด</th>
-              <th style="text-align:center">Export รายงาน</th>
-              <th style="text-align:center">จัดการพนักงาน</th>
-              <th style="text-align:center">จัดการประเภทลา</th>
-              <th style="text-align:center">ดูรายงาน</th>
-              <th>คำอธิบาย</th>
-              <th style="text-align:center">จัดการ</th>
+          <div class="table-wrap perm-table" style="border-radius:12px;border:1.5px solid #e2e8f0;box-shadow:0 2px 12px rgba(0,0,0,.06)"><table>
+            <thead><tr style="background:linear-gradient(135deg,#dbeafe,#eff6ff);border-bottom:2px solid #93c5fd">
+              <th style="color:#1e3a5f;border-bottom:none;padding:13px 16px;font-size:13px">🏷️ บทบาท</th>
+              <th style="text-align:center;color:#1d4ed8;border-bottom:none;padding:13px 10px;font-size:12px;font-weight:700">📋<br><span style="color:#1e3a5f">ดูคำขอ</span></th>
+              <th style="text-align:center;color:#1d4ed8;border-bottom:none;padding:13px 10px;font-size:12px;font-weight:700">📤<br><span style="color:#1e3a5f">Export</span></th>
+              <th style="text-align:center;color:#1d4ed8;border-bottom:none;padding:13px 10px;font-size:12px;font-weight:700">👥<br><span style="color:#1e3a5f">จัดการพนักงาน</span></th>
+              <th style="text-align:center;color:#1d4ed8;border-bottom:none;padding:13px 10px;font-size:12px;font-weight:700">🏷️<br><span style="color:#1e3a5f">ประเภทลา</span></th>
+              <th style="text-align:center;color:#1d4ed8;border-bottom:none;padding:13px 10px;font-size:12px;font-weight:700">📊<br><span style="color:#1e3a5f">รายงาน</span></th>
+              <th style="color:#374151;border-bottom:none;padding:13px 16px;font-size:13px">📝 คำอธิบาย</th>
+              <th style="text-align:center;color:#1e3a5f;border-bottom:none;padding:13px 16px;font-size:13px">⚙️ จัดการ</th>
             </tr></thead>
             <tbody id="perm-tbody"><tr><td colspan="8" class="empty">กำลังโหลด...</td></tr></tbody>
           </table></div>
@@ -1563,32 +1860,32 @@
           <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px;padding:16px;background:linear-gradient(135deg,#f7fafc,#edf2f7);border-radius:10px;border:1px solid #e2e8f0">
             <div class="form-group">
               <label>🏢 แผนก <span style="color:#c53030">*</span></label>
-              <input id="da-dept" placeholder="ระบุชื่อแผนก" style="width:160px">
+              <select id="da-dept" style="width:180px"><option value="">— เลือกแผนก —</option></select>
             </div>
             <div class="form-group">
               <label>📊 ระดับการอนุมัติ <span style="color:#c53030">*</span></label>
-              <select id="da-level" style="width:220px" onchange="loadApproverCandidates()">
-                <option value="1">ระดับตรวจสอบ</option>
-                <option value="2">ระดับอนุมัติ</option>
+              <select id="da-level" style="width:200px" onchange="loadApproverCandidates()">
+                <option value="1">ระดับ 1 — ตรวจสอบ</option>
+                <option value="2">ระดับ 2 — อนุมัติ</option>
               </select>
             </div>
             <div class="form-group">
               <label>👤 เลือกผู้อนุมัติ <span style="color:#c53030">*</span></label>
-              <select id="da-approver" style="width:240px"><option>กำลังโหลด...</option></select>
+              <select id="da-approver" style="width:260px"><option value="">กำลังโหลด...</option></select>
             </div>
             <button class="btn btn-primary" style="margin-top:auto" onclick="saveDeptApprover()">💾 บันทึก</button>
           </div>
 
           <div id="da-alert"></div>
           <div class="section-header"><span>📋 รายการผู้อนุมัติที่กำหนดไว้</span></div>
-          <div class="table-wrap"><table>
-            <thead><tr>
-              <th>แผนก</th>
-              <th>ระดับการอนุมัติ</th>
-              <th>ชื่อผู้อนุมัติ</th>
-              <th>รหัสพนักงาน</th>
-              <th>บทบาท</th>
-              <th style="text-align:center">จัดการ</th>
+          <div class="table-wrap" style="border-radius:12px;border:1.5px solid #e2e8f0;box-shadow:0 2px 12px rgba(0,0,0,.06)"><table>
+            <thead><tr style="background:linear-gradient(135deg,#dbeafe,#eff6ff);border-bottom:2px solid #93c5fd">
+              <th style="color:#1e3a5f;border-bottom:none;padding:13px 16px;font-size:13px">🏢 แผนก</th>
+              <th style="text-align:center;color:#1d4ed8;border-bottom:none;padding:13px 14px;font-size:13px;font-weight:700">📊 ระดับการอนุมัติ</th>
+              <th style="color:#1e3a5f;border-bottom:none;padding:13px 16px;font-size:13px">👤 ชื่อผู้อนุมัติ</th>
+              <th style="text-align:center;color:#374151;border-bottom:none;padding:13px 14px;font-size:13px">🪪 รหัสพนักงาน</th>
+              <th style="color:#374151;border-bottom:none;padding:13px 14px;font-size:13px">🏷️ บทบาท</th>
+              <th style="text-align:center;color:#1e3a5f;border-bottom:none;padding:13px 16px;font-size:13px">⚙️ จัดการ</th>
             </tr></thead>
             <tbody id="da-tbody"><tr><td colspan="6" class="empty">ยังไม่มีการกำหนดผู้อนุมัติ</td></tr></tbody>
           </table></div>
@@ -1631,14 +1928,14 @@
 
           <div id="lt-alert"></div>
           <div class="section-header"><span>📋 รายการประเภทการลาทั้งหมด</span></div>
-          <div class="table-wrap"><table>
-            <thead><tr>
-              <th style="text-align:center">รหัสลา</th>
-              <th>ชื่อประเภทการลา</th>
-              <th style="text-align:center">โควต้าวันลา/ปี</th>
-              <th style="text-align:center">ต้องแนบเอกสาร</th>
-              <th style="text-align:center">ลาเกิน (วัน) แนบเอกสาร</th>
-              <th style="text-align:center">จัดการ</th>
+          <div class="table-wrap" style="border-radius:12px;border:1.5px solid #e2e8f0;box-shadow:0 2px 12px rgba(0,0,0,.06)"><table>
+            <thead><tr style="background:linear-gradient(135deg,#dbeafe,#eff6ff);border-bottom:2px solid #93c5fd">
+              <th style="text-align:center;color:#1d4ed8;border-bottom:none;padding:13px 14px;font-size:13px;font-weight:700">🔖 รหัสลา</th>
+              <th style="color:#1e3a5f;border-bottom:none;padding:13px 16px;font-size:13px">🏷️ ชื่อประเภทการลา</th>
+              <th style="text-align:center;color:#0369a1;border-bottom:none;padding:13px 14px;font-size:13px;font-weight:700">📅 โควต้าวันลา/ปี</th>
+              <th style="text-align:center;color:#374151;border-bottom:none;padding:13px 14px;font-size:13px">📎 ต้องแนบเอกสาร</th>
+              <th style="text-align:center;color:#374151;border-bottom:none;padding:13px 14px;font-size:13px">⏰ ลาเกิน (วัน) แนบเอกสาร</th>
+              <th style="text-align:center;color:#1e3a5f;border-bottom:none;padding:13px 16px;font-size:13px">⚙️ จัดการ</th>
             </tr></thead>
             <tbody id="lt-tbody"><tr><td colspan="6" class="empty">กำลังโหลด...</td></tr></tbody>
           </table></div>
@@ -1657,6 +1954,7 @@ const API = '/api';
 let token = localStorage.getItem('token');
 let user  = JSON.parse(localStorage.getItem('user') || 'null');
 let currentApprovalId = null;
+let _approveRowMap = {};
 
 // ====== WORK HOURS CALCULATION (mirrors backend) ======
 // Reference working Saturday for monthly employees (เสาร์เว้นเสาร์)
@@ -1787,9 +2085,7 @@ function showApp() {
     document.getElementById('tab-leave-mgmt').style.display = '';
     document.getElementById('tab-report').style.display = '';
     document.getElementById('tab-hr').style.display = '';
-    document.getElementById('tab-calendar-all').style.display = '';
-    document.getElementById('tab-approve').style.display = '';
-    document.getElementById('bnav-approve').style.display = '';
+    document.getElementById('tab-calendar-all')?.style && (document.getElementById('tab-calendar-all').style.display = '');
     document.getElementById('bnav-report').style.display = '';
     document.getElementById('bnav-hr').style.display = '';
     const sel = document.getElementById('dash-year');
@@ -2037,7 +2333,7 @@ async function loadBalance() {
   const roleEl  = document.getElementById('home-greeting-role');
   if (greetEl && user) greetEl.textContent = user.name || '-';
   if (roleEl  && user) {
-    const rmap = { employee:'พนักงาน', unit_head:'หัวหน้าหน่วยงาน', department_head:'หัวหน้าแผนก', division_manager:'ผู้จัดการฝ่าย', hr_admin:'HR Admin' };
+    const rmap = { employee:'พนักงาน', unit_head:'หัวหน้าหน่วยงาน', department_head:'หัวหน้าแผนก', division_manager:'ผู้จัดการ', hr_admin:'HR Admin' };
     const roleLabel = rmap[user.role] || user.role;
     const deptLabel = user.department ? ` &nbsp;|&nbsp; 🏢 ${user.department}` : '';
     roleEl.innerHTML = `<span style="background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px">👤 ${roleLabel}${deptLabel}</span>`;
@@ -2134,26 +2430,26 @@ function renderEmpTable() {
   else {
     tbody.innerHTML = slice.map(r => {
       const approvals = r.approvals || [];
-      const checker  = approvals[0]?.approver_name || '-';
-      const approver = approvals[2]?.approver_name || approvals[1]?.approver_name || '-';
-      // Derive display status from lr.status when in terminal/advanced state
-      // to avoid stale 'pending' showing on approval rows that were skipped or auto-approved
+      const lvl1 = approvals.find(a => a.level === 1);
+      const lvl2 = approvals.find(a => a.level === 2);
+      const checker  = lvl1?.approver_name || '-';
+      const approver = lvl2?.approver_name || '-';
       const fullyApproved = r.status === 'approved';
       const pastL1 = ['approved_l1','approved'].includes(r.status);
       const rejected = r.status === 'rejected';
       const checkerStatus  = fullyApproved ? 'approved'
         : pastL1 ? 'approved'
-        : rejected && (approvals[0]?.status === 'rejected') ? 'rejected'
-        : (approvals[0]?.status || 'pending');
+        : rejected && lvl1?.status === 'rejected' ? 'rejected'
+        : (lvl1?.status || 'pending');
       const approverStatus = fullyApproved ? 'approved'
-        : rejected && (approvals[2]?.status === 'rejected' || approvals[1]?.status === 'rejected') ? 'rejected'
-        : (approvals[2]?.status || approvals[1]?.status || 'pending');
+        : rejected && lvl2?.status === 'rejected' ? 'rejected'
+        : (lvl2?.status || 'pending');
       const statusBg = { pending:'#fefcbf',approved:'#c6f6d5',rejected:'#fed7d7',approved_l1:'#bee3f8',cancelled:'#e2e8f0' };
       const statusTx = { pending:'#744210',approved:'#22543d',rejected:'#742a2a',approved_l1:'#2a4365',cancelled:'#4a5568' };
       const stBadge = (st) => `<span style="background:${statusBg[st]||'#e2e8f0'};color:${statusTx[st]||'#4a5568'};padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap">${statusLabel[st]||st}</span>`;
       const personBadge = (name, st) => `<div style="font-size:13px;font-weight:600;margin-bottom:3px">${name}</div>${stBadge(st)}`;
       return `<tr>
-        <td style="font-size:13px;white-space:nowrap">${r.start_date || '-'}</td>
+        <td style="font-size:13px;white-space:nowrap">${fmtDate(r.start_date) || '-'}</td>
         <td><span style="background:#ebf8ff;color:#2c5282;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${r.leave_type_name}</span></td>
         <td style="text-align:center"><div style="font-weight:700;font-size:15px;color:#1e3a5f">${r.days < 1 ? (Math.round((r.hours||r.days*8)*10)/10) + ' ชม.' : r.days + ' วัน'}</div><div style="font-size:11px;color:#a0aec0">${r.days < 1 ? 'ไม่เต็มวัน' : 'วัน'}</div></td>
         <td>${stBadge(r.status)}</td>
@@ -2209,6 +2505,8 @@ async function loadLeaveTypes() {
   sickLeaveTypeId = sick ? sick.id : null;
   const hSel = document.getElementById('hist-filter-type');
   if (hSel && hSel.options.length <= 1) data.forEach(t => { const o = new Option(t.name, t.name); hSel.add(o); });
+  const rptTypeSel = document.getElementById('rpt-type');
+  if (rptTypeSel && rptTypeSel.options.length <= 1) data.forEach(t => { rptTypeSel.add(new Option(t.name, t.id)); });
 }
 
 // ลาล่วงหน้าได้ไม่จำกัด; ย้อนหลัง: ลาป่วย 30 วัน, อื่นๆ ไม่อนุญาต
@@ -2229,18 +2527,49 @@ function updateLeaveDateMin() {
 // ---- Flatpickr instances ----
 let fpStart, fpEnd;
 
+// ===== Date-Time select helpers for leave request form =====
+function getReqTimeStr(prefix) {
+  const h = document.getElementById(prefix+'-hour')?.value || '08';
+  const m = document.getElementById(prefix+'-min')?.value  || '00';
+  return `${h}:${m}`;
+}
+function setReqTimeStr(prefix, timeStr) {
+  const [h, m] = (timeStr || '08:00').split(':');
+  const hEl = document.getElementById(prefix+'-hour');
+  const mEl = document.getElementById(prefix+'-min');
+  if (hEl) hEl.value = String(h).padStart(2,'0');
+  if (mEl) mEl.value = String(m).padStart(2,'0');
+}
+function thaiDateLabel(d) {
+  if (!d) return null;
+  const DOW = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return `${DOW[d.getDay()]}  ${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+function initReqTimeSelects() {
+  ['req-start','req-end'].forEach(pfx => {
+    const hSel = document.getElementById(pfx+'-hour');
+    const mSel = document.getElementById(pfx+'-min');
+    if (!hSel || hSel.options.length) return;
+    for (let h = 0; h < 24; h++) { const v = String(h).padStart(2,'0'); hSel.appendChild(new Option(v,v)); }
+    for (let m = 0; m < 60; m++) { const v = String(m).padStart(2,'0'); mSel.appendChild(new Option(v,v)); }
+  });
+  setReqTimeStr('req-start','08:00');
+  setReqTimeStr('req-end','17:00');
+}
+
 function fpToISO(fp) {
   const d = fp.selectedDates[0];
   if (!d) return null;
   const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const prefix = (fp === fpStart) ? 'req-start' : 'req-end';
+  return `${dateStr}T${getReqTimeStr(prefix)}`;
 }
 
 function initFlatpickr() {
   if (fpStart && fpEnd) return;
-  const today = new Date(); today.setHours(0,0,0,0);
 
-  // ตรวจสอบ + บังคับ minDate — อ่าน minDate จาก fp.config แทนการ hard-code today
   function getMinDate() {
     const selectedId = parseInt(document.getElementById('req-type')?.value);
     const isSick = sickLeaveTypeId && selectedId === sickLeaveTypeId;
@@ -2254,104 +2583,82 @@ function initFlatpickr() {
       fp.setDate(minD, true);
       const selectedId = parseInt(document.getElementById('req-type')?.value);
       const isSick = sickLeaveTypeId && selectedId === sickLeaveTypeId;
-      Swal.fire({
-        icon: 'warning',
-        title: 'ไม่สามารถเลือกวันดังกล่าวได้',
+      Swal.fire({ icon:'warning', title:'ไม่สามารถเลือกวันดังกล่าวได้',
         text: isSick ? 'ลาป่วยย้อนหลังได้ไม่เกิน 30 วัน' : 'กรุณาเลือกวันที่ตั้งแต่วันนี้เป็นต้นไป',
-        confirmButtonColor: '#1e3a5f',
-      });
-    }
-  }
-
-  let _timeAlertShowing = false;
-  function applyTimeRange(fp, dateStr) {
-    const range = dateStr ? getWorkTimeRange(dateStr) : null;
-    fp.set('minTime', range ? range.minTime : '00:00');
-    fp.set('maxTime', range ? range.maxTime : '23:59');
-  }
-
-  function enforceTimeRange(fp, sel) {
-    if (!sel[0]) return;
-    const dateStr = dateStrFromDate(sel[0]);
-    const range = dateStr ? getWorkTimeRange(dateStr) : null;
-    if (!range) return;
-    const [maxH, maxM] = range.maxTime.split(':').map(Number);
-    const [minH, minM] = range.minTime.split(':').map(Number);
-    const selH = sel[0].getHours(), selM = sel[0].getMinutes();
-    const overMax = selH > maxH || (selH === maxH && selM > maxM);
-    const underMin = selH < minH || (selH === minH && selM < minM);
-    if ((overMax || underMin) && !_timeAlertShowing) {
-      _timeAlertShowing = true;
-      const clampTime = overMax ? range.maxTime : range.minTime;
-      const [ch, cm] = clampTime.split(':').map(Number);
-      const clamped = new Date(sel[0]);
-      clamped.setHours(ch, cm, 0, 0);
-      fp.setDate(clamped, false);
-      Swal.fire({
-        icon: 'warning',
-        title: 'เกินเวลาทำงาน',
-        html: `เวลาทำงานของวันนี้คือ <b>${range.minTime} – ${range.maxTime} น.</b><br>ระบบปรับเวลาเป็น <b>${clampTime} น.</b> ให้อัตโนมัติ`,
-        confirmButtonColor: '#1e3a5f',
-      }).then(() => { _timeAlertShowing = false; });
+        confirmButtonColor:'#1e3a5f' });
     }
   }
 
   function dateStrFromDate(d) {
     if (!d) return null;
-    const pad = n => String(n).padStart(2, '0');
+    const pad = n => String(n).padStart(2,'0');
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   }
 
-  const opts = {
-    enableTime: true,
-    dateFormat: 'd-m-Y H:i',
-    time_24hr: true,
-    locale: {
-      ...flatpickr.l10ns.th,
-      firstDayOfWeek: 0,
-      weekdays: {
-        shorthand: ['อา','จ','อ','พ','พฤ','ศ','ส'],
-        longhand:  ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'],
-      },
-    },
-    allowInput: false,
-    // ไม่กำหนด minDate/maxDate — เพื่อให้ลาล่วงหน้าได้ไม่จำกัด
-    onChange: () => calcReqDays(),
-  };
-  fpStart = flatpickr('#req-start', {
+  // เมื่อเลือกวัน → auto-set เวลา (select) ตามเงื่อนไข
+  function applyTimeToSelects(dateStr, prefix, side) {
+    const range = dateStr ? getWorkTimeRange(dateStr) : null;
+    if (range && side) setReqTimeStr(prefix, side === 'max' ? range.maxTime : range.minTime);
+  }
+
+  // ตรวจสอบเวลาและแจ้งเตือนถ้าเกินขอบเขต
+  let _timeAlertShowing = false;
+  function enforceTimeSelects(dateStr, prefix) {
+    if (_timeAlertShowing) return;
+    const range = dateStr ? getWorkTimeRange(dateStr) : null;
+    if (!range) return;
+    const timeVal = getReqTimeStr(prefix);
+    const [selH, selM] = timeVal.split(':').map(Number);
+    const [maxH, maxM] = range.maxTime.split(':').map(Number);
+    const [minH, minM] = range.minTime.split(':').map(Number);
+    const overMax  = selH > maxH || (selH === maxH && selM > maxM);
+    const underMin = selH < minH || (selH === minH && selM < minM);
+    if (overMax || underMin) {
+      _timeAlertShowing = true;
+      const clamp = overMax ? range.maxTime : range.minTime;
+      setReqTimeStr(prefix, clamp);
+      const d = new Date(dateStr + 'T12:00:00');
+      const dowLbl = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'][d.getDay()];
+      Swal.fire({ icon:'warning', title:'เกินเวลาทำงาน',
+        html: `วัน<b>${dowLbl}</b> เวลาทำงานคือ <b>${range.minTime} – ${range.maxTime} น.</b><br>ระบบปรับเวลาเป็น <b>${clamp} น.</b> ให้อัตโนมัติ`,
+        confirmButtonColor:'#1e3a5f' }).then(() => { _timeAlertShowing = false; calcReqDays(); });
+    }
+  }
+
+  const locale = { ...flatpickr.l10ns.th, firstDayOfWeek: 0,
+    weekdays: { shorthand:['อา','จ','อ','พ','พฤ','ศ','ส'], longhand:['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'] } };
+  const opts = { enableTime: false, dateFormat: 'd-m-Y', allowInput: false, locale };
+
+  initReqTimeSelects();
+
+  fpStart = flatpickr('#req-start-date', {
     ...opts,
     onChange: (sel) => {
       enforceMinDate(fpStart, sel);
-      applyTimeRange(fpStart, dateStrFromDate(sel[0]));
-      enforceTimeRange(fpStart, sel);
+      const ds = dateStrFromDate(sel[0]);
+      const lbl = document.getElementById('req-start-date-label');
+      if (lbl) { lbl.textContent = thaiDateLabel(sel[0]) || ''; lbl.classList.remove('placeholder'); }
+      applyTimeToSelects(ds, 'req-start', 'min');
+      enforceTimeSelects(ds, 'req-start');
       calcReqDays();
     },
-    onClose: (sel) => {
-      enforceMinDate(fpStart, sel);
-      enforceTimeRange(fpStart, sel);
-    },
   });
-  fpEnd = flatpickr('#req-end', {
+  fpEnd = flatpickr('#req-end-date', {
     ...opts,
     onChange: (sel) => {
       enforceMinDate(fpEnd, sel);
-      applyTimeRange(fpEnd, dateStrFromDate(sel[0]));
-      enforceTimeRange(fpEnd, sel);
-      calcReqDays();
-    },
-    onClose: (sel) => {
-      // ตรวจสอบหลังจากปิด calendar สิ้นสุด (ผู้ใช้ยืนยันเลือกแล้ว)
+      const ds = dateStrFromDate(sel[0]);
+      const lbl = document.getElementById('req-end-date-label');
+      if (lbl) { lbl.textContent = thaiDateLabel(sel[0]) || ''; lbl.classList.remove('placeholder'); }
+      applyTimeToSelects(ds, 'req-end', 'max');
+      enforceTimeSelects(ds, 'req-end');
       calcReqDays();
       const sv = fpStart ? fpToISO(fpStart) : null;
-      const ev = sel[0] ? (() => { const d=sel[0]; const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; })() : null;
+      const ev = fpToISO(fpEnd);
       if (sv && ev && new Date(ev) <= new Date(sv)) {
-        Swal.fire({
-          icon: 'error',
-          title: 'วันที่/เวลาไม่ถูกต้อง',
-          html: '<b>วันที่สิ้นสุดการลา</b> ต้องอยู่หลัง<br><b>วันที่เริ่มลา</b> กรุณาเลือกใหม่',
-          confirmButtonText: 'ตกลง',
-          confirmButtonColor: '#1e3a5f',
-        });
+        Swal.fire({ icon:'error', title:'วันที่/เวลาไม่ถูกต้อง',
+          html:'<b>วันที่สิ้นสุดการลา</b> ต้องอยู่หลัง<br><b>วันที่เริ่มลา</b> กรุณาเลือกใหม่',
+          confirmButtonText:'ตกลง', confirmButtonColor:'#1e3a5f' });
       }
     },
   });
@@ -2453,15 +2760,16 @@ function calcReqDays() {
   const endDateStr   = ev.slice(0, 10);
   const { hours: workHours, days: workDays } = calcLeaveResultFE(startDateStr, endDateStr, sv, ev);
 
-  // สูตร: ใช้ 8 ชม./วัน เป็นฐาน
-  // วัน = floor(hours / 8)  |  ชม.เหลือ = floor(hours % 8)  |  นาที = round(decimal * 60)
-  const HOURS_PER_DAY = 8;
-  const fullDays      = Math.floor(workHours / HOURS_PER_DAY);
-  const remainHours   = workHours - fullDays * HOURS_PER_DAY;
-  const extraH        = Math.floor(remainHours);
-  const extraMin      = Math.round((remainHours - extraH) * 60);
+  // ฐานการแสดงผล: 1 วัน = 8 ชม. เสมอ (ตามเงื่อนไขบริษัท)
+  // จ-พฤ รายเดือน: workHours=9 → 9÷8 = 1 วัน เหลือ 1 ชม.
+  // ศ รายเดือน:    workHours=8 → 8÷8 = 1 วัน เหลือ 0 ชม.
+  const DISPLAY_H_PER_DAY = 8;
+  const fullDays    = Math.floor(workDays);
+  const remHoursRaw = workHours - fullDays * DISPLAY_H_PER_DAY;
+  const extraH      = Math.max(0, Math.floor(remHoursRaw));
+  const extraMin    = Math.max(0, Math.round((remHoursRaw - extraH) * 60));
 
-  const isPartialDay = workHours < HOURS_PER_DAY;
+  const isPartialDay = workHours < DISPLAY_H_PER_DAY;
   const summaryParts = [];
   if (fullDays > 0) summaryParts.push(`${fullDays} วัน`);
   if (extraH   > 0) summaryParts.push(`${extraH} ชั่วโมง`);
@@ -2493,16 +2801,9 @@ async function loadDepartments() {
   const data = await api('GET', '/leave/departments');
   if (data.error) return;
   const sel = document.getElementById('req-dept');
-  sel.innerHTML = '<option value="">-- เลือกหน่วยงาน/แผนก --</option>';
-  if (data.departments?.length) {
-    const og1 = document.createElement('optgroup'); og1.label = '🏢 แผนก';
-    data.departments.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; og1.appendChild(o); });
-    sel.appendChild(og1);
-  }
+  sel.innerHTML = '<option value="">-- เลือกหน่วยงาน --</option>';
   if (data.units?.length) {
-    const og2 = document.createElement('optgroup'); og2.label = '🏬 หน่วยงาน';
-    data.units.forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; og2.appendChild(o); });
-    sel.appendChild(og2);
+    data.units.forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; sel.appendChild(o); });
   }
 }
 
@@ -2519,7 +2820,7 @@ async function loadApprovers() {
     ).join('');
   };
   fill('req-approver1', data.level1 || [], '-- เลือกผู้ตรวจสอบ (หัวหน้าหน่วย/แผนก) --');
-  fill('req-approver3', data.level2 || [], '-- เลือกผู้อนุมัติ (ผู้จัดการฝ่าย) --');
+  fill('req-approver3', data.level2 || [], '-- เลือกผู้อนุมัติ (ผู้จัดการ) --');
 }
 
 async function submitRequest() {
@@ -2574,8 +2875,14 @@ async function submitRequest() {
   if (!resp.ok) return swalError(r.message || 'เกิดข้อผิดพลาด');
   historyCache = [];
   swalSuccess(`ยื่นคำขอลาสำเร็จ เลขที่ ${r.request_no}` + (r.attachments ? ` (ไฟล์แนบ ${r.attachments} ไฟล์)` : ''), () => { historyCache = []; loadBalance(); loadHistory(); switchTab('home'); });
-  if (fpStart) fpStart.clear(); else document.getElementById('req-start').value = '';
-  if (fpEnd)   fpEnd.clear();   else document.getElementById('req-end').value = '';
+  if (fpStart) { fpStart.clear(); } else document.getElementById('req-start-date')?.classList.add('placeholder');
+  if (fpEnd)   { fpEnd.clear();   } else document.getElementById('req-end-date')?.classList.add('placeholder');
+  ['req-start-date-label','req-end-date-label'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = 'ยังไม่ได้เลือกวัน'; el.classList.add('placeholder'); }
+  });
+  setReqTimeStr('req-start','08:00');
+  setReqTimeStr('req-end','17:00');
   document.getElementById('req-reason').value = '';
   document.getElementById('req-days').textContent = '';
   const dbox = document.getElementById('req-duration-box'); if (dbox) dbox.style.display = 'none';
@@ -2595,6 +2902,9 @@ async function loadHistory() {
     const types = [...new Set(historyCache.map(r => r.leave_type_name))].filter(Boolean);
     const sel = document.getElementById('hist-filter-type');
     if (sel && sel.options.length <= 1) types.forEach(t => { const o = new Option(t,t); sel.add(o); });
+    // ไม่ set ปี default — แสดงทุกปีเหมือนหน้าหลัก
+    const yearEl = document.getElementById('hist-filter-year');
+    if (yearEl && !yearEl.value) yearEl.value = '';
   }
   renderHistoryTable();
 }
@@ -2620,27 +2930,30 @@ function renderHistoryTable() {
   if (filterYear)   data = data.filter(r => (r.start_date||'').startsWith(filterYear));
 
   const tbody = document.getElementById('history-tbody');
-  if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">ไม่พบข้อมูลที่ตรงกัน</td></tr>'; return; }
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">ไม่พบข้อมูลที่ตรงกัน</td></tr>'; return; }
 
   tbody.innerHTML = data.map(r => {
-    const steps = (r.approvals || []).map((a, i) => {
-      const labels = ['หัวหน้าหน่วย','หัวหน้าแผนก','ผู้จัดการฝ่าย'];
-      const cls = a.status === 'approved' ? 'done' : a.status === 'rejected' ? 'fail' : (i === 0 || r.approvals[i-1]?.status === 'approved') ? 'active' : '';
-      const tip = a.approver_name ? `\n${a.approver_name}` : '';
-      return `<div class="step ${cls}" title="${labels[i]}${tip}">${labels[i]}</div>`;
-    }).join('');
+    const approvalCell = (level) => {
+      const a = (r.approvals || []).find(x => x.level === level);
+      if (!a) return '<span style="color:#a0aec0;font-size:12px">-</span>';
+      const name = a.approver_name || '-';
+      const cls  = a.status === 'approved' ? 'done' : a.status === 'rejected' ? 'fail' : 'active';
+      const badge = `<br><span class="step ${cls}" style="display:inline-block;margin-top:4px;border-radius:12px;padding:2px 8px;font-size:11px;border-top:none;background:${cls==='done'?'#f0fff4':cls==='fail'?'#fff5f5':'#ebf8ff'}">${{done:'อนุมัติแล้ว',fail:'ปฏิเสธ',active:'รอดำเนินการ'}[cls]}</span>`;
+      return `<span style="font-size:13px;font-weight:600;color:#2d3748">${name}</span>${badge}`;
+    };
     const canCancel = r.status === 'pending';
     const atts = (r.attachments || []).map(a =>
       `<span onclick="downloadFile('${a.filename}','${a.original_name.replace(/'/g,"\\'")}\")" style="font-size:11px;color:#4299e1;margin-right:6px;cursor:pointer;display:inline-flex;align-items:center;gap:3px" title="${a.original_name}">📎 ${a.original_name.length > 18 ? a.original_name.slice(0,15)+'…' : a.original_name}</span>`
     ).join('');
-    const dateRange = r.start_date !== r.end_date ? `${r.start_date}<br><span style="color:#a0aec0;font-size:11px">ถึง ${r.end_date}</span>` : r.start_date;
+    const dateRange = r.start_date !== r.end_date ? `${fmtDate(r.start_date)}<br><span style="color:#a0aec0;font-size:11px">ถึง ${fmtDate(r.end_date)}</span>` : fmtDate(r.start_date);
     return `<tr>
       <td><span style="font-family:monospace;font-size:12px;background:#f0f4f8;padding:3px 8px;border-radius:6px">${r.request_no}</span></td>
       <td><span style="background:#ebf8ff;color:#2c5282;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${r.leave_type_name}</span>${r.is_backdated ? '<br><span style="background:#fff3cd;color:#856404;font-size:10px;padding:1px 6px;border-radius:8px;margin-top:2px;display:inline-block">ย้อนหลัง</span>' : ''}</td>
       <td style="font-size:13px">${dateRange}</td>
-      <td style="text-align:center"><div style="font-weight:800;font-size:16px;color:#1e3a5f">${r.days}</div><div style="font-size:10px;color:#a0aec0">วัน</div></td>
+      <td style="text-align:center">${r.days < 1 ? `<div style="font-weight:800;font-size:15px;color:#2b6cb0">${Math.round((r.hours||r.days*8)*10)/10} ชม.</div><div style="font-size:10px;color:#a0aec0">ไม่เต็มวัน</div>` : `<div style="font-weight:800;font-size:16px;color:#1e3a5f">${r.days}</div><div style="font-size:10px;color:#a0aec0">วัน</div>`}</td>
       <td>${statusBadge(r.status)}</td>
-      <td><div class="steps">${steps}</div>${atts ? `<div style="margin-top:6px">${atts}</div>` : ''}</td>
+      <td>${approvalCell(1)}${atts ? `<div style="margin-top:6px">${atts}</div>` : ''}</td>
+      <td>${approvalCell(2)}</td>
       <td style="text-align:center">${canCancel ? `<button class="btn btn-danger btn-sm" onclick="cancelRequest(${r.id})">✕ ยกเลิก</button>` : '<span style="color:#a0aec0;font-size:12px">-</span>'}</td>
     </tr>`;
   }).join('');
@@ -2666,20 +2979,22 @@ async function cancelRequest(id) {
 
 // ====== APPROVE ======
 async function loadPending() {
+  _approveRowMap = {};
   const data = await api('GET', '/leave/pending');
   const tbody = document.getElementById('approve-tbody');
   if (!Array.isArray(data) || !data.length) {
     tbody.innerHTML = '<tr><td colspan="8" class="empty">ไม่มีรายการรออนุมัติ</td></tr>'; return;
   }
+  data.forEach(r => { _approveRowMap[r.approval_id] = r; });
   tbody.innerHTML = data.map(r => `<tr>
     <td style="font-family:monospace;font-size:13px">${r.request_no}</td>
     <td>${r.employee_name}<br><span style="font-size:12px;color:#718096">${r.emp_code}</span></td>
     <td><span style="font-size:12px">${r.unit}<br>${r.department}</span></td>
     <td>${r.leave_type_name}</td>
-    <td style="font-size:13px">${r.start_date}${r.start_date !== r.end_date ? ' – ' + r.end_date : ''}</td>
+    <td style="font-size:13px">${fmtDate(r.start_date)}${r.start_date !== r.end_date ? ' – ' + fmtDate(r.end_date) : ''}</td>
     <td style="text-align:center">${r.days} วัน</td>
     <td style="font-size:13px;max-width:150px">${r.reason}</td>
-    <td><button class="btn btn-primary btn-sm" onclick="openApproveModal(${r.approval_id}, ${JSON.stringify(r).replace(/"/g,'&quot;')})">ดำเนินการ</button></td>
+    <td><button class="btn btn-primary btn-sm" onclick="openApproveModal(${r.approval_id})">ดำเนินการ</button></td>
   </tr>`).join('');
 }
 
@@ -2698,21 +3013,23 @@ async function loadApproveHistory() {
     <td style="font-family:monospace;font-size:13px">${r.request_no}</td>
     <td>${r.employee_name}</td>
     <td>${r.leave_type_name}</td>
-    <td style="font-size:13px">${r.start_date} – ${r.end_date} (${r.days} วัน)</td>
+    <td style="font-size:13px">${fmtDate(r.start_date)} – ${fmtDate(r.end_date)} (${r.days} วัน)</td>
     <td>${badge} <span style="font-size:11px;color:#718096">${lvlLabel}</span></td>
     <td style="font-size:13px">${r.comment || '-'}</td>
-    <td style="font-size:12px;color:#718096">${r.acted_at ? r.acted_at.slice(0,16) : '-'}</td>
+    <td style="font-size:12px;color:#718096">${r.acted_at ? fmtDate(r.acted_at.slice(0,10)) + ' ' + r.acted_at.slice(11,16) : '-'}</td>
   </tr>`;
   }).join('');
 }
 
-function openApproveModal(approvalId, row) {
+function openApproveModal(approvalId) {
+  const row = _approveRowMap[approvalId];
+  if (!row) return;
   currentApprovalId = approvalId;
   document.getElementById('modal-comment').value = '';
   document.getElementById('modal-info').innerHTML = `
     <b>พนักงาน:</b> ${row.employee_name} (${row.emp_code})<br>
     <b>ประเภท:</b> ${row.leave_type_name}<br>
-    <b>วันที่:</b> ${row.start_date} – ${row.end_date} (${row.days} วัน)<br>
+    <b>วันที่:</b> ${fmtDate(row.start_date)} – ${fmtDate(row.end_date)} (${row.days} วัน)<br>
     <b>เหตุผล:</b> ${row.reason}
   `;
   document.getElementById('approve-modal').classList.add('open');
@@ -2738,26 +3055,139 @@ async function submitApproval(action) {
 }
 
 // ====== REPORT ======
-async function loadReport() {
-  const year = document.getElementById('rpt-year').value;
-  const dept = document.getElementById('rpt-dept').value.trim();
-  let url = `/leave/report?year=${year}`;
-  if (dept) url += `&department=${encodeURIComponent(dept)}`;
-  const data = await api('GET', url);
-  const tbody = document.getElementById('report-tbody');
-  if (!Array.isArray(data) || !data.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty">ไม่มีข้อมูล</td></tr>'; return;
+let rptAllData = [];
+let rptPage = 1;
+const RPT_PAGE_SIZE = 30;
+
+function fmtDate(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  return `${day}-${m}-${y}`;
+}
+function fmtDuration(days, hours) {
+  const d = Number(days) || 0;
+  const h = Number(hours) || 0;
+  if (d >= 1) {
+    return `<div style="font-weight:700;font-size:14px;color:#1e3a5f">${d}</div><div style="font-size:10px;color:#a0aec0">วัน</div>`;
   }
-  tbody.innerHTML = data.map(r => `<tr>
-    <td style="font-size:13px">${r.emp_code}</td>
-    <td>${r.employee_name}</td>
-    <td>${r.department}</td>
-    <td>${r.division}</td>
-    <td>${r.leave_type_name}</td>
-    <td style="font-size:13px">${r.start_date} – ${r.end_date}</td>
-    <td style="text-align:center">${r.days}</td>
+  if (h > 0) {
+    const wholeH = Math.floor(h);
+    const mins = Math.round((h - wholeH) * 60);
+    const parts = [];
+    if (wholeH > 0) parts.push(`${wholeH} ชม.`);
+    if (mins > 0) parts.push(`${mins} นาที`);
+    return `<div style="font-weight:700;font-size:13px;color:#2b6cb0">${parts.join(' ')}</div><div style="font-size:10px;color:#a0aec0">ไม่เต็มวัน</div>`;
+  }
+  return `<div style="font-weight:700;font-size:14px;color:#1e3a5f">${d}</div><div style="font-size:10px;color:#a0aec0">วัน</div>`;
+}
+
+async function loadReport() {
+  const year   = (document.getElementById('rpt-year')?.value || '').trim();
+  const dept   = (document.getElementById('rpt-dept')?.value || '').trim();
+  const tbody  = document.getElementById('report-tbody');
+  tbody.innerHTML = '<tr><td colspan="9" class="empty">กำลังโหลด...</td></tr>';
+  let url = `/leave/report?`;
+  if (year) url += `year=${year}&`;
+  if (dept) url += `department=${encodeURIComponent(dept)}&`;
+  const data = await api('GET', url);
+  if (!Array.isArray(data)) {
+    tbody.innerHTML = `<tr><td colspan="9" style="color:#e53e3e;padding:16px;text-align:center">⚠️ ${data?.error || 'โหลดไม่ได้'}</td></tr>`;
+    return;
+  }
+  rptAllData = data;
+  rptPage = 1;
+  renderReport();
+}
+
+function renderReport() {
+  const empQ   = (document.getElementById('rpt-emp')?.value    || '').toLowerCase();
+  const typeQ  = (document.getElementById('rpt-type')?.value   || '');
+  const statusQ= (document.getElementById('rpt-status')?.value || '');
+  const filtered = rptAllData.filter(r => {
+    if (empQ    && !r.employee_name.toLowerCase().includes(empQ) && !(r.emp_code||'').toLowerCase().includes(empQ)) return false;
+    if (typeQ   && String(r.leave_type_id) !== typeQ) return false;
+    if (statusQ && r.status !== statusQ) return false;
+    return true;
+  });
+  const tbody = document.getElementById('report-tbody');
+  const sumEl = document.getElementById('rpt-summary');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">ไม่มีข้อมูล</td></tr>';
+    document.getElementById('rpt-pagination').innerHTML = '';
+    sumEl.style.display = 'none';
+    return;
+  }
+  const totalDays = filtered.reduce((s, r) => s + (r.days || 0), 0);
+  sumEl.style.display = '';
+  sumEl.innerHTML = `พบ <b>${filtered.length}</b> รายการ รวม <b>${totalDays}</b> วัน`;
+  const totalPages = Math.ceil(filtered.length / RPT_PAGE_SIZE);
+  if (rptPage > totalPages) rptPage = totalPages;
+  const pageData = filtered.slice((rptPage - 1) * RPT_PAGE_SIZE, rptPage * RPT_PAGE_SIZE);
+  tbody.innerHTML = pageData.map(r => `<tr>
+    <td style="font-size:13px">${r.emp_code||''}</td>
+    <td><b>${r.employee_name||''}</b></td>
+    <td style="font-size:12px">${r.department||''}</td>
+    <td style="font-size:12px">${r.division||''}</td>
+    <td style="font-size:13px">${r.leave_type_name||''}</td>
+    <td style="font-size:12px;white-space:nowrap">${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}</td>
+    <td style="text-align:center;font-weight:600">${r.days}</td>
     <td>${statusBadge(r.status)}</td>
+    <td style="text-align:center"><button class="btn btn-sm" style="padding:3px 8px;font-size:11px;background:#f7fafc;border:1px solid #cbd5e0;color:#4a5568" onclick="exportEmpReport(${r.id},'${(r.employee_name||'').replace(/'/g,'\\x27')}')">📄</button></td>
   </tr>`).join('');
+  // pagination
+  const pg = document.getElementById('rpt-pagination');
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  const btnS = (active) => `style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e0;background:${active?'#3182ce':'#fff'};color:${active?'#fff':'#2d3748'};cursor:${active?'default':'pointer'};font-size:13px"`;
+  let html = `<button onclick="rptGoPage(${rptPage-1})" ${rptPage===1?'disabled':''} style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e0;background:#fff;cursor:pointer;font-size:13px">‹</button>`;
+  for (let p = 1; p <= totalPages; p++) html += `<button onclick="rptGoPage(${p})" ${btnS(p===rptPage)}>${p}</button>`;
+  html += `<button onclick="rptGoPage(${rptPage+1})" ${rptPage===totalPages?'disabled':''} style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e0;background:#fff;cursor:pointer;font-size:13px">›</button>`;
+  html += `<span style="font-size:12px;color:#718096">แสดง ${(rptPage-1)*RPT_PAGE_SIZE+1}–${Math.min(rptPage*RPT_PAGE_SIZE,filtered.length)} จาก ${filtered.length}</span>`;
+  pg.innerHTML = html;
+}
+
+function rptGoPage(p) { rptPage = p; renderReport(); }
+
+function exportReport(fmt) {
+  const empQ    = (document.getElementById('rpt-emp')?.value    || '').toLowerCase();
+  const typeQ   = (document.getElementById('rpt-type')?.value   || '');
+  const statusQ = (document.getElementById('rpt-status')?.value || '');
+  const filtered = rptAllData.filter(r => {
+    if (empQ    && !r.employee_name.toLowerCase().includes(empQ) && !(r.emp_code||'').toLowerCase().includes(empQ)) return false;
+    if (typeQ   && String(r.leave_type_id) !== typeQ) return false;
+    if (statusQ && r.status !== statusQ) return false;
+    return true;
+  });
+  if (!filtered.length) return swalError('ไม่มีข้อมูลสำหรับ export');
+  if (fmt === 'csv') {
+    const header = ['รหัสพนักงาน','ชื่อ-นามสกุล','แผนก','ฝ่าย','ประเภทการลา','วันที่เริ่ม','วันที่สิ้นสุด','จำนวนวัน','สถานะ'];
+    const rows = filtered.map(r => [r.emp_code, r.employee_name, r.department, r.division, r.leave_type_name, fmtDate(r.start_date), fmtDate(r.end_date), r.days, r.status]);
+    const csv = [header, ...rows].map(row => row.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `leave_report_${document.getElementById('rpt-year')?.value||'all'}.csv`; a.click();
+  } else if (fmt === 'print') {
+    const STATUS_TH = { pending:'รอตรวจสอบ', approved_l1:'รอระดับอนุมัติ', approved:'อนุมัติแล้ว', rejected:'ปฏิเสธ', cancelled:'ยกเลิก' };
+    const rows = filtered.map(r => `<tr><td>${r.emp_code}</td><td>${r.employee_name}</td><td>${r.department}</td><td>${r.division}</td><td>${r.leave_type_name}</td><td>${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}</td><td style="text-align:center">${r.days}</td><td>${STATUS_TH[r.status]||r.status}</td></tr>`).join('');
+    const win = window.open('','_blank');
+    win.document.write(`<html><head><title>รายงานการลา</title><style>body{font-family:sans-serif;font-size:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:4px 8px}th{background:#e2e8f0}</style></head><body><h2>รายงานการลา ปี ${document.getElementById('rpt-year')?.value||''}</h2><table><thead><tr><th>รหัส</th><th>ชื่อ</th><th>แผนก</th><th>ฝ่าย</th><th>ประเภท</th><th>ช่วงวันที่</th><th>วัน</th><th>สถานะ</th></tr></thead><tbody>${rows}</tbody></table></body></html>`);
+    win.document.close(); win.print();
+  }
+}
+
+function exportEmpReport(leaveId, empName) {
+  const rows = rptAllData.filter(r => r.employee_name === empName);
+  if (!rows.length) return;
+  const STATUS_TH = { pending:'รอตรวจสอบ', approved_l1:'รอระดับอนุมัติ', approved:'อนุมัติแล้ว', rejected:'ปฏิเสธ', cancelled:'ยกเลิก' };
+  const trs = rows.map(r => `<tr><td>${r.leave_type_name}</td><td>${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}</td><td style="text-align:center">${r.days}</td><td>${STATUS_TH[r.status]||r.status}</td></tr>`).join('');
+  const totalDays = rows.reduce((s,r)=>s+(r.days||0),0);
+  const win = window.open('','_blank');
+  win.document.write(`<html><head><title>รายงานการลา - ${empName}</title><style>body{font-family:sans-serif;font-size:13px;padding:20px}h2{margin-bottom:4px}p{margin:2px 0;color:#555}table{border-collapse:collapse;width:100%;margin-top:14px}th,td{border:1px solid #ccc;padding:6px 10px}th{background:#e2e8f0}.total{font-weight:600;color:#2d3748}</style></head><body>
+  <h2>รายงานการลา</h2>
+  <p>พนักงาน: <b>${empName}</b> (${rows[0].emp_code})</p>
+  <p>แผนก: ${rows[0].department} | ฝ่าย: ${rows[0].division}</p>
+  <table><thead><tr><th>ประเภทการลา</th><th>ช่วงวันที่</th><th style="text-align:center">วัน</th><th>สถานะ</th></tr></thead><tbody>${trs}<tr><td colspan="2" style="text-align:right;font-weight:600">รวม</td><td style="text-align:center;font-weight:600">${totalDays}</td><td></td></tr></tbody></table>
+  </body></html>`);
+  win.document.close(); win.print();
 }
 
 // ====== HELPERS ======
@@ -2934,7 +3364,7 @@ async function loadLeaveRecords() {
   const data = await api('GET', `/hr/leave-records?${params}`);
   const tbody = document.getElementById('lm-tbody');
   const countEl = document.getElementById('lm-count');
-  if (!Array.isArray(data)) { tbody.innerHTML = '<tr><td colspan="9" class="empty">เกิดข้อผิดพลาด</td></tr>'; return; }
+  if (!Array.isArray(data)) { tbody.innerHTML = '<tr><td colspan="10" class="empty">เกิดข้อผิดพลาด</td></tr>'; return; }
   countEl.textContent = `พบ ${data.length} รายการ`;
 
   // populate type dropdown ครั้งแรก
@@ -2950,26 +3380,31 @@ async function loadLeaveRecords() {
     if (Array.isArray(types)) types.forEach(t => { const o = document.createElement('option'); o.value=t.id; o.textContent=t.name; elType.appendChild(o); });
   }
 
+  const lmApprovalCell = (approvals, level) => {
+    const a = (approvals||[]).find(x => x.level === level);
+    if (!a || !a.approver_name) return '<span style="color:#a0aec0;font-size:12px">-</span>';
+    const cls = a.status==='approved'?'done':a.status==='rejected'?'fail':'active';
+    const badgeColor = cls==='done'?'#c6f6d5;color:#22543d':cls==='fail'?'#fed7d7;color:#742a2a':'#bee3f8;color:#2a4365';
+    const badgeLabel = {done:'อนุมัติ',fail:'ปฏิเสธ',active:'รอ'}[cls];
+    return `<div style="font-size:12px;font-weight:600;color:#2d3748">${a.approver_name}</div><span style="font-size:11px;padding:1px 7px;border-radius:12px;background:${badgeColor}">${badgeLabel}</span>`;
+  };
   tbody.innerHTML = data.length ? data.map(r => {
-    const steps = (r.approvals||[]).map((a,i) => {
-      const cls = a.status==='approved'?'done':a.status==='rejected'?'fail':(i===0||r.approvals[i-1]?.status==='approved')?'active':'';
-      return `<div class="step ${cls}" title="${['หัวหน้าหน่วย','หัวหน้าแผนก','ผู้จัดการฝ่าย'][i]}: ${a.status}"></div>`;
-    }).join('');
     return `<tr>
       <td style="font-family:monospace;font-size:12px">${r.request_no}</td>
       <td>${r.employee_name}<br><span style="font-size:11px;color:#718096">${r.emp_code}</span></td>
       <td style="font-size:12px">${r.department}</td>
       <td style="font-size:12px">${r.leave_type_name}</td>
-      <td style="font-size:12px">${r.start_date}<br>${r.end_date!==r.start_date?r.end_date:''}</td>
-      <td style="text-align:center">${r.days}</td>
+      <td style="font-size:12px">${fmtDate(r.start_date)}<br>${r.end_date!==r.start_date?fmtDate(r.end_date):''}</td>
+      <td style="text-align:center">${fmtDuration(r.days, r.hours)}</td>
       <td>${statusBadge(r.status)}</td>
-      <td><div class="steps" style="width:80px">${steps}</div></td>
+      <td>${lmApprovalCell(r.approvals,1)}</td>
+      <td>${lmApprovalCell(r.approvals,2)}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-sm" style="background:#ebf4ff;color:#2b6cb0;margin-right:4px" onclick='openEditLeave(${JSON.stringify(JSON.stringify(r))})'>แก้ไข</button>
         <button class="btn btn-danger btn-sm" onclick="deleteLeaveRecord(${r.id},'${r.request_no}')">ลบ</button>
       </td>
     </tr>`;
-  }).join('') : '<tr><td colspan="9" class="empty">ไม่พบข้อมูล</td></tr>';
+  }).join('') : '<tr><td colspan="10" class="empty">ไม่พบข้อมูล</td></tr>';
 }
 
 function openEditLeave(rJson) {
@@ -2981,21 +3416,29 @@ function openEditLeave(rJson) {
   document.getElementById('el-start').value  = r.start_date;
   document.getElementById('el-end').value    = r.end_date;
   document.getElementById('el-reason').value = r.reason;
-  // ป้องกันการเลือกวันย้อนหลัง
   const todayStr = new Date().toISOString().split('T')[0];
   document.getElementById('el-start').min = todayStr;
   document.getElementById('el-end').min   = todayStr;
+  // load checker (level 1) and approver (level 2) dropdowns with current values
+  const lvl1 = r.approvals ? r.approvals.find(a => a.level === 1) : null;
+  const lvl2 = r.approvals ? r.approvals.find(a => a.level === 2) : null;
+  loadApproverSelect('el-checker',  lvl1 ? lvl1.approver_id : null, 1);
+  loadApproverSelect('el-approver', lvl2 ? lvl2.approver_id : null, 2);
   document.getElementById('edit-leave-modal').classList.add('open');
 }
 function closeEditLeaveModal() { document.getElementById('edit-leave-modal').classList.remove('open'); }
 
 async function saveLeaveRecord() {
+  const checkerId  = document.getElementById('el-checker').value;
+  const approverId = document.getElementById('el-approver').value;
   const r = await api('PUT', `/hr/leave-records/${currentEditLeaveId}`, {
     leave_type_id: parseInt(document.getElementById('el-type').value),
-    status:     document.getElementById('el-status').value,
-    start_date: document.getElementById('el-start').value,
-    end_date:   document.getElementById('el-end').value,
-    reason:     document.getElementById('el-reason').value,
+    status:      document.getElementById('el-status').value,
+    start_date:  document.getElementById('el-start').value,
+    end_date:    document.getElementById('el-end').value,
+    reason:      document.getElementById('el-reason').value,
+    checker_id:  checkerId  ? parseInt(checkerId)  : undefined,
+    approver_id: approverId ? parseInt(approverId) : undefined,
   });
   if (r.error) return setAlert('edit-leave-alert', r.error, 'error');
   setAlert('edit-leave-alert', r.message, 'success');
@@ -3010,8 +3453,300 @@ async function deleteLeaveRecord(id, no) {
   });
 }
 
+// ====== ADD LEAVE RECORD (HR) ======
+let fpAlStart, fpAlEnd;
+
+async function loadApproverSelect(selectId, currentId, level) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const first = sel.options[0];
+  sel.innerHTML = '';
+  sel.appendChild(first);
+  // โหลดจาก /approver-candidates ซึ่ง UNION ทั้ง role-based + dept_approvers ที่ HR Admin กำหนด
+  const url = level ? `/hr/approver-candidates?level=${level}` : '/hr/approver-candidates';
+  const data = await api('GET', url);
+  if (Array.isArray(data)) {
+    data.forEach(u => sel.appendChild(new Option(`${u.name} (${u.employee_id}) — ${u.department}`, u.id)));
+  }
+  if (currentId != null) sel.value = String(currentId);
+}
+
+// ====== AL modal — time range helpers (module-scope so alLookupEmp can call them) ======
+function alWithEmpType(fn) {
+  const origType = user?.employee_type, origProb = user?.probation_start_date;
+  if (user) { user.employee_type = _alEmployee?.employee_type || 'monthly'; user.probation_start_date = _alEmployee?.probation_start_date || null; }
+  const result = fn();
+  if (user) { user.employee_type = origType; user.probation_start_date = origProb; }
+  return result;
+}
+function alDateStr(d) { if (!d) return null; const p = n => String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function alGetISO(side) {
+  const fp = side === 'start' ? fpAlStart : fpAlEnd;
+  if (!fp || !fp.selectedDates[0]) return null;
+  const d = fp.selectedDates[0];
+  const p = n => String(n).padStart(2,'0');
+  const dateStr = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  const timeEl = document.getElementById(side === 'start' ? 'al-start-time' : 'al-end-time');
+  const timeVal = timeEl?.value || (side === 'start' ? '08:00' : '17:00');
+  return `${dateStr}T${timeVal}`;
+}
+function alApplyTimeToInput(dateStr, timeInputId, side) {
+  const range = dateStr ? alWithEmpType(() => getWorkTimeRange(dateStr)) : null;
+  const el = document.getElementById(timeInputId);
+  if (!el) return;
+  if (range) {
+    el.min = range.minTime;
+    el.max = range.maxTime;
+    if (side) el.value = side === 'max' ? range.maxTime : range.minTime;
+  } else {
+    el.min = '00:00'; el.max = '23:59';
+  }
+}
+let _alTimeAlert = false;
+function alEnforceTimeInput(dateStr, timeInputId) {
+  if (_alTimeAlert) return;
+  const range = dateStr ? alWithEmpType(() => getWorkTimeRange(dateStr)) : null;
+  if (!range) return;
+  const el = document.getElementById(timeInputId);
+  if (!el || !el.value) return;
+  const [selH, selM] = el.value.split(':').map(Number);
+  const [maxH, maxM] = range.maxTime.split(':').map(Number);
+  const [minH, minM] = range.minTime.split(':').map(Number);
+  const overMax  = selH > maxH || (selH === maxH && selM > maxM);
+  const underMin = selH < minH || (selH === minH && selM < minM);
+  if (overMax || underMin) {
+    _alTimeAlert = true;
+    const clamp = overMax ? range.maxTime : range.minTime;
+    el.value = clamp;
+    const d = new Date(dateStr + 'T12:00:00');
+    const dowLbl = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'][d.getDay()];
+    Swal.fire({ icon:'warning', title:'เกินเวลาทำงาน',
+      html: `วัน<b>${dowLbl}</b> เวลาทำงานคือ <b>${range.minTime} – ${range.maxTime} น.</b><br>ระบบปรับเวลาเป็น <b>${clamp} น.</b> ให้อัตโนมัติ`,
+      confirmButtonColor:'#1e3a5f' }).then(() => { _alTimeAlert = false; alCalcDuration(); });
+  }
+}
+
+function openAddLeaveModal() {
+  const modal = document.getElementById('add-leave-modal');
+  modal.style.display = 'flex';
+  document.getElementById('add-leave-alert').innerHTML = '';
+  _alEmployee = null;
+  document.getElementById('al-empid').value = '';
+  document.getElementById('al-emp-name').innerHTML = '';
+  document.getElementById('al-days').value = '';
+  document.getElementById('al-hours').value = '';
+  document.getElementById('al-reason').value = '';
+  document.getElementById('al-status').value = 'approved';
+  document.getElementById('al-files').value = '';
+  document.getElementById('al-files-info').textContent = '';
+  // init flatpickr date-only + native time inputs
+  const fpLocale = { ...flatpickr.l10ns.th, firstDayOfWeek: 0, weekdays: { shorthand: ['อา','จ','อ','พ','พฤ','ศ','ส'], longhand: ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'] } };
+  const fpOpts = { enableTime: false, dateFormat: 'd-m-Y', allowInput: false, locale: fpLocale };
+  if (fpAlStart) fpAlStart.destroy();
+  if (fpAlEnd)   fpAlEnd.destroy();
+  document.getElementById('al-start-time').value = '08:00';
+  document.getElementById('al-end-time').value   = '17:00';
+  fpAlStart = flatpickr('#al-start-date', { ...fpOpts,
+    onChange: (sel) => {
+      const ds = alDateStr(sel[0]);
+      alApplyTimeToInput(ds, 'al-start-time', 'min');
+      alEnforceTimeInput(ds, 'al-start-time');
+      alCalcDuration();
+    }
+  });
+  fpAlEnd = flatpickr('#al-end-date', { ...fpOpts,
+    onChange: (sel) => {
+      const ds = alDateStr(sel[0]);
+      alApplyTimeToInput(ds, 'al-end-time', 'max');
+      alEnforceTimeInput(ds, 'al-end-time');
+      alCalcDuration();
+      const sv = alGetISO('start'), ev = alGetISO('end');
+      if (sv && ev && new Date(ev) <= new Date(sv)) {
+        Swal.fire({ icon:'error', title:'วันที่/เวลาไม่ถูกต้อง',
+          html:'<b>วันที่สิ้นสุดการลา</b> ต้องอยู่หลัง<br><b>วันที่เริ่มลา</b> กรุณาเลือกใหม่',
+          confirmButtonText:'ตกลง', confirmButtonColor:'#1e3a5f' });
+      }
+    }
+  });
+  document.getElementById('al-calc-info').textContent = '';
+  document.getElementById('al-days').readOnly = false;
+  document.getElementById('al-hours').readOnly = false;
+  // populate type dropdown
+  const sel = document.getElementById('al-type');
+  if (sel.options.length === 0 && leaveTypesCache.length) {
+    leaveTypesCache.forEach(t => {
+      const o = new Option(`${t.code ? '['+t.code+'] ' : ''}${t.name}`, t.id);
+      sel.appendChild(o);
+    });
+  } else if (sel.options.length === 0) {
+    api('GET', '/hr/leave-types').then(data => {
+      if (Array.isArray(data)) data.forEach(t => {
+        const o = new Option(`${t.code ? '['+t.code+'] ' : ''}${t.name}`, t.id);
+        sel.appendChild(o);
+      });
+    });
+  }
+  // populate checker/approver dropdowns
+  loadApproverSelect('al-checker', null, 1);
+  loadApproverSelect('al-approver', null, 2);
+  // show file names on change
+  document.getElementById('al-files').onchange = function() {
+    const names = Array.from(this.files).map(f => f.name).join(', ');
+    document.getElementById('al-files-info').textContent = names ? `เลือก: ${names}` : '';
+  };
+}
+
+function closeAddLeaveModal() {
+  document.getElementById('add-leave-modal').style.display = 'none';
+}
+
+function alCalcDuration() {
+  const startISO = alGetISO('start');
+  const endISO   = alGetISO('end');
+  const infoEl = document.getElementById('al-calc-info');
+  if (!startISO || !endISO) return;
+  const s = new Date(startISO), e = new Date(endISO);
+  if (e <= s) {
+    infoEl.style.color = '#c53030';
+    infoEl.textContent = '⚠️ วันที่สิ้นสุดต้องหลังวันที่เริ่มลา';
+    return;
+  }
+
+  const origType  = user?.employee_type;
+  const origProb  = user?.probation_start_date;
+  if (user) {
+    user.employee_type        = _alEmployee?.employee_type        || 'monthly';
+    user.probation_start_date = _alEmployee?.probation_start_date || null;
+  }
+
+  const startDate = startISO.slice(0, 10);
+  const endDate   = endISO.slice(0, 10);
+  const startDT   = startISO;
+  const endDT     = endISO;
+
+  const result = calcLeaveResultFE(startDate, endDate, startDT, endDT);
+
+  // restore user
+  if (user) {
+    user.employee_type        = origType;
+    user.probation_start_date = origProb;
+  }
+
+  const totalDays  = result.days;
+  const totalHours = parseFloat(result.hours.toFixed(2));
+
+  document.getElementById('al-days').value  = totalDays;
+  // ชั่วโมง: แสดงเฉพาะเมื่อลาไม่เต็มวัน (< 1 วัน) หรือมีชั่วโมงส่วนเกิน
+  document.getElementById('al-hours').value = totalDays < 1 ? totalHours : '';
+
+  const empTypeLbl = EMP_TYPE_LABEL[_alEmployee?.employee_type || 'monthly'] || '';
+  infoEl.style.color = '#4a9580';
+  infoEl.innerHTML = `✓ <b>${totalDays} วัน</b> (รวม ${totalHours} ชม.) — <span style="color:#2b6cb0">${empTypeLbl}</span>`;
+}
+
+let _alEmpTimer = null;
+let _alEmployee = null; // { employee_type, probation_start_date }
+
+const EMP_TYPE_LABEL = {
+  monthly:      'รายเดือน (จ-พฤ 9ชม / ศ 8ชม / ส 4ชม เว้นเสาร์)',
+  daily:        'รายวัน (จ-ส 8ชม | หักพักเที่ยง)',
+  housekeeping: 'แม่บ้าน (ตรวจสอบตามวันทดลองงาน)',
+};
+
+async function alLookupEmp() {
+  clearTimeout(_alEmpTimer);
+  _alEmpTimer = setTimeout(async () => {
+    const empid = document.getElementById('al-empid').value.trim();
+    const nameEl = document.getElementById('al-emp-name');
+    if (!empid) { nameEl.innerHTML = ''; _alEmployee = null; return; }
+    const data = await api('GET', `/hr/employees?search=${encodeURIComponent(empid)}`);
+    if (Array.isArray(data) && data.length) {
+      const exact = data.find(u => u.employee_id === empid) || data[0];
+      _alEmployee = { employee_type: exact.employee_type || 'monthly', probation_start_date: exact.probation_start_date || null };
+      const typeLabel = EMP_TYPE_LABEL[_alEmployee.employee_type] || _alEmployee.employee_type;
+      nameEl.innerHTML = `<span style="color:#276749">✓ ${exact.name} (${exact.department})</span><br><span style="font-size:11px;background:#ebf4ff;color:#2b6cb0;padding:2px 8px;border-radius:10px;margin-top:2px;display:inline-block">🏷 ${typeLabel}</span>`;
+      // อัปเดต label ชั่วโมง
+      const hpdEl = document.getElementById('al-hpd-label');
+      if (hpdEl) hpdEl.textContent = `(${typeLabel})`;
+      // re-apply time ranges ถ้ามีวันที่เลือกแล้ว
+      if (fpAlStart?.selectedDates[0]) alApplyTimeRange(fpAlStart, alDateStr(fpAlStart.selectedDates[0]), null);
+      if (fpAlEnd?.selectedDates[0])   alApplyTimeRange(fpAlEnd,   alDateStr(fpAlEnd.selectedDates[0]),   null);
+      alCalcDuration(); // คำนวนใหม่เมื่อรู้ประเภทพนักงาน
+    } else {
+      _alEmployee = null;
+      nameEl.innerHTML = '<span style="color:#c53030">✗ ไม่พบพนักงาน</span>';
+    }
+  }, 400);
+}
+
+async function submitAddLeave() {
+  const empid  = document.getElementById('al-empid').value.trim();
+  const typeId = document.getElementById('al-type').value;
+  const days   = document.getElementById('al-days').value;
+  const hours  = document.getElementById('al-hours').value;
+  const reason = document.getElementById('al-reason').value.trim();
+  const status = document.getElementById('al-status').value;
+  const alertEl = document.getElementById('add-leave-alert');
+
+  // แปลง dd/mm/yyyy HH:mm → YYYY-MM-DD และ YYYY-MM-DD HH:mm
+  const toISO = (dt) => {
+    if (!dt) return '';
+    const [datePart] = dt.split(' ');
+    const [d, m, y] = datePart.split('/');
+    return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  };
+  const toISODT = (dt) => {
+    if (!dt) return '';
+    const [datePart, timePart = '00:00'] = dt.split(' ');
+    const [d, m, y] = datePart.split('/');
+    return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')} ${timePart}`;
+  };
+  const startVal = fpAlStart?.input.value || '';
+  const endVal   = fpAlEnd?.input.value   || '';
+  const start    = toISO(startVal);
+  const end      = toISO(endVal);
+  const startDT  = toISODT(startVal);
+  const endDT    = toISODT(endVal);
+
+  if (!empid || !typeId || !start || !end) {
+    alertEl.innerHTML = '<div class="alert alert-error">กรุณากรอกข้อมูลให้ครบ (รหัสพนักงาน, ประเภทลา, วันที่)</div>';
+    return;
+  }
+  if (!days) {
+    alertEl.innerHTML = '<div class="alert alert-error">กรุณากรอกจำนวนวัน</div>';
+    return;
+  }
+  const checkerId  = document.getElementById('al-checker').value;
+  const approverId = document.getElementById('al-approver').value;
+  const files = document.getElementById('al-files').files;
+  const fd = new FormData();
+  fd.append('employee_id', empid);
+  fd.append('leave_type_id', typeId);
+  fd.append('start_date', start);
+  fd.append('end_date', end);
+  fd.append('start_datetime', startDT);
+  fd.append('end_datetime', endDT);
+  fd.append('days', days);
+  fd.append('hours', hours || '0');
+  fd.append('reason', reason || '-');
+  fd.append('status', status);
+  if (checkerId)  fd.append('checker_id',  checkerId);
+  if (approverId) fd.append('approver_id', approverId);
+  for (const f of files) fd.append('attachments', f);
+  const resp = await fetch('/api/hr/leave-records', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+    body: fd,
+  });
+  const r = await resp.json();
+  if (!resp.ok) { alertEl.innerHTML = `<div class="alert alert-error">${r.error||r.message}</div>`; return; }
+  closeAddLeaveModal();
+  const attMsg = r.attachments ? ` (ไฟล์แนบ ${r.attachments} ไฟล์)` : '';
+  swalSuccess(`บันทึกการลาสำเร็จ — ${r.request_no}${attMsg}`, () => loadLeaveRecords());
+}
+
 // ====== HR MANAGEMENT ======
-const ROLE_LABEL = { employee:'พนักงาน', unit_head:'หัวหน้าหน่วยงาน', department_head:'หัวหน้าแผนก', division_manager:'ผู้จัดการฝ่าย', hr_admin:'HR Admin' };
+const ROLE_LABEL = { employee:'พนักงาน', unit_head:'หัวหน้าหน่วยงาน', department_head:'หัวหน้าแผนก', division_manager:'ผู้จัดการ', hr_admin:'HR Admin' };
 let currentEmpId = null;
 let leaveTypesCache = [];
 
@@ -3064,7 +3799,7 @@ async function previewImport() {
 
     if (!dataRows.length) { preview.style.display = 'none'; btn.disabled = true; return; }
 
-    const roleLabel = { employee:'พนักงาน', unit_head:'หัวหน้าหน่วยงาน', department_head:'หัวหน้าแผนก', division_manager:'ผู้จัดการฝ่าย', hr_admin:'HR Admin' };
+    const roleLabel = { employee:'พนักงาน', unit_head:'หัวหน้าหน่วยงาน', department_head:'หัวหน้าแผนก', division_manager:'ผู้จัดการ', hr_admin:'HR Admin' };
     tbody.innerHTML = dataRows.map((r, i) => `<tr>
       <td>${i+1}</td>
       <td>${r[0]||''}</td><td>${r[1]||''}</td><td>${r[2]||''}</td>
@@ -3155,6 +3890,7 @@ function renderHrCalGrid() {
   const firstDay = new Date(hrCalYear, hrCalMonth, 1).getDay();
   const daysInMonth = new Date(hrCalYear, hrCalMonth + 1, 0).getDate();
   const today = new Date();
+  const pad = n => String(n).padStart(2,'0');
 
   const dayMap = {};
   hrCalData.forEach(r => {
@@ -3169,85 +3905,102 @@ function renderHrCalGrid() {
     }
   });
 
-  const DOW = ['อา','จ','อ','พ','พฤ','ศ','ส'];
-  const dowColors = ['#e53e3e','#4a5568','#4a5568','#4a5568','#4a5568','#4a5568','#3182ce'];
-  const dowBg    = ['#fff5f5','#f7fafc','#f7fafc','#f7fafc','#f7fafc','#f7fafc','#ebf8ff'];
+  const DOW = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
 
-  let html = `<div style="border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);border:1px solid #e2e8f0">
-  <table style="width:100%;border-collapse:collapse;min-width:600px">
-    <thead><tr>${DOW.map((d,i)=>`<th style="padding:12px 6px;text-align:center;font-size:13px;font-weight:800;color:${dowColors[i]};background:${dowBg[i]};border-bottom:2px solid #e2e8f0;letter-spacing:.5px">${d}</th>`).join('')}</tr></thead>
-    <tbody>`;
+  // header row
+  let html = `<div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 8px 32px rgba(15,39,68,.12);border:1px solid #e2e9f3">`;
+
+  // day-of-week headers
+  html += `<div style="display:grid;grid-template-columns:repeat(7,1fr)">`;
+  const dowHdrStyle = [
+    'background:linear-gradient(135deg,#fee2e2,#fecaca);color:#991b1b;',
+    'background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#1e3a8a;',
+    'background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#1e3a8a;',
+    'background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#1e3a8a;',
+    'background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#1e3a8a;',
+    'background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#1e3a8a;',
+    'background:linear-gradient(135deg,#e0f2fe,#bae6fd);color:#075985;',
+  ];
+  DOW.forEach((d, i) => {
+    html += `<div style="${dowHdrStyle[i]}padding:14px 6px;text-align:center;font-size:13px;font-weight:800;letter-spacing:.3px;border-bottom:2px solid rgba(0,0,0,.06)">${d}</div>`;
+  });
+  html += '</div>';
+
+  // calendar body grid — fixed rows
+  const totalRows = Math.ceil((firstDay + daysInMonth) / 7);
+  html += `<div style="display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:130px">`;
 
   let day = 1;
-  for (let row = 0; row < 6; row++) {
-    if (day > daysInMonth) break;
-    html += '<tr>';
-    for (let col = 0; col < 7; col++) {
-      const cellDay = (row === 0 && col < firstDay) ? null : day <= daysInMonth ? day++ : null;
-      const isToday = cellDay && hrCalYear === today.getFullYear() && hrCalMonth === today.getMonth() && cellDay === today.getDate();
-      const isSun = col === 0, isSat = col === 6;
-      const events = cellDay ? (dayMap[cellDay] || []) : [];
-      const visible = events.slice(0, 3);
-      const extra = events.length - visible.length;
+  const totalCells = totalRows * 7;
+  for (let i = 0; i < totalCells; i++) {
+    const col = i % 7;
+    const cellDay = (i < firstDay) ? null : day <= daysInMonth ? day++ : null;
+    const isToday = cellDay && hrCalYear === today.getFullYear() && hrCalMonth === today.getMonth() && cellDay === today.getDate();
+    const isSun = col === 0, isSat = col === 6;
+    const events = cellDay ? (dayMap[cellDay] || []) : [];
+    const visible = events.slice(0, 3);
+    const extra = events.length - visible.length;
 
-      let cellBg = '', cellBorder = '', holBanner = '', dayLabel = '';
-      if (cellDay) {
-        const pad = n => String(n).padStart(2,'0');
-        const dStr = `${hrCalYear}-${pad(hrCalMonth+1)}-${pad(cellDay)}`;
-        if (isCompanyHoliday(dStr)) {
-          cellBg = 'background:linear-gradient(160deg,#fff5f5,#fff0f0);';
-          cellBorder = 'border-left:4px solid #fc8181;';
-          holBanner = `<div style="font-size:9px;background:linear-gradient(90deg,#e53e3e,#c53030);color:#fff;border-radius:6px;padding:2px 7px;margin-bottom:5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 3px rgba(229,62,62,.3)">🎌 ${companyHolidayName(dStr)}</div>`;
-        } else if (isSun) {
-          cellBg = 'background:linear-gradient(160deg,#faf5ff,#f5eeff);';
-          cellBorder = 'border-left:4px solid #b794f4;';
-        } else if (isSat) {
-          const ws = workScheduleCache[dStr];
-          const working = ws ? ws === 'working_sat' : isWorkingSaturday(new Date(hrCalYear, hrCalMonth, cellDay));
-          if (working) {
-            cellBg = 'background:linear-gradient(160deg,#f0fff4,#e6ffed);';
-            cellBorder = 'border-left:4px solid #68d391;';
-            dayLabel = `<span style="font-size:9px;font-weight:700;color:#276749;background:#c6f6d5;border-radius:5px;padding:1px 6px;margin-left:5px">✓ ทำงาน</span>`;
-          } else {
-            cellBg = 'background:linear-gradient(160deg,#fffaf0,#fff5e6);';
-            cellBorder = 'border-left:4px solid #f6ad55;';
-            dayLabel = `<span style="font-size:9px;font-weight:700;color:#c05621;background:#feebc8;border-radius:5px;padding:1px 6px;margin-left:5px">หยุด</span>`;
-          }
+    let bg = '', borderLeft = '', holBanner = '', dayLabel = '';
+
+    if (!cellDay) {
+      bg = 'background:linear-gradient(135deg,#f8fafd,#f1f5f9);';
+    } else if (isToday) {
+      bg = 'background:linear-gradient(160deg,#eff6ff,#dbeafe);'; borderLeft = 'border-left:3px solid #1565c0;';
+    } else {
+      const dStr = `${hrCalYear}-${pad(hrCalMonth+1)}-${pad(cellDay)}`;
+      if (isCompanyHoliday(dStr)) {
+        bg = 'background:linear-gradient(160deg,#fff1f2,#fecaca20);'; borderLeft = 'border-left:3px solid #ef4444;';
+        holBanner = `<div style="font-size:9px;background:linear-gradient(90deg,#dc2626,#b91c1c);color:#fff;border-radius:5px;padding:2px 6px;margin-bottom:4px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(220,38,38,.3)">🎌 ${companyHolidayName(dStr)}</div>`;
+      } else if (isSun) {
+        bg = 'background:linear-gradient(160deg,#fdf4ff,#f3e8ff);'; borderLeft = 'border-left:3px solid #c084fc;';
+      } else if (isSat) {
+        const ws = workScheduleCache[dStr];
+        const working = ws ? ws === 'working_sat' : isWorkingSaturday(new Date(hrCalYear, hrCalMonth, cellDay));
+        if (working) {
+          bg = 'background:linear-gradient(160deg,#f0fdf4,#dcfce7);'; borderLeft = 'border-left:3px solid #22c55e;';
+          dayLabel = `<span style="font-size:9px;font-weight:700;color:#14532d;background:#bbf7d0;border-radius:5px;padding:1px 5px;margin-left:4px">✓ ทำงาน</span>`;
         } else {
-          cellBg = 'background:#fff;';
+          bg = 'background:linear-gradient(160deg,#fffbeb,#fef3c7);'; borderLeft = 'border-left:3px solid #f59e0b;';
+          dayLabel = `<span style="font-size:9px;font-weight:700;color:#78350f;background:#fde68a;border-radius:5px;padding:1px 5px;margin-left:4px">หยุด</span>`;
         }
+      } else {
+        bg = 'background:#fff;';
       }
-
-      const numColor = isSun ? '#9f7aea' : isSat ? '#4299e1' : '#2d3748';
-      const emptyBg  = 'background:#f9fafb;';
-      const todayExtra = isToday ? 'box-shadow:inset 0 0 0 2px #4299e1;background:linear-gradient(160deg,#ebf8ff,#e0f2fe)!important;' : '';
-
-      html += `<td style="vertical-align:top;padding:6px;border:1px solid #edf2f7;min-height:90px;${cellDay ? (isToday ? 'background:linear-gradient(160deg,#ebf8ff,#dbeafe);border-left:4px solid #4299e1;' : cellBg + cellBorder) : emptyBg}${!cellDay?'':''}">`;
-      if (cellDay) {
-        const numStyle = isToday
-          ? `display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#2b6cb0,#4299e1);color:#fff;font-size:13px;font-weight:800;box-shadow:0 2px 6px rgba(66,153,225,.4)`
-          : `font-size:13px;font-weight:700;color:${numColor}`;
-        html += `<div style="display:flex;align-items:center;margin-bottom:5px"><span style="${numStyle}">${cellDay}</span>${dayLabel}</div>`;
-        html += holBanner;
-        visible.forEach(ev => {
-          const color = hrCalTypeColors[ev.leave_type_name] || '#718096';
-          html += `<div title="${ev.employee_name} — ${ev.leave_type_name}" style="font-size:10px;font-weight:600;background:${color};color:#fff;border-radius:5px;padding:2px 7px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:default;box-shadow:0 1px 3px rgba(0,0,0,.15)">${ev.employee_name}</div>`;
-        });
-        if (extra > 0) html += `<div style="font-size:10px;color:#a0aec0;font-weight:600;margin-top:2px;padding:1px 4px;background:#f7fafc;border-radius:4px;display:inline-block">+${extra} อื่นๆ</div>`;
-      }
-      html += '</td>';
     }
-    html += '</tr>';
+
+    const numColor = !cellDay ? '' : isSun ? '#9333ea' : isSat ? '#0284c7' : '#1e293b';
+    const borderRight = col < 6 ? 'border-right:1px solid #e2e9f3;' : '';
+    const borderBottom = i < totalCells - 7 ? 'border-bottom:1px solid #e2e9f3;' : '';
+
+    html += `<div style="position:relative;overflow:hidden;padding:8px 9px;${bg}${borderLeft}${borderRight}${borderBottom}box-sizing:border-box;">`;
+    if (cellDay) {
+      const numBubble = isToday
+        ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#1976d2);color:#fff;font-size:13px;font-weight:800;box-shadow:0 3px 8px rgba(21,101,192,.4)">${cellDay}</span>`
+        : `<span style="font-size:14px;font-weight:800;color:${numColor}">${cellDay}</span>`;
+      html += `<div style="display:flex;align-items:center;margin-bottom:5px">${numBubble}${dayLabel}</div>`;
+      html += holBanner;
+      visible.forEach(ev => {
+        const color = hrCalTypeColors[ev.leave_type_name] || '#64748b';
+        const evJson = JSON.stringify(JSON.stringify(ev));
+        html += `<div onmouseenter="showTooltip(event,${evJson},'${color}')" onmouseleave="hideTooltip()" style="font-size:10px;font-weight:700;background:${color};color:#fff;border-radius:6px;padding:3px 8px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.18);letter-spacing:.1px;cursor:pointer">${ev.employee_name}</div>`;
+      });
+      if (extra > 0) html += `<div style="font-size:10px;color:#64748b;font-weight:700;padding:2px 6px;background:#e2e9f3;border-radius:5px;display:inline-block">+${extra} เพิ่มเติม</div>`;
+    }
+    html += '</div>';
   }
-  html += '</tbody></table></div>';
-  html += `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12px;align-items:center;padding:10px 14px;background:#f7fafc;border-radius:10px;border:1px solid #e2e8f0">
-    <span style="font-weight:700;color:#4a5568">ความหมายสี:</span>
-    <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#fff5f5,#fff0f0);border:2px solid #fc8181"></span><span style="color:#742a2a;font-weight:600">🎌 หยุดตามประเพณี</span></span>
-    <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#faf5ff,#f5eeff);border:2px solid #b794f4"></span><span style="color:#553c9a;font-weight:600">อาทิตย์</span></span>
-    <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#f0fff4,#e6ffed);border:2px solid #68d391"></span><span style="color:#276749;font-weight:600">✓ เสาร์ทำงาน</span></span>
-    <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#fffaf0,#fff5e6);border:2px solid #f6ad55"></span><span style="color:#c05621;font-weight:600">เสาร์หยุด</span></span>
-    <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#ebf8ff,#dbeafe);border:2px solid #4299e1"></span><span style="color:#2b6cb0;font-weight:600">วันนี้</span></span>
+  html += '</div></div>';
+
+  // legend
+  html += `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;font-size:12px;align-items:center;padding:12px 16px;background:#fff;border-radius:12px;border:1px solid #e2e9f3;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+    <span style="font-weight:800;color:#334155">ความหมายสี:</span>
+    <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:#fee2e2;border:2px solid #ef4444;display:inline-block"></span><span style="color:#7f1d1d;font-weight:600">🎌 หยุดตามประเพณี</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:#fdf4ff;border:2px solid #c084fc;display:inline-block"></span><span style="color:#581c87;font-weight:600">วันอาทิตย์</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:#f0fdf4;border:2px solid #22c55e;display:inline-block"></span><span style="color:#14532d;font-weight:600">✓ เสาร์ทำงาน</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:#fffbeb;border:2px solid #f59e0b;display:inline-block"></span><span style="color:#78350f;font-weight:600">เสาร์หยุด</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#1976d2);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff">วัน</span><span style="color:#1e3a8a;font-weight:600">วันนี้</span></span>
   </div>`;
+
   document.getElementById('hr-cal-grid').innerHTML = html;
 }
 
@@ -3280,14 +4033,15 @@ function renderHrEmpTable() {
     <td style="font-family:monospace">${u.employee_id}</td>
     <td>${u.name}</td>
     <td style="font-size:13px">${u.email}</td>
+    <td style="font-size:13px">${u.unit||''}</td>
+    <td>${u.department||''}</td>
+    <td style="font-size:13px">${u.division||''}</td>
     <td><span class="badge ${u.role === 'hr_admin' ? 'badge-approved' : u.role === 'employee' ? 'badge-cancelled' : 'badge-l1'}">${ROLE_LABEL[u.role]||u.role}</span></td>
-    <td>${u.department}</td>
-    <td style="font-size:13px">${u.unit}</td>
     <td style="white-space:nowrap">
       <button class="btn btn-sm" style="background:#ebf4ff;color:#2b6cb0;margin-right:4px" onclick="openEmpModal(${u.id})">แก้ไข</button>
       <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${u.id},'${u.name}')">ลบ</button>
     </td>
-  </tr>`).join('') : '<tr><td colspan="7" class="empty">ไม่พบข้อมูล</td></tr>';
+  </tr>`).join('') : '<tr><td colspan="8" class="empty">ไม่พบข้อมูล</td></tr>';
 
   const infoEl = document.getElementById('hr-emp-table-info');
   if (infoEl) infoEl.textContent = total
@@ -3403,6 +4157,8 @@ const PROTECTED_ROLES = ['employee','unit_head','department_head','division_mana
 
 // ===== USER MENU PERMISSIONS (per-user) =====
 let upAllData = [];
+let upPage = 1;
+const UP_PAGE_SIZE = 20;
 
 // สิทธิ์ที่ HR Admin สามารถมอบให้พนักงานรายบุคคล
 // (พนักงาน, นำเข้า Excel, สิทธิ์, ผู้อนุมัติ, ประเภทการลา — hr_admin เท่านั้น จึงไม่อยู่ในรายการนี้)
@@ -3427,7 +4183,8 @@ async function loadUserPerms() {
   filterUserPerms();
 }
 
-function filterUserPerms() {
+function filterUserPerms(resetPage) {
+  if (resetPage) upPage = 1;
   const search = (document.getElementById('up-search')?.value || '').toLowerCase();
   const dept   = (document.getElementById('up-dept')?.value   || '').toLowerCase();
   const tbody  = document.getElementById('up-tbody');
@@ -3436,21 +4193,45 @@ function filterUserPerms() {
     const matchD = !dept || (u.department||'').toLowerCase().includes(dept);
     return matchS && matchD;
   });
-  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty">ไม่พบข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = filtered.map(u => {
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">ไม่พบข้อมูล</td></tr>';
+    document.getElementById('up-pagination').innerHTML = '';
+    return;
+  }
+  const totalPages = Math.ceil(filtered.length / UP_PAGE_SIZE);
+  if (upPage > totalPages) upPage = totalPages;
+  const pageData = filtered.slice((upPage - 1) * UP_PAGE_SIZE, upPage * UP_PAGE_SIZE);
+  tbody.innerHTML = pageData.map((u, i) => {
     const tds = UP_FIELDS.map(f =>
-      `<td style="text-align:center"><label class="toggle"><input type="checkbox" ${u[f.key] ? 'checked' : ''}
+      `<td style="text-align:center;padding:10px 8px"><label class="toggle"><input type="checkbox" ${u[f.key] ? 'checked' : ''}
         onchange="updateUserPerm(${u.id},'${f.key}',this.checked,this)"><span class="slider"></span></label></td>`
     ).join('');
     const roleLabel = ROLE_LABEL[u.role] || u.role;
-    return `<tr>
-      <td><b>${u.name}</b><br><span style="font-size:11px;color:#718096">${roleLabel}</span></td>
-      <td style="font-size:13px">${u.employee_id||''}</td>
-      <td style="font-size:13px">${u.department||''}</td>
+    const roleColor = u.role==='hr_admin'?'#c6f6d5;color:#22543d':u.role==='employee'?'#e2e8f0;color:#4a5568':'#bee3f8;color:#2a4365';
+    return `<tr style="transition:background .15s" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
+      <td style="padding:10px 14px">
+        <div style="font-weight:700;color:#1e3a5f;font-size:14px">${u.name}</div>
+        <span style="font-size:11px;background:${roleColor};padding:2px 8px;border-radius:20px;font-weight:600">${roleLabel}</span>
+      </td>
+      <td style="font-family:monospace;font-size:13px;color:#4a5568;text-align:center;padding:10px 14px">${u.employee_id||''}</td>
+      <td style="font-size:13px;color:#4a5568;padding:10px 14px">${u.department||''}</td>
       ${tds}
     </tr>`;
   }).join('');
+  // pagination controls
+  const pg = document.getElementById('up-pagination');
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  const btnStyle = (active) => `style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e0;background:${active?'#3182ce':'#fff'};color:${active?'#fff':'#2d3748'};cursor:${active?'default':'pointer'};font-size:13px"`;
+  let html = `<button onclick="upGoPage(${upPage-1})" ${upPage===1?'disabled':''} style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e0;background:#fff;cursor:pointer;font-size:13px">‹</button>`;
+  for (let p = 1; p <= totalPages; p++) {
+    html += `<button onclick="upGoPage(${p})" ${btnStyle(p===upPage)}>${p}</button>`;
+  }
+  html += `<button onclick="upGoPage(${upPage+1})" ${upPage===totalPages?'disabled':''} style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e0;background:#fff;cursor:pointer;font-size:13px">›</button>`;
+  html += `<span style="font-size:12px;color:#718096">แสดง ${(upPage-1)*UP_PAGE_SIZE+1}–${Math.min(upPage*UP_PAGE_SIZE,filtered.length)} จาก ${filtered.length} รายการ</span>`;
+  pg.innerHTML = html;
 }
+
+function upGoPage(p) { upPage = p; filterUserPerms(); }
 
 async function updateUserPerm(userId, field, value, checkbox) {
   const r = await api('PUT', `/hr/user-permissions/${userId}`, { [field]: value ? 1 : 0 });
@@ -3467,18 +4248,19 @@ async function loadPermissions() {
   if (!Array.isArray(data)) return;
   tbody.innerHTML = data.map(p => {
     const fields = ['can_view_all_requests','can_export','can_manage_employees','can_manage_leave_types','can_view_report'];
-    const tds = fields.map(f => `<td style="text-align:center">
+    const tds = fields.map(f => `<td style="text-align:center;padding:12px 10px">
       <label class="toggle"><input type="checkbox" ${p[f] ? 'checked' : ''} onchange="updatePerm('${p.role}','${f}',this.checked)"><span class="slider"></span></label>
     </td>`).join('');
     const isProtected = PROTECTED_ROLES.includes(p.role);
-    const roleLabel = `<b>${ROLE_LABEL[p.role]||p.role}</b>${isProtected ? ' <span style="font-size:10px;background:#e2e8f0;color:#718096;border-radius:4px;padding:1px 5px">ระบบ</span>' : ''}`;
-    const editBtn = `<button class="btn btn-sm" style="background:#ebf4ff;color:#2b6cb0;margin-right:4px" onclick="editPermDesc('${p.role}','${(p.description||'').replace(/'/g,"\\'")}')">✏️ แก้ไข</button>`;
-    const delBtn = isProtected ? '' : `<button class="btn btn-danger btn-sm" onclick="deletePermRole('${p.role}')">ลบ</button>`;
-    return `<tr>
-      <td>${roleLabel}</td>
+    const rlColor = p.role==='hr_admin'?'#c6f6d5;color:#22543d':p.role==='employee'?'#e2e8f0;color:#4a5568':'#bee3f8;color:#2a4365';
+    const roleLabel = `<span style="background:${rlColor};padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${ROLE_LABEL[p.role]||p.role}</span>${isProtected ? ' <span style="font-size:10px;background:#e2e8f0;color:#718096;border-radius:4px;padding:1px 5px;margin-left:4px">ระบบ</span>' : ''}`;
+    const editBtn = `<button class="btn btn-sm" style="background:#ebf4ff;color:#2b6cb0;margin-right:4px" onclick="editPermDesc('${p.role}','${(p.description||'').replace(/'/g,"\\'")}')">✏️</button>`;
+    const delBtn = isProtected ? '' : `<button class="btn btn-danger btn-sm" onclick="deletePermRole('${p.role}')">🗑️</button>`;
+    return `<tr style="transition:background .15s" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
+      <td style="padding:12px 16px">${roleLabel}</td>
       ${tds}
-      <td style="font-size:12px;color:#718096;max-width:180px">${p.description||''}</td>
-      <td style="white-space:nowrap">${editBtn}${delBtn}</td>
+      <td style="font-size:12px;color:#718096;max-width:180px;padding:12px 16px">${p.description||''}</td>
+      <td style="white-space:nowrap;text-align:center;padding:12px 16px">${editBtn}${delBtn}</td>
     </tr>`;
   }).join('');
 }
@@ -3537,14 +4319,22 @@ async function loadDeptApprovers() {
   const data = await api('GET', '/hr/dept-approvers');
   await loadApproverCandidates();
 
+  // populate department dropdown
+  const daDept = document.getElementById('da-dept');
+  if (daDept) {
+    const depts = data.departments || [];
+    const curVal = daDept.value;
+    daDept.innerHTML = '<option value="">— เลือกแผนก —</option>' + depts.map(d => `<option value="${d}"${d===curVal?' selected':''}>${d}</option>`).join('');
+  }
+
   if (!data || data.error) return;
   const tbody = document.getElementById('da-tbody');
   const rows = data.approvers || [];
 
-  // group by department + approver_name
+  // group by department + approver_user_id
   const grouped = {};
   rows.forEach(r => {
-    const key = `${r.department}||${r.approver_name}`;
+    const key = `${r.department}||${r.approver_user_id}`;
     if (!grouped[key]) grouped[key] = { ...r, levels: [] };
     grouped[key].levels.push({ level: r.level, id: r.id });
   });
@@ -3558,18 +4348,19 @@ async function loadDeptApprovers() {
   const entries = Object.values(grouped);
   tbody.innerHTML = entries.length ? entries.map(r => {
     const levelsSorted = r.levels.sort((a,b) => a.level - b.level);
-    const badges = levelsSorted.map(l => levelBadge(l.level)).join(' , ');
+    const badges = levelsSorted.map(l => levelBadge(l.level)).join(' ');
     const actionBtns = levelsSorted.map(l =>
-      `<button class="btn btn-sm" style="background:#ebf4ff;color:#2b6cb0;margin-right:4px" onclick="editDeptApprover(${l.id},'${r.department}',${l.level},${r.approver_user_id})">✏️ แก้ไข</button>` +
-      `<button class="btn btn-danger btn-sm" onclick="deleteDeptApprover(${l.id})">ลบ</button>`
-    ).join(' &nbsp; ');
-    return `<tr>
-      <td>${r.department}</td>
-      <td>${badges}</td>
-      <td>${r.approver_name}</td>
-      <td style="font-family:monospace;font-size:13px">${r.approver_emp_id}</td>
-      <td style="font-size:13px">${ROLE_LABEL[r.approver_role]||r.approver_role}</td>
-      <td style="white-space:nowrap">${actionBtns}</td>
+      `<button class="btn btn-sm" style="background:#ebf4ff;color:#2b6cb0;margin-right:4px" onclick="editDeptApprover(${l.id},'${r.department}',${l.level},${r.approver_user_id})">✏️</button>` +
+      `<button class="btn btn-danger btn-sm" onclick="deleteDeptApprover(${l.id})">🗑️</button>`
+    ).join(' ');
+    const roleColor = r.approver_role==='hr_admin'?'#c6f6d5;color:#22543d':r.approver_role==='employee'?'#e2e8f0;color:#4a5568':'#bee3f8;color:#2a4365';
+    return `<tr style="transition:background .15s" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
+      <td style="padding:12px 16px;font-weight:700;color:#1e3a5f">${r.department}</td>
+      <td style="text-align:center;padding:12px 14px">${badges}</td>
+      <td style="padding:12px 16px;font-weight:600">${r.approver_name}</td>
+      <td style="font-family:monospace;font-size:13px;text-align:center;padding:12px 14px;color:#4a5568">${r.approver_emp_id}</td>
+      <td style="padding:12px 14px"><span style="background:${roleColor};padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${ROLE_LABEL[r.approver_role]||r.approver_role}</span></td>
+      <td style="white-space:nowrap;text-align:center;padding:12px 14px">${actionBtns}</td>
     </tr>`;
   }).join('') : '<tr><td colspan="6" class="empty">ยังไม่มีการกำหนดผู้อนุมัติ</td></tr>';
 }
@@ -3650,21 +4441,21 @@ async function loadLeaveTypesHr() {
   tbody.innerHTML = data.map(lt => {
     const overDays = lt.requires_doc_over_days || 0;
     const code = lt.code || '';
-    return `<tr>
-    <td style="text-align:center"><input id="ltcode-${lt.id}" value="${code}" placeholder="เช่น S02" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:72px;text-align:center;font-weight:700;color:#2b6cb0"></td>
-    <td><input id="ltname-${lt.id}" value="${lt.name}" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:200px"></td>
-    <td style="text-align:center"><input type="number" id="ltdays-${lt.id}" value="${lt.max_days_per_year}" style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;width:80px;text-align:center" min="0"></td>
-    <td style="text-align:center"><label class="toggle"><input type="checkbox" id="ltdoc-${lt.id}" ${lt.requires_document ? 'checked' : ''}><span class="slider"></span></label></td>
-    <td style="text-align:center">
+    return `<tr style="transition:background .15s" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
+    <td style="text-align:center;padding:10px 14px"><input id="ltcode-${lt.id}" value="${code}" placeholder="เช่น S02" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;width:72px;text-align:center;font-weight:700;color:#2b6cb0;font-size:14px;transition:.15s" onfocus="this.style.borderColor='#4299e1'" onblur="this.style.borderColor='#e2e8f0'"></td>
+    <td style="padding:10px 16px"><input id="ltname-${lt.id}" value="${lt.name}" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;width:200px;font-size:14px;transition:.15s" onfocus="this.style.borderColor='#4299e1'" onblur="this.style.borderColor='#e2e8f0'"></td>
+    <td style="text-align:center;padding:10px 14px"><input type="number" id="ltdays-${lt.id}" value="${lt.max_days_per_year}" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;width:80px;text-align:center;font-size:14px;font-weight:700;color:#1e3a5f;transition:.15s" min="0" onfocus="this.style.borderColor='#4299e1'" onblur="this.style.borderColor='#e2e8f0'"></td>
+    <td style="text-align:center;padding:10px 14px"><label class="toggle"><input type="checkbox" id="ltdoc-${lt.id}" ${lt.requires_document ? 'checked' : ''}><span class="slider"></span></label></td>
+    <td style="text-align:center;padding:10px 14px">
       <div style="display:flex;align-items:center;justify-content:center;gap:8px">
         <label class="toggle"><input type="checkbox" id="ltover-toggle-${lt.id}" ${overDays > 0 ? 'checked' : ''} onchange="toggleOverDays(${lt.id})"><span class="slider"></span></label>
-        <input type="number" id="ltover-${lt.id}" value="${overDays > 0 ? overDays : 3}" min="1" style="border:1px solid #e2e8f0;border-radius:6px;padding:4px 6px;width:64px;text-align:center;${overDays === 0 ? 'opacity:.4;pointer-events:none' : ''}">
+        <input type="number" id="ltover-${lt.id}" value="${overDays > 0 ? overDays : 3}" min="1" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 8px;width:64px;text-align:center;font-size:13px;transition:.15s;${overDays === 0 ? 'opacity:.4;pointer-events:none' : ''}" onfocus="this.style.borderColor='#4299e1'" onblur="this.style.borderColor='#e2e8f0'">
         <span style="font-size:12px;color:#718096">วัน</span>
       </div>
     </td>
-    <td style="text-align:center">
-      <button class="btn btn-sm" style="background:#ebf4ff;color:#2b6cb0;margin-right:4px" onclick="updateLeaveType(${lt.id})">บันทึก</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteLeaveType(${lt.id},'${lt.name}')">ลบ</button>
+    <td style="text-align:center;padding:10px 14px;white-space:nowrap">
+      <button class="btn btn-sm" style="background:linear-gradient(135deg,#276749,#38a169);color:#fff;margin-right:6px;box-shadow:0 2px 6px rgba(56,161,105,.3)" onclick="updateLeaveType(${lt.id})">💾 บันทึก</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteLeaveType(${lt.id},'${lt.name}')">🗑️</button>
     </td>
   </tr>`;
   }).join('');
@@ -4049,7 +4840,8 @@ function renderCalendar(headId, bodyId, year, month, events, myOnly) {
       const isPending = ['pending','approved_l1'].includes(ev.status);
       const cls = isPending ? 'ev-pending' : isMine ? 'ev-mine' : 'ev-other';
       const label = myOnly ? ev.leave_type_name : ev.employee_name;
-      return `<div class="cal-event ${cls}" onmouseenter="showTooltip(event,${JSON.stringify(JSON.stringify(ev))})" onmouseleave="hideTooltip()">${label}</div>`;
+      const tipColor = isPending ? '#f59e0b' : isMine ? '#1565c0' : '#22c55e';
+      return `<div class="cal-event ${cls}" onmouseenter="showTooltip(event,${JSON.stringify(JSON.stringify(ev))},'${tipColor}')" onmouseleave="hideTooltip()">${label}</div>`;
     }).join('');
     cells += `<div class="cal-day${isToday?' today':''}${dayClass}"><div class="cal-day-num">${d}${dayBadge}</div>${holidayRow}${evHtml}</div>`;
   }
@@ -4062,15 +4854,34 @@ function renderCalendar(headId, bodyId, year, month, events, myOnly) {
   body.innerHTML = cells;
 }
 
-function showTooltip(e, evJson) {
+function showTooltip(e, evJson, tipColor) {
   const ev = JSON.parse(evJson);
   const tip = document.getElementById('tooltip');
-  const isPending = ['pending','approved_l1'].includes(ev.status);
-  const statusLabel = isPending ? 'รออนุมัติ' : 'อนุมัติแล้ว';
-  tip.innerHTML = `<b>${ev.employee_name}</b><br>${ev.leave_type_name}<br>${ev.start_date} – ${ev.end_date} (${ev.days} วัน)<br>สถานะ: ${statusLabel}`;
+  const STATUS_MAP = {
+    pending:     { label:'⏳ รอตรวจสอบ',    bg:'#fef9c3', color:'#78350f' },
+    approved_l1: { label:'🔄 รอระดับอนุมัติ', bg:'#dbeafe', color:'#1e3a8a' },
+    approved:    { label:'✅ อนุมัติแล้ว',    bg:'#dcfce7', color:'#14532d' },
+    rejected:    { label:'❌ ปฏิเสธ',         bg:'#fee2e2', color:'#7f1d1d' },
+    cancelled:   { label:'🚫 ยกเลิก',         bg:'#f1f5f9', color:'#475569' },
+  };
+  const st = STATUS_MAP[ev.status] || { label: ev.status, bg:'#f1f5f9', color:'#475569' };
+  const color = tipColor || '#1565c0';
+  const daysText = ev.days < 1 ? `${Math.round((ev.hours||ev.days*8)*10)/10} ชม.` : `${ev.days} วัน`;
+  tip.style.setProperty('--tip-color', color);
+  tip.innerHTML = `
+    <div class="tip-name">${ev.employee_name || ev.leave_type_name}</div>
+    <div class="tip-row">📋 <span><b>${ev.leave_type_name || ''}</b></span></div>
+    <div class="tip-row">📅 <span>${fmtDate(ev.start_date)}${ev.start_date !== ev.end_date ? ' – ' + fmtDate(ev.end_date) : ''}</span></div>
+    <div class="tip-row">⏱️ <span><b>${daysText}</b></span></div>
+    ${ev.department ? `<div class="tip-row">🏢 <span>${ev.department}${ev.unit ? ' / ' + ev.unit : ''}</span></div>` : ''}
+    ${ev.reason ? `<div class="tip-row">💬 <span style="white-space:normal">${ev.reason.length>60?ev.reason.slice(0,60)+'…':ev.reason}</span></div>` : ''}
+    <div><span class="tip-status" style="background:${st.bg};color:${st.color}">${st.label}</span></div>
+  `;
   tip.style.display = 'block';
-  tip.style.left = (e.clientX + 14) + 'px';
-  tip.style.top  = (e.clientY + 14) + 'px';
+  // smart position — keep inside viewport
+  const x = e.clientX + 16, y = e.clientY + 16;
+  tip.style.left = (x + 270 > window.innerWidth ? e.clientX - 274 : x) + 'px';
+  tip.style.top  = (y + 220 > window.innerHeight ? e.clientY - 224 : y) + 'px';
 }
 function hideTooltip() { document.getElementById('tooltip').style.display = 'none'; }
 </script>

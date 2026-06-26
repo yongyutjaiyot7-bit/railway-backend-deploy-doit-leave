@@ -242,7 +242,7 @@ async function initDb() {
     insPerm.run('employee',         0, 0, 0, 0, 0, 'พนักงานทั่วไป ยื่นและดูคำขอของตนเองเท่านั้น');
     insPerm.run('unit_head',        1, 0, 0, 0, 0, 'หัวหน้าหน่วยงาน อนุมัติระดับ 1');
     insPerm.run('department_head',  1, 0, 0, 0, 1, 'หัวหน้าแผนก อนุมัติระดับ 2 และดูรายงานแผนก');
-    insPerm.run('division_manager', 1, 1, 0, 0, 1, 'ผู้จัดการฝ่าย อนุมัติระดับ 2 (ระดับอนุมัติ) และ export รายงาน');
+    insPerm.run('division_manager', 1, 1, 0, 0, 1, 'ผู้จัดการ อนุมัติระดับ 2 (ระดับอนุมัติ) และ export รายงาน');
     insPerm.run('hr_admin',         1, 1, 1, 1, 1, 'HR Admin เข้าถึงได้ทุกส่วน');
   }
 

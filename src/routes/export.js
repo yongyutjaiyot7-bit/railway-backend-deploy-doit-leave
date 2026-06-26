@@ -163,7 +163,7 @@ module.exports = function (db) {
     // สรุป
     const total = data.length;
     const approved = data.filter(r => r.สถานะ === 'อนุมัติแล้ว').length;
-    const pending  = data.filter(r => ['รอหัวหน้าหน่วย','รอหัวหน้าแผนก','รอผู้จัดการฝ่าย'].includes(r.สถานะ)).length;
+    const pending  = data.filter(r => ['รอตรวจสอบ','รอระดับอนุมัติ'].includes(r.สถานะ)).length;
     const rejected = data.filter(r => r.สถานะ === 'ปฏิเสธ').length;
     const totalDays = data.filter(r => r.สถานะ === 'อนุมัติแล้ว').reduce((s, r) => s + (Number(r['จำนวนวัน']) || 0), 0);
 

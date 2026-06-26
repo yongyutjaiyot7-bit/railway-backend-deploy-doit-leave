@@ -5,6 +5,9 @@ const XLSX = require('xlsx');
 const { authenticate } = require('../middleware/auth');
 
 const xlsUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const { upload, UPLOAD_DIR } = require('../middleware/upload');
+const fs = require('fs');
+const path = require('path');
 
 module.exports = function (db) {
   const router = express.Router();
@@ -286,6 +289,8 @@ module.exports = function (db) {
     if (![1,2].includes(Number(level))) return res.status(400).json({ message: 'level ต้องเป็น 1 หรือ 2' });
     const approver = db.prepare('SELECT * FROM users WHERE id=?').get(approver_user_id);
     if (!approver) return res.status(404).json({ message: 'ไม่พบผู้ใช้' });
+    const exactDup = db.prepare('SELECT id FROM dept_approvers WHERE department=? AND level=? AND approver_user_id=?').get(department, Number(level), Number(approver_user_id));
+    if (exactDup) return res.status(409).json({ message: `${approver.name} (${approver.employee_id}) เป็นผู้อนุมัติระดับ ${level} แผนก ${department} อยู่แล้ว` });
     db.prepare(`INSERT INTO dept_approvers (department,level,approver_user_id) VALUES (?,?,?)
       ON CONFLICT(department,level) DO UPDATE SET approver_user_id=excluded.approver_user_id, created_at=datetime('now')`)
       .run(department, Number(level), Number(approver_user_id));
@@ -302,8 +307,18 @@ module.exports = function (db) {
     if (!approver) return res.status(404).json({ message: 'ไม่พบผู้ใช้' });
     const newLevel = level ? Number(level) : row.level;
     const newDept = department || row.department;
-    db.prepare('UPDATE dept_approvers SET approver_user_id=?, level=?, department=? WHERE id=?').run(Number(approver_user_id), newLevel, newDept, Number(req.params.id));
-    res.json({ message: `อัปเดตผู้อนุมัติระดับ ${newLevel} แผนก ${newDept} เป็น "${approver.name}" สำเร็จ` });
+    // ตรวจสอบ (แผนก + ระดับ + คนเดิม) ซ้ำทั้ง 3 ช่อง (ยกเว้น row ที่กำลังแก้ไข)
+    const dupExact = db.prepare('SELECT id FROM dept_approvers WHERE department=? AND level=? AND approver_user_id=? AND id!=?').get(newDept, newLevel, Number(approver_user_id), Number(req.params.id));
+    if (dupExact) return res.status(409).json({ message: `${approver.name} (${approver.employee_id}) เป็นผู้อนุมัติระดับ ${newLevel} แผนก ${newDept} อยู่แล้ว` });
+    // ตรวจสอบ UNIQUE(department, level) slot ซ้ำกับแถวอื่น (ยกเว้น row ที่กำลังแก้ไข)
+    const dupSlot = db.prepare('SELECT id FROM dept_approvers WHERE department=? AND level=? AND id!=?').get(newDept, newLevel, Number(req.params.id));
+    if (dupSlot) return res.status(409).json({ message: `แผนก ${newDept} ระดับ ${newLevel} มีผู้อนุมัติอยู่แล้ว กรุณาลบก่อนหรือเลือกระดับอื่น` });
+    try {
+      db.prepare('UPDATE dept_approvers SET approver_user_id=?, level=?, department=? WHERE id=?').run(Number(approver_user_id), newLevel, newDept, Number(req.params.id));
+      res.json({ message: `อัปเดตผู้อนุมัติระดับ ${newLevel} แผนก ${newDept} เป็น "${approver.name}" สำเร็จ` });
+    } catch(e) {
+      res.status(409).json({ message: 'ไม่สามารถอัปเดตได้: ข้อมูลซ้ำกับรายการที่มีอยู่แล้ว' });
+    }
   });
 
   // DELETE /api/hr/dept-approvers/:id
@@ -317,18 +332,31 @@ module.exports = function (db) {
   // GET /api/hr/approver-candidates - รายชื่อผู้ที่เป็นผู้อนุมัติได้
   router.get('/approver-candidates', (req, res) => {
     const level = parseInt(req.query.level) || 0;
-    // ระดับตรวจสอบ (1): หัวหน้าหน่วยงาน, หัวหน้าแผนก
-    // ระดับอนุมัติ (2): ผู้จัดการฝ่ายขึ้นไป
-    const roles = level === 1
-      ? ['unit_head','department_head','division_manager','hr_admin']
-      : ['department_head','division_manager','hr_admin'];
-    const placeholders = roles.map(() => '?').join(',');
-    const rows = db.prepare(`
+    // รวมจาก 2 แหล่ง: (1) role-based และ (2) dept_approvers ที่ HR Admin กำหนด
+    const rolesByLevel = {
+      1: ['unit_head','department_head','division_manager','hr_admin'],
+      2: ['department_head','division_manager','hr_admin'],
+    };
+    const roles = rolesByLevel[level] || ['unit_head','department_head','division_manager','hr_admin'];
+    const ph = roles.map(() => '?').join(',');
+    const byRole = db.prepare(`
       SELECT id, employee_id, name, role, department, division, unit
-      FROM users WHERE role IN (${placeholders})
-      ORDER BY role, department, name
+      FROM users WHERE role IN (${ph})
     `).all(roles);
-    res.json(rows);
+    // เพิ่มผู้ที่ HR Admin กำหนดไว้ใน dept_approvers ที่ level นี้
+    const byDept = level > 0 ? db.prepare(`
+      SELECT u.id, u.employee_id, u.name, u.role, u.department, u.division, u.unit
+      FROM dept_approvers da JOIN users u ON u.id = da.approver_user_id
+      WHERE da.level = ?
+    `).all(level) : [];
+    // merge + dedupe
+    const seen = new Set();
+    const result = [];
+    [...byRole, ...byDept].forEach(u => {
+      if (!seen.has(u.id)) { seen.add(u.id); result.push(u); }
+    });
+    result.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+    res.json(result);
   });
 
   // GET /api/hr/leave-types
@@ -460,11 +488,55 @@ module.exports = function (db) {
 
   // ===== จัดการข้อมูลการลา =====
 
+  // POST /api/hr/leave-records — เพิ่มบันทึกการลาย้อนหลัง (HR Admin)
+  router.post('/leave-records', upload.array('attachments', 5), (req, res) => {
+    const { employee_id, leave_type_id, start_date, end_date, days, hours, reason, status, checker_id, approver_id } = req.body;
+    if (!employee_id || !leave_type_id || !start_date || !end_date)
+      return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ (พนักงาน, ประเภทลา, วันที่)' });
+    const emp = db.prepare('SELECT id FROM users WHERE employee_id=? OR id=?').get(employee_id, employee_id);
+    if (!emp) return res.status(404).json({ message: `ไม่พบพนักงานรหัส ${employee_id}` });
+    const lt = db.prepare('SELECT id,max_days_per_year FROM leave_types WHERE id=?').get(leave_type_id);
+    if (!lt) return res.status(404).json({ message: 'ไม่พบประเภทการลา' });
+    const d = new Date();
+    const prefix = `HR${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    const request_no = `${prefix}${String(Math.floor(Math.random()*9000)+1000)}`;
+    const calcDays = days ? Number(days) : (Math.floor((new Date(end_date)-new Date(start_date))/86400000)+1);
+    const recStatus = status || 'approved';
+    const checkerId  = checker_id  ? Number(checker_id)  : req.user.id;
+    const approverId = approver_id ? Number(approver_id) : null;
+    const approvalStatus = recStatus === 'approved' ? 'approved' : recStatus === 'rejected' ? 'rejected' : 'pending';
+    const r = db.prepare(`
+      INSERT INTO leave_requests (request_no,employee_id,leave_type_id,start_date,end_date,days,hours,reason,status,is_backdated,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,1,datetime('now'),datetime('now'))
+    `).run(request_no, emp.id, leave_type_id, start_date, end_date, calcDays, hours||0, reason||'-', recStatus);
+    const leaveId = r.lastInsertRowid;
+    // อัปเดต leave_balance ถ้า approved
+    if (recStatus === 'approved') {
+      const year = new Date(start_date).getFullYear();
+      db.prepare(`INSERT OR IGNORE INTO leave_balances (employee_id,leave_type_id,year,total_days) VALUES (?,?,?,?)`)
+        .run(emp.id, leave_type_id, year, lt.max_days_per_year||0);
+      db.prepare(`UPDATE leave_balances SET used_days=used_days+? WHERE employee_id=? AND leave_type_id=? AND year=?`)
+        .run(calcDays, emp.id, leave_type_id, year);
+    }
+    // level 1 — ผู้ตรวจสอบ
+    db.prepare(`INSERT INTO approvals (leave_request_id,level,approver_id,status,acted_at) VALUES (?,1,?,?,datetime('now'))`)
+      .run(leaveId, checkerId, approvalStatus);
+    // level 2 — ผู้อนุมัติ (ถ้าระบุ)
+    if (approverId) {
+      db.prepare(`INSERT INTO approvals (leave_request_id,level,approver_id,status,acted_at) VALUES (?,2,?,?,datetime('now'))`)
+        .run(leaveId, approverId, approvalStatus);
+    }
+    // บันทึกไฟล์แนบ
+    const insFile = db.prepare(`INSERT INTO leave_attachments (leave_request_id,filename,original_name,mime_type,file_size) VALUES (?,?,?,?,?)`);
+    (req.files || []).forEach(f => insFile.run(leaveId, f.filename, f.originalname, f.mimetype, f.size));
+    res.status(201).json({ message: 'เพิ่มบันทึกการลาสำเร็จ', request_no, id: leaveId, attachments: (req.files||[]).length });
+  });
+
   // GET /api/hr/leave-records
   router.get('/leave-records', (req, res) => {
     const { status, department, leave_type_id, year, month, search } = req.query;
     let sql = `
-      SELECT lr.id, lr.request_no, lr.start_date, lr.end_date, lr.days, lr.reason,
+      SELECT lr.id, lr.request_no, lr.start_date, lr.end_date, lr.days, lr.hours, lr.reason,
              lr.status, lr.created_at, lr.updated_at,
              lt.name as leave_type_name, lt.id as leave_type_id,
              u.name as employee_name, u.employee_id as emp_code,
@@ -486,7 +558,7 @@ module.exports = function (db) {
     // ดึง approvals
     const result = rows.map(r => {
       const approvals = db.prepare(`
-        SELECT a.level, a.status, a.comment, a.acted_at, u.name as approver_name
+        SELECT a.id, a.level, a.status, a.comment, a.acted_at, a.approver_id, u.name as approver_name
         FROM approvals a LEFT JOIN users u ON u.id = a.approver_id
         WHERE a.leave_request_id = ? ORDER BY a.level
       `).all(r.id);
@@ -499,10 +571,24 @@ module.exports = function (db) {
   router.put('/leave-records/:id', (req, res) => {
     const lr = db.prepare('SELECT * FROM leave_requests WHERE id=?').get(req.params.id);
     if (!lr) return res.status(404).json({ message: 'ไม่พบคำขอลา' });
-    const { start_date, end_date, reason, status, leave_type_id } = req.body;
+    const { start_date, end_date, reason, status, leave_type_id, checker_id, approver_id } = req.body;
     const days = start_date && end_date ? Math.floor((new Date(end_date)-new Date(start_date))/86400000)+1 : lr.days;
     db.prepare(`UPDATE leave_requests SET start_date=?,end_date=?,days=?,reason=?,status=?,leave_type_id=?,updated_at=datetime('now') WHERE id=?`)
       .run(start_date||lr.start_date, end_date||lr.end_date, days, reason||lr.reason, status||lr.status, leave_type_id||lr.leave_type_id, lr.id);
+
+    // helper: upsert approval level
+    const upsertApproval = (level, userId) => {
+      if (!userId) return;
+      const existing = db.prepare('SELECT id FROM approvals WHERE leave_request_id=? AND level=?').get(lr.id, level);
+      if (existing) {
+        db.prepare(`UPDATE approvals SET approver_id=?,acted_at=datetime('now') WHERE id=?`).run(Number(userId), existing.id);
+      } else {
+        db.prepare(`INSERT INTO approvals (leave_request_id,level,approver_id,status,acted_at) VALUES (?,?,?,?,datetime('now'))`)
+          .run(lr.id, level, Number(userId), status || lr.status);
+      }
+    };
+    upsertApproval(1, checker_id);
+    upsertApproval(2, approver_id);
     res.json({ message: 'แก้ไขข้อมูลการลาสำเร็จ' });
   });
 

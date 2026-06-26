@@ -138,11 +138,16 @@ module.exports = function (db) {
   // GET /api/leave/balance
   router.get('/balance', authenticate, (req, res) => {
     const year = parseInt(req.query.year) || new Date().getFullYear();
+    // ดึงทุกประเภทลา LEFT JOIN balance เพื่อให้แสดงแม้ยังไม่มี record
     const rows = db.prepare(`
-      SELECT lb.*, lt.name as leave_type_name
-      FROM leave_balances lb
-      JOIN leave_types lt ON lt.id = lb.leave_type_id
-      WHERE lb.employee_id = ? AND lb.year = ?
+      SELECT lt.id as leave_type_id, lt.name as leave_type_name, lt.max_days_per_year as total_days,
+             COALESCE(lb.used_days, 0) as used_days,
+             COALESCE(lb.id, NULL) as id, lb.year
+      FROM leave_types lt
+      LEFT JOIN leave_balances lb ON lb.leave_type_id = lt.id
+        AND lb.employee_id = ? AND lb.year = ?
+      WHERE lt.max_days_per_year > 0
+      ORDER BY lt.code, lt.name
     `).all(req.user.id, year);
     res.json(rows);
   });
