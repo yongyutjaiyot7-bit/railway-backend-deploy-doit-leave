@@ -1599,11 +1599,11 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px;align-items:end">
           <div class="form-group">
             <label>🔍 ค้นหา</label>
-            <input id="lm-search" placeholder="ชื่อ / รหัส / เลขที่" oninput="loadLeaveRecords()">
+            <input id="lm-search" placeholder="ชื่อ / รหัส / เลขที่" oninput="lmPage=1;loadLeaveRecords()">
           </div>
           <div class="form-group">
             <label>📌 สถานะ</label>
-            <select id="lm-status" onchange="loadLeaveRecords()">
+            <select id="lm-status" onchange="lmPage=1;loadLeaveRecords()">
               <option value="">ทุกสถานะ</option>
               <option value="pending">รอตรวจสอบ</option>
               <option value="approved_l1">รอระดับอนุมัติ</option>
@@ -1614,28 +1614,50 @@
           </div>
           <div class="form-group">
             <label>🏢 แผนก</label>
-            <input id="lm-dept" placeholder="ทุกแผนก" oninput="loadLeaveRecords()">
+            <input id="lm-dept" placeholder="ทุกแผนก" oninput="lmPage=1;loadLeaveRecords()">
           </div>
           <div class="form-group">
             <label>📅 ปี</label>
-            <input type="number" id="lm-year" placeholder="ทุกปี" oninput="loadLeaveRecords()">
+            <input type="number" id="lm-year" placeholder="ทุกปี" oninput="lmPage=1;loadLeaveRecords()">
           </div>
           <div class="form-group">
             <label>📆 เดือน</label>
-            <select id="lm-month" onchange="loadLeaveRecords()">
+            <select id="lm-month" onchange="lmPage=1;loadLeaveRecords()">
               <option value="">ทุกเดือน</option>
-              ${['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'].map((m,i)=>`<option value="${i+1}">${m}</option>`).join('')}
+              <option value="1">มกราคม</option>
+              <option value="2">กุมภาพันธ์</option>
+              <option value="3">มีนาคม</option>
+              <option value="4">เมษายน</option>
+              <option value="5">พฤษภาคม</option>
+              <option value="6">มิถุนายน</option>
+              <option value="7">กรกฎาคม</option>
+              <option value="8">สิงหาคม</option>
+              <option value="9">กันยายน</option>
+              <option value="10">ตุลาคม</option>
+              <option value="11">พฤศจิกายน</option>
+              <option value="12">ธันวาคม</option>
             </select>
           </div>
           <div class="form-group">
             <label>🏷️ ประเภทการลา</label>
-            <select id="lm-type" onchange="loadLeaveRecords()">
+            <select id="lm-type" onchange="lmPage=1;loadLeaveRecords()">
               <option value="">ทุกประเภท</option>
             </select>
           </div>
         </div>
 
-        <div id="lm-count" style="font-size:13px;color:#718096;margin-bottom:10px;padding:8px 12px;background:#f7fafc;border-radius:8px;border-left:3px solid #4299e1"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          <div id="lm-count" style="font-size:13px;color:#718096;padding:8px 12px;background:#f7fafc;border-radius:8px;border-left:3px solid #4299e1;flex:1"></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#718096">
+            แสดง
+            <select id="lm-page-size" onchange="lmPage=1;loadLeaveRecords()" style="padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit">
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            รายการ/หน้า
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead><tr>
@@ -1653,6 +1675,7 @@
             <tbody id="lm-tbody"><tr><td colspan="10" class="empty">กำลังโหลด...</td></tr></tbody>
           </table>
         </div>
+        <div id="lm-pagination" style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap"></div>
       </div>
 
       <!-- ประวัติการลบใบลา -->
@@ -3465,19 +3488,27 @@ function fmtDate(d) {
   return `${day}-${m}-${y}`;
 }
 function fmtDuration(days, hours) {
-  const DISPLAY_H_PER_DAY = 8;
   const d = Number(days) || 0;
-  let h = Number(hours) || 0;
-  // hours อาจเก็บเป็นชั่วโมงรวม — เอาเฉพาะส่วนเกินจาก days
-  if (h >= DISPLAY_H_PER_DAY) h = h % DISPLAY_H_PER_DAY;
-  const wholeH = Math.floor(h);
-  const mins   = Math.round((h - wholeH) * 60);
-  const parts  = [];
-  if (d > 0)      parts.push(`${d} วัน`);
-  if (wholeH > 0) parts.push(`${wholeH} ชม.`);
-  if (mins > 0)   parts.push(`${mins} นาที`);
-  const text = parts.length ? parts.join(' ') : '0';
-  const color = d >= 1 ? '#1e3a5f' : '#2b6cb0';
+  const h = Number(hours) || 0;
+  let text, color;
+  if (d > 0) {
+    // มีค่า days (0.5, 1, 1.5, 2, ...) → แสดงเป็นวันเสมอ
+    // เช่น ลาครึ่งวัน จ-พฤ รายเดือน = 0.5 วัน ไม่ว่าจะ 4h หรือ 5h
+    text  = `${d} วัน`;
+    color = d >= 1 ? '#1e3a5f' : '#2b6cb0';
+  } else if (h > 0) {
+    // days=0 แต่มีชั่วโมง (กรณี admin กรอกเฉพาะชั่วโมง)
+    const wholeH = Math.floor(h);
+    const mins   = Math.round((h - wholeH) * 60);
+    const parts  = [];
+    if (wholeH > 0) parts.push(`${wholeH} ชม.`);
+    if (mins > 0)   parts.push(`${mins} นาที`);
+    text  = parts.length ? parts.join(' ') : '0';
+    color = '#2b6cb0';
+  } else {
+    text  = '0';
+    color = '#718096';
+  }
   return `<div style="font-weight:700;font-size:13px;color:${color}">${text}</div>`;
 }
 
@@ -3764,8 +3795,10 @@ async function loadDashboard() {
 
 // ====== LEAVE MANAGEMENT (HR) ======
 let currentEditLeaveId = null;
+let lmPage = 1;
 
-async function loadLeaveRecords() {
+async function loadLeaveRecords(page) {
+  if (page) lmPage = page;
   const params = new URLSearchParams();
   const search = document.getElementById('lm-search')?.value; if (search) params.set('search', search);
   const status = document.getElementById('lm-status')?.value; if (status) params.set('status', status);
@@ -3773,12 +3806,17 @@ async function loadLeaveRecords() {
   const year   = document.getElementById('lm-year')?.value;   if (year)   params.set('year', year);
   const month  = document.getElementById('lm-month')?.value;  if (month)  params.set('month', month);
   const type   = document.getElementById('lm-type')?.value;   if (type)   params.set('leave_type_id', type);
+  const limit  = document.getElementById('lm-page-size')?.value || 20;
+  params.set('page', lmPage);
+  params.set('limit', limit);
 
   const data = await api('GET', `/hr/leave-records?${params}`);
   const tbody = document.getElementById('lm-tbody');
   const countEl = document.getElementById('lm-count');
-  if (!Array.isArray(data)) { tbody.innerHTML = '<tr><td colspan="10" class="empty">เกิดข้อผิดพลาด</td></tr>'; return; }
-  countEl.textContent = `พบ ${data.length} รายการ`;
+  if (!data || !data.rows) { tbody.innerHTML = '<tr><td colspan="10" class="empty">เกิดข้อผิดพลาด</td></tr>'; return; }
+  const { rows: dataRows, total, page: curPage } = data;
+  const totalPages = Math.max(1, Math.ceil(total / Number(limit)));
+  countEl.textContent = `พบ ${total} รายการ — หน้า ${curPage}/${totalPages}`;
 
   // populate type dropdown ครั้งแรก
   const typeSel = document.getElementById('lm-type');
@@ -3801,7 +3839,7 @@ async function loadLeaveRecords() {
     const badgeLabel = {done:'อนุมัติ',fail:'ปฏิเสธ',active:'รอ'}[cls];
     return `<div style="font-size:12px;font-weight:600;color:#2d3748">${a.approver_name}</div><span style="font-size:11px;padding:1px 7px;border-radius:12px;background:${badgeColor}">${badgeLabel}</span>`;
   };
-  tbody.innerHTML = data.length ? data.map(r => {
+  tbody.innerHTML = dataRows.length ? dataRows.map(r => {
     return `<tr>
       <td style="font-family:monospace;font-size:12px">${r.request_no}</td>
       <td>${r.employee_name}<br><span style="font-size:11px;color:#718096">${r.emp_code}</span></td>
@@ -3818,6 +3856,36 @@ async function loadLeaveRecords() {
       </td>
     </tr>`;
   }).join('') : '<tr><td colspan="10" class="empty">ไม่พบข้อมูล</td></tr>';
+
+  // Pagination
+  const pgEl = document.getElementById('lm-pagination');
+  if (pgEl) {
+    if (totalPages <= 1) { pgEl.innerHTML = ''; return; }
+    const maxBtn = 7;
+    let pages = [];
+    if (totalPages <= maxBtn) {
+      pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+    } else {
+      pages = [1];
+      if (lmPage > 3) pages.push('...');
+      for (let i = Math.max(2, lmPage - 1); i <= Math.min(totalPages - 1, lmPage + 1); i++) pages.push(i);
+      if (lmPage < totalPages - 2) pages.push('...');
+      pages.push(totalPages);
+    }
+    pgEl.innerHTML = `
+      <button onclick="loadLeaveRecords(${lmPage - 1})" ${lmPage === 1 ? 'disabled' : ''}
+        style="padding:7px 14px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#4a5568;cursor:pointer;font-family:inherit;font-size:13px;${lmPage===1?'opacity:.4;cursor:default':''}">‹ ก่อนหน้า</button>
+      ${pages.map(p => p === '...'
+        ? `<span style="padding:7px 6px;color:#a0aec0">…</span>`
+        : `<button onclick="loadLeaveRecords(${p})"
+            style="padding:7px 13px;border-radius:8px;border:1.5px solid ${p===lmPage?'#1565c0':'#e2e8f0'};
+                   background:${p===lmPage?'#1565c0':'#fff'};color:${p===lmPage?'#fff':'#4a5568'};
+                   font-weight:${p===lmPage?800:500};cursor:pointer;font-size:13px;font-family:inherit">${p}</button>`
+      ).join('')}
+      <button onclick="loadLeaveRecords(${lmPage + 1})" ${lmPage === totalPages ? 'disabled' : ''}
+        style="padding:7px 14px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#4a5568;cursor:pointer;font-family:inherit;font-size:13px;${lmPage===totalPages?'opacity:.4;cursor:default':''}">ถัดไป ›</button>
+    `;
+  }
 }
 
 function openEditLeave(rJson) {

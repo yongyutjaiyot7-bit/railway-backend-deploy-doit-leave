@@ -534,28 +534,35 @@ module.exports = function (db) {
 
   // GET /api/hr/leave-records
   router.get('/leave-records', (req, res) => {
-    const { status, department, leave_type_id, year, month, search } = req.query;
-    let sql = `
+    const { status, department, leave_type_id, year, month, search, page = 1, limit = 20 } = req.query;
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (status)        { where += ' AND lr.status = ?';                  params.push(status); }
+    if (department)    { where += ' AND u.department LIKE ?';            params.push(`%${department}%`); }
+    if (leave_type_id) { where += ' AND lr.leave_type_id = ?';           params.push(leave_type_id); }
+    if (year)  { where += " AND (strftime('%Y',lr.start_date)=? OR strftime('%Y',lr.created_at)=?)"; params.push(year,year); }
+    if (month) { where += " AND strftime('%m',lr.start_date)=?"; params.push(String(month).padStart(2,'0')); }
+    if (search) { where += ' AND (u.name LIKE ? OR u.employee_id LIKE ? OR lr.request_no LIKE ?)'; const s=`%${search}%`; params.push(s,s,s); }
+
+    const baseSql = `
+      FROM leave_requests lr
+      JOIN leave_types lt ON lt.id = lr.leave_type_id
+      JOIN users u ON u.id = lr.employee_id
+      ${where}
+    `;
+    const total = db.prepare(`SELECT COUNT(*) as c ${baseSql}`).get(...params).c;
+    const offset = (Number(page) - 1) * Number(limit);
+    const rows = db.prepare(`
       SELECT lr.id, lr.request_no, lr.start_date, lr.end_date, lr.start_datetime, lr.end_datetime, lr.days, lr.hours, lr.reason,
              lr.status, lr.created_at, lr.updated_at,
              lt.name as leave_type_name, lt.id as leave_type_id,
              u.name as employee_name, u.employee_id as emp_code,
              u.department, u.division, u.unit
-      FROM leave_requests lr
-      JOIN leave_types lt ON lt.id = lr.leave_type_id
-      JOIN users u ON u.id = lr.employee_id
-      WHERE 1=1
-    `;
-    const params = [];
-    if (status)        { sql += ' AND lr.status = ?';                  params.push(status); }
-    if (department)    { sql += ' AND u.department = ?';               params.push(department); }
-    if (leave_type_id) { sql += ' AND lr.leave_type_id = ?';           params.push(leave_type_id); }
-    if (year)  { sql += " AND (strftime('%Y',lr.start_date)=? OR strftime('%Y',lr.created_at)=?)"; params.push(year,year); }
-    if (month) { sql += " AND (strftime('%m',lr.start_date)=? OR (strftime('%Y',lr.start_date) IS NULL AND strftime('%m',lr.created_at)=?))"; params.push(String(month).padStart(2,'0'),String(month).padStart(2,'0')); }
-    if (search)        { sql += ' AND (u.name LIKE ? OR u.employee_id LIKE ? OR lr.request_no LIKE ?)'; const s=`%${search}%`; params.push(s,s,s); }
-    sql += ' ORDER BY lr.created_at DESC LIMIT 300';
-    const rows = db.prepare(sql).all(...params);
-    // ดึง approvals
+      ${baseSql}
+      ORDER BY lr.created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(...params, Number(limit), offset);
+
     const result = rows.map(r => {
       const approvals = db.prepare(`
         SELECT a.id, a.level, a.status, a.comment, a.acted_at, a.approver_id, u.name as approver_name
@@ -564,7 +571,7 @@ module.exports = function (db) {
       `).all(r.id);
       return { ...r, approvals };
     });
-    res.json(result);
+    res.json({ rows: result, total, page: Number(page), limit: Number(limit) });
   });
 
   // PUT /api/hr/leave-records/:id - แก้ไขข้อมูลการลา (HR override)
