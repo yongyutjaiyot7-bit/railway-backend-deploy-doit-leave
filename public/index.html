@@ -1512,11 +1512,12 @@
                 <th>ประเภทการลา</th>
                 <th>ช่วงวันที่ลา</th>
                 <th style="text-align:center">วัน</th>
+                <th>เหตุผลการลา</th>
                 <th>สถานะ</th>
                 <th style="text-align:center">Export</th>
               </tr>
             </thead>
-            <tbody id="report-tbody"><tr><td colspan="9" class="empty">กดปุ่ม "ดูรายงาน" เพื่อโหลดข้อมูล</td></tr></tbody>
+            <tbody id="report-tbody"><tr><td colspan="10" class="empty">กดปุ่ม "ดูรายงาน" เพื่อโหลดข้อมูล</td></tr></tbody>
           </table>
         </div>
         <div id="rpt-pagination" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap"></div>
@@ -1604,6 +1605,8 @@
         <button class="btn btn-sm" id="hrtab-approver" onclick="hrTab('approver')" style="background:#f0f4f8;color:#4a5568">✅ ผู้อนุมัติต่อแผนก</button>
         <button class="btn btn-sm" id="hrtab-leavetype" onclick="hrTab('leavetype')" style="background:#f0f4f8;color:#4a5568">📋 ประเภทการลา</button>
         <button class="btn btn-sm" id="hrtab-workschedule" onclick="hrTab('workschedule')" style="background:#f0f4f8;color:#4a5568">📆 วันทำงาน/หยุด</button>
+        <button class="btn btn-sm" id="hrtab-summary" onclick="hrTab('summary')" style="background:#f0f4f8;color:#4a5568">📊 สรุปการลา</button>
+        <button class="btn btn-sm" id="hrtab-deptsummary" onclick="hrTab('deptsummary')" style="background:#f0f4f8;color:#4a5568">🏢 สรุปตามแผนก</button>
       </div>
 
       <!-- DASHBOARD -->
@@ -1733,7 +1736,7 @@
         <div class="card">
           <h2>ℹ️ รูปแบบวันทำงานเสาร์ (ค่าเริ่มต้น)</h2>
           <p style="font-size:13px;color:#4a5568;line-height:1.8">
-            ระบบใช้รูปแบบ <b>"เสาร์เว้นเสาร์"</b> โดยอ้างอิงจากวันที่ <b>3 มกราคม 2569</b> เป็น <b>เสาร์ทำงาน</b><br>
+            ระบบใช้รูปแบบ <b>"เสาร์เว้นเสาร์"</b> โดยอ้างอิงจากวันที่ <b>3 มกราคม 2569</b> เป็น <b>เสาร์หยุด</b><br>
             วันเสาร์ที่เพิ่มในรายการด้านบนจะ <b>override</b> รูปแบบนี้เฉพาะวันนั้น ๆ<br>
             <span style="color:#e53e3e">🔴 เสาร์หยุด</span> = วันหยุด ไม่นับชั่วโมงทำงาน &nbsp;|&nbsp;
             <span style="color:#38a169">✅ เสาร์ทำงาน</span> = วันทำงาน นับ 4 ชั่วโมง (พนักงานรายเดือน)
@@ -2019,6 +2022,96 @@
         </div>
       </div>
 
+      <!-- ===== สรุปรายงานการลาแต่ละประเภทของพนักงานทุกคน ===== -->
+      <div id="hrsec-summary" style="display:none">
+        <div style="background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(30,58,95,.08);padding:22px 24px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+            <span style="font-size:18px;font-weight:800;color:#1e3a5f">📊 สรุปรายงานการลาแต่ละประเภทของพนักงานทุกคน</span>
+            <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap">
+              <label style="font-size:13px;color:#4a5568;font-weight:600">ปี:</label>
+              <select id="summary-year" onchange="loadLeaveSummary()" style="border:1.5px solid #cbd5e0;border-radius:8px;padding:6px 12px;font-size:14px;color:#1e3a5f;font-weight:700;background:#f7fafc;cursor:pointer"></select>
+              <button onclick="exportLeaveSummary()" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(5,150,105,.25)">⬇️ Export Excel</button>
+            </div>
+          </div>
+          <!-- search box -->
+          <div style="margin-bottom:14px">
+            <div style="position:relative;max-width:360px">
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:#94a3b8;pointer-events:none">🔍</span>
+              <input id="summary-search" type="text" placeholder="ค้นหา รหัส / ชื่อ / แผนก..." oninput="summaryCurrentPage=1;renderSummaryPage()" style="width:100%;box-sizing:border-box;padding:9px 12px 9px 36px;border:1.5px solid #cbd5e0;border-radius:10px;font-size:14px;color:#1e3a5f;background:#f7fafc;outline:none;transition:border .15s" onfocus="this.style.borderColor='#2b6cb0';this.style.background='#fff'" onblur="this.style.borderColor='#cbd5e0';this.style.background='#f7fafc'">
+            </div>
+          </div>
+          <div id="summary-alert" style="display:none"></div>
+          <div id="summary-loading" style="text-align:center;padding:32px;color:#64748b;font-size:14px">กำลังโหลดข้อมูล...</div>
+          <!-- info bar -->
+          <div id="summary-info-bar" style="display:none;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+            <span id="summary-info-text" style="font-size:13px;color:#64748b;flex:1;min-width:160px"></span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:12px;color:#64748b">แสดง:</label>
+              <select id="summary-page-size" onchange="summaryCurrentPage=1;renderSummaryPage()" style="border:1.5px solid #cbd5e0;border-radius:7px;padding:4px 8px;font-size:13px;color:#1e3a5f;font-weight:600;background:#f7fafc;cursor:pointer">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <label style="font-size:12px;color:#64748b">รายการ/หน้า</label>
+            </div>
+          </div>
+          <div id="summary-wrap" style="overflow-x:auto;display:none">
+            <table id="summary-table" style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead id="summary-thead"></thead>
+              <tbody id="summary-tbody"></tbody>
+            </table>
+          </div>
+          <!-- pagination bar -->
+          <div id="summary-pagination" style="display:none;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px;margin-top:16px;padding-top:14px;border-top:1.5px solid #e2e8f0"></div>
+        </div>
+      </div>
+
+      <!-- ===== สรุปรายงานตามแผนก ===== -->
+      <div id="hrsec-deptsummary" style="display:none">
+        <div style="background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(30,58,95,.08);padding:22px 24px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+            <span style="font-size:18px;font-weight:800;color:#1e3a5f">🏢 สรุปการลาแต่ละแผนก</span>
+            <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap">
+              <label style="font-size:13px;color:#4a5568;font-weight:600">ปี:</label>
+              <select id="deptsummary-year" onchange="loadDeptSummary()" style="border:1.5px solid #cbd5e0;border-radius:8px;padding:6px 12px;font-size:14px;color:#1e3a5f;font-weight:700;background:#f7fafc;cursor:pointer"></select>
+              <button onclick="exportDeptSummary()" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(5,150,105,.25)">⬇️ Export Excel</button>
+            </div>
+          </div>
+          <!-- search -->
+          <div style="margin-bottom:14px">
+            <div style="position:relative;max-width:320px">
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:#94a3b8;pointer-events:none">🔍</span>
+              <input id="deptsummary-search" type="text" placeholder="ค้นหาชื่อแผนก..." oninput="renderDeptSummaryPage()" style="width:100%;box-sizing:border-box;padding:9px 12px 9px 36px;border:1.5px solid #cbd5e0;border-radius:10px;font-size:14px;color:#1e3a5f;background:#f7fafc;outline:none" onfocus="this.style.borderColor='#2b6cb0';this.style.background='#fff'" onblur="this.style.borderColor='#cbd5e0';this.style.background='#f7fafc'">
+            </div>
+          </div>
+          <div id="deptsummary-alert" style="display:none"></div>
+          <div id="deptsummary-loading" style="text-align:center;padding:32px;color:#64748b;font-size:14px">กำลังโหลดข้อมูล...</div>
+          <!-- stat cards -->
+          <div id="deptsummary-cards" style="display:none;gap:12px;flex-wrap:wrap;margin-bottom:18px"></div>
+          <!-- info bar -->
+          <div id="deptsummary-info-bar" style="display:none;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+            <span id="deptsummary-info-text" style="font-size:13px;color:#64748b;flex:1;min-width:160px"></span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:12px;color:#64748b">แสดง:</label>
+              <select id="deptsummary-page-size" onchange="deptSummaryCurrentPage=1;renderDeptSummaryPage()" style="border:1.5px solid #cbd5e0;border-radius:7px;padding:4px 8px;font-size:13px;color:#1e3a5f;font-weight:600;background:#f7fafc;cursor:pointer">
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
+              <label style="font-size:12px;color:#64748b">รายการ/หน้า</label>
+            </div>
+          </div>
+          <div id="deptsummary-wrap" style="overflow-x:auto;display:none">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead id="deptsummary-thead"></thead>
+              <tbody id="deptsummary-tbody"></tbody>
+            </table>
+          </div>
+          <div id="deptsummary-pagination" style="display:none;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px;margin-top:16px;padding-top:14px;border-top:1.5px solid #e2e8f0"></div>
+        </div>
+      </div>
+
     </div><!-- end page-hr -->
 
   </main>
@@ -2035,7 +2128,7 @@ let _approveRowMap = {};
 
 // ====== WORK HOURS CALCULATION (mirrors backend) ======
 // Reference working Saturday for monthly employees (เสาร์เว้นเสาร์)
-const WORKING_SAT_REF = new Date('2026-01-03T00:00:00');
+const WORKING_SAT_REF = new Date('2026-01-10T00:00:00');
 // Cache: { 'YYYY-MM-DD': 'working_sat'|'holiday_sat' }
 let workScheduleCache = {};
 // Cache: { 'YYYY-MM-DD': 'ชื่อวันหยุด' }
@@ -3289,7 +3382,7 @@ async function loadReport() {
   if (dept) url += `department=${encodeURIComponent(dept)}&`;
   const data = await api('GET', url);
   if (!Array.isArray(data)) {
-    tbody.innerHTML = `<tr><td colspan="9" style="color:#e53e3e;padding:16px;text-align:center">⚠️ ${data?.error || 'โหลดไม่ได้'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="color:#e53e3e;padding:16px;text-align:center">⚠️ ${data?.error || 'โหลดไม่ได้'}</td></tr>`;
     return;
   }
   rptAllData = data;
@@ -3310,7 +3403,7 @@ function renderReport() {
   const tbody = document.getElementById('report-tbody');
   const sumEl = document.getElementById('rpt-summary');
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty">ไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty">ไม่มีข้อมูล</td></tr>';
     document.getElementById('rpt-pagination').innerHTML = '';
     sumEl.style.display = 'none';
     return;
@@ -3328,7 +3421,8 @@ function renderReport() {
     <td style="font-size:12px">${r.division||''}</td>
     <td style="font-size:13px">${r.leave_type_name||''}</td>
     <td style="font-size:12px;white-space:nowrap">${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}</td>
-    <td style="text-align:center;font-weight:600">${r.days}</td>
+    <td style="text-align:center">${fmtDuration(r.days, r.hours)}</td>
+    <td style="font-size:12px;color:#4a5568;max-width:200px;word-break:break-word">${r.reason||'-'}</td>
     <td>${statusBadge(r.status)}</td>
     <td style="text-align:center"><button class="btn btn-sm" style="padding:3px 8px;font-size:11px;background:#f7fafc;border:1px solid #cbd5e0;color:#4a5568" onclick="exportEmpReport(${r.id},'${(r.employee_name||'').replace(/'/g,'\\x27')}')">📄</button></td>
   </tr>`).join('');
@@ -3347,18 +3441,20 @@ function rptGoPage(p) { rptPage = p; renderReport(); }
 
 function exportReport(fmt) {
   const empQ    = (document.getElementById('rpt-emp')?.value    || '').toLowerCase();
+  const deptQ   = (document.getElementById('rpt-dept')?.value   || '').toLowerCase();
   const typeQ   = (document.getElementById('rpt-type')?.value   || '');
   const statusQ = (document.getElementById('rpt-status')?.value || '');
   const filtered = rptAllData.filter(r => {
     if (empQ    && !r.employee_name.toLowerCase().includes(empQ) && !(r.emp_code||'').toLowerCase().includes(empQ)) return false;
+    if (deptQ   && !(r.department||'').toLowerCase().includes(deptQ)) return false;
     if (typeQ   && String(r.leave_type_id) !== typeQ) return false;
     if (statusQ && r.status !== statusQ) return false;
     return true;
   });
   if (!filtered.length) return swalError('ไม่มีข้อมูลสำหรับ export');
   if (fmt === 'csv') {
-    const header = ['รหัสพนักงาน','ชื่อ-นามสกุล','แผนก','ฝ่าย','ประเภทการลา','วันที่เริ่ม','วันที่สิ้นสุด','จำนวนวัน','สถานะ'];
-    const rows = filtered.map(r => [r.emp_code, r.employee_name, r.department, r.division, r.leave_type_name, fmtDate(r.start_date), fmtDate(r.end_date), r.days, r.status]);
+    const header = ['รหัสพนักงาน','ชื่อ-นามสกุล','แผนก','ฝ่าย','ประเภทการลา','วันที่เริ่ม','วันที่สิ้นสุด','จำนวนวัน','เหตุผลการลา','สถานะ'];
+    const rows = filtered.map(r => [r.emp_code, r.employee_name, r.department, r.division, r.leave_type_name, fmtDate(r.start_date), fmtDate(r.end_date), r.days, r.reason||'', r.status]);
     const csv = [header, ...rows].map(row => row.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -3376,14 +3472,24 @@ function exportEmpReport(leaveId, empName) {
   const rows = rptAllData.filter(r => r.employee_name === empName);
   if (!rows.length) return;
   const STATUS_TH = { pending:'รอตรวจสอบ', approved_l1:'รอระดับอนุมัติ', approved:'อนุมัติแล้ว', rejected:'ปฏิเสธ', cancelled:'ยกเลิก' };
-  const trs = rows.map(r => `<tr><td>${r.leave_type_name}</td><td>${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}</td><td style="text-align:center">${r.days}</td><td>${STATUS_TH[r.status]||r.status}</td></tr>`).join('');
+  const fmtDur = (days, hours) => {
+    const d=Number(days)||0, h=Number(hours)||0;
+    const wh=Math.floor(h), wm=Math.round((h-wh)*60);
+    const p=[];
+    if(d>0) p.push(`${d} วัน`);
+    if(wh>0) p.push(`${wh} ชม.`);
+    if(wm>0) p.push(`${wm} นาที`);
+    return p.join(' ')||'0';
+  };
+  const trs = rows.map(r => `<tr><td>${r.leave_type_name}</td><td>${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}</td><td style="text-align:center;font-weight:600">${fmtDur(r.days,r.hours)}</td><td style="color:#555">${r.reason||'-'}</td><td>${STATUS_TH[r.status]||r.status}</td></tr>`).join('');
   const totalDays = rows.reduce((s,r)=>s+(r.days||0),0);
+  const totalHours = rows.reduce((s,r)=>s+(Number(r.hours)||0),0);
   const win = window.open('','_blank');
   win.document.write(`<html><head><title>รายงานการลา - ${empName}</title><style>body{font-family:sans-serif;font-size:13px;padding:20px}h2{margin-bottom:4px}p{margin:2px 0;color:#555}table{border-collapse:collapse;width:100%;margin-top:14px}th,td{border:1px solid #ccc;padding:6px 10px}th{background:#e2e8f0}.total{font-weight:600;color:#2d3748}</style></head><body>
   <h2>รายงานการลา</h2>
   <p>พนักงาน: <b>${empName}</b> (${rows[0].emp_code})</p>
   <p>แผนก: ${rows[0].department} | ฝ่าย: ${rows[0].division}</p>
-  <table><thead><tr><th>ประเภทการลา</th><th>ช่วงวันที่</th><th style="text-align:center">วัน</th><th>สถานะ</th></tr></thead><tbody>${trs}<tr><td colspan="2" style="text-align:right;font-weight:600">รวม</td><td style="text-align:center;font-weight:600">${totalDays}</td><td></td></tr></tbody></table>
+  <table><thead><tr><th>ประเภทการลา</th><th>ช่วงวันที่</th><th style="text-align:center">จำนวน</th><th>เหตุผลการลา</th><th>สถานะ</th></tr></thead><tbody>${trs}<tr><td colspan="2" style="text-align:right;font-weight:600">รวมทั้งหมด</td><td style="text-align:center;font-weight:700">${fmtDur(totalDays,totalHours)}</td><td colspan="2"></td></tr></tbody></table>
   </body></html>`);
   win.document.close(); win.print();
 }
@@ -4070,8 +4176,9 @@ let currentEmpId = null;
 let leaveTypesCache = [];
 
 function hrTab(name) {
-  ['dash','calendar','emp','import','perm','approver','leavetype','workschedule'].forEach(t => {
-    document.getElementById(`hrsec-${t}`).style.display = 'none';
+  ['dash','calendar','emp','import','perm','approver','leavetype','workschedule','summary','deptsummary'].forEach(t => {
+    const sec = document.getElementById(`hrsec-${t}`);
+    if (sec) sec.style.display = 'none';
     const btn = document.getElementById(`hrtab-${t}`);
     if (btn) { btn.style.background = '#f0f4f8'; btn.style.color = '#4a5568'; btn.style.boxShadow = 'none'; }
   });
@@ -4086,6 +4193,441 @@ function hrTab(name) {
   if (name === 'approver')      loadDeptApprovers();
   if (name === 'leavetype')     loadLeaveTypesHr();
   if (name === 'workschedule')  { loadCompanyHolidaysHr(); loadWorkScheduleHr(); }
+  if (name === 'summary')       loadLeaveSummary();
+  if (name === 'deptsummary')   loadDeptSummary();
+}
+
+// ===== สรุปรายงานการลา =====
+let leaveSummaryData = null;
+let summaryCurrentPage = 1;
+
+function initSummaryYearFilter() {
+  const sel = document.getElementById('summary-year');
+  if (!sel || sel.options.length) return;
+  const cur = new Date().getFullYear();
+  for (let y = cur; y >= cur - 5; y--) sel.appendChild(new Option(y, y));
+  sel.value = cur;
+}
+
+async function loadLeaveSummary() {
+  initSummaryYearFilter();
+  summaryCurrentPage = 1;
+  const year = document.getElementById('summary-year')?.value || new Date().getFullYear();
+  document.getElementById('summary-loading').style.display = '';
+  document.getElementById('summary-wrap').style.display = 'none';
+  document.getElementById('summary-info-bar').style.display = 'none';
+  document.getElementById('summary-pagination').style.display = 'none';
+  document.getElementById('summary-alert').style.display = 'none';
+  const data = await api('GET', `/hr/leave-summary?year=${year}`);
+  document.getElementById('summary-loading').style.display = 'none';
+  if (data.error || !data.leaveTypes) {
+    const al = document.getElementById('summary-alert');
+    al.style.display = '';
+    al.innerHTML = `<div style="background:#fee2e2;color:#991b1b;border-radius:8px;padding:12px 16px;font-size:13px">เกิดข้อผิดพลาด: ${data.error || JSON.stringify(data)}</div>`;
+    return;
+  }
+  // กรองเฉพาะประเภทการลาที่มีข้อมูลจริง
+  const activeLeaveTypes = data.leaveTypes.filter(lt =>
+    data.employees.some(e => Number(e.types[lt.id]?.count || 0) > 0)
+  );
+  leaveSummaryData = { ...data, leaveTypes: activeLeaveTypes };
+  buildSummaryHeader(activeLeaveTypes);
+  renderSummaryPage();
+}
+
+function buildSummaryHeader(leaveTypes) {
+  const thStyle = 'padding:10px 12px;font-size:12px;font-weight:700;text-align:center;white-space:nowrap;border:1px solid #e2e8f0;background:linear-gradient(135deg,#1e3a5f,#2b6cb0);color:#fff';
+  const thLeft  = 'padding:10px 12px;font-size:12px;font-weight:700;text-align:left;white-space:nowrap;border:1px solid #e2e8f0;background:linear-gradient(135deg,#1e3a5f,#2b6cb0);color:#fff';
+  let headHtml = `<tr>
+    <th style="${thLeft};position:sticky;left:0;z-index:2">#</th>
+    <th style="${thLeft};position:sticky;left:32px;z-index:2;min-width:120px">รหัส</th>
+    <th style="${thLeft};position:sticky;left:100px;z-index:2;min-width:160px">ชื่อ-นามสกุล</th>
+    <th style="${thLeft}">แผนก</th>`;
+  for (const lt of leaveTypes) {
+    headHtml += `<th style="${thStyle};min-width:100px">${lt.name}</th>`;
+  }
+  headHtml += `<th style="${thStyle}">รวมทั้งหมด</th></tr>`;
+  document.getElementById('summary-thead').innerHTML = headHtml;
+}
+
+function renderSummaryPage() {
+  if (!leaveSummaryData) return;
+  const { leaveTypes, employees } = leaveSummaryData;
+  const kw = (document.getElementById('summary-search')?.value || '').trim().toLowerCase();
+  const filtered = kw
+    ? employees.filter(e =>
+        (e.employee_id||'').toLowerCase().includes(kw) ||
+        (e.name||'').toLowerCase().includes(kw) ||
+        (e.department||'').toLowerCase().includes(kw))
+    : employees;
+  const pageSize = parseInt(document.getElementById('summary-page-size')?.value || '20');
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (summaryCurrentPage > totalPages) summaryCurrentPage = totalPages;
+  const start = (summaryCurrentPage - 1) * pageSize;
+  const pageData = filtered.slice(start, start + pageSize);
+
+  // info bar
+  document.getElementById('summary-info-bar').style.display = 'flex';
+  document.getElementById('summary-info-text').innerHTML =
+    `แสดง <b>${total ? start+1 : 0}–${Math.min(start+pageSize, total)}</b> จาก <b>${total}</b> รายการ` +
+    (totalPages > 1 ? ` &nbsp;|&nbsp; หน้า <b>${summaryCurrentPage}</b> / <b>${totalPages}</b>` : '');
+
+  const tdBase = 'padding:9px 12px;border:1px solid #e2e8f0;font-size:12px;text-align:center;white-space:nowrap';
+  const tdLeft = 'padding:9px 12px;border:1px solid #e2e8f0;font-size:12px;text-align:left;white-space:nowrap';
+
+  let bodyHtml = '';
+  pageData.forEach((emp, i) => {
+    const idx = start + i;
+    let totalDays = 0, totalHours = 0;
+    for (const lt of leaveTypes) {
+      totalDays  += Number(emp.types[lt.id]?.days  || 0);
+      totalHours += Number(emp.types[lt.id]?.hours || 0);
+    }
+    const bg = i % 2 === 0 ? '#fff' : '#f8fafc';
+    bodyHtml += `<tr style="background:${bg}">
+      <td style="${tdBase};position:sticky;left:0;background:${bg};color:#94a3b8;font-size:11px">${idx+1}</td>
+      <td style="${tdLeft};position:sticky;left:32px;background:${bg};font-weight:700;color:#1e3a5f">${emp.employee_id||'-'}</td>
+      <td style="${tdLeft};position:sticky;left:100px;background:${bg};font-weight:600">${emp.name||'-'}</td>
+      <td style="${tdLeft};color:#4a5568">${emp.department||'-'}</td>`;
+    for (const lt of leaveTypes) {
+      const t = emp.types[lt.id];
+      if (t && (Number(t.days) > 0 || Number(t.hours) > 0)) {
+        const d=Number(t.days), h=Number(t.hours), wh=Math.floor(h), wm=Math.round((h-wh)*60);
+        const parts=[];
+        if(d>0) parts.push(`${d}วัน`);
+        if(wh>0) parts.push(`${wh}ชม.`);
+        if(wm>0) parts.push(`${wm}น.`);
+        bodyHtml += `<td style="${tdBase};color:#1d4ed8;font-weight:700">${parts.join(' ')}<br><span style="font-size:10px;color:#94a3b8">(${t.count}ครั้ง)</span></td>`;
+      } else {
+        bodyHtml += `<td style="${tdBase};color:#e2e8f0;font-size:16px">·</td>`;
+      }
+    }
+    const td=Number(totalDays), th2=Number(totalHours), wh2=Math.floor(th2), wm2=Math.round((th2-wh2)*60);
+    const tp=[];
+    if(td>0) tp.push(`${td}วัน`);
+    if(wh2>0) tp.push(`${wh2}ชม.`);
+    if(wm2>0) tp.push(`${wm2}น.`);
+    bodyHtml += `<td style="${tdBase};font-weight:800;color:#1e3a5f;background:#eff6ff">${tp.join(' ')||'–'}</td></tr>`;
+  });
+
+  if (!filtered.length) {
+    const msg = kw ? `ไม่พบข้อมูลที่ค้นหา "${kw}"` : 'ไม่มีข้อมูล';
+    bodyHtml = `<tr><td colspan="${leaveTypes.length+5}" style="${tdBase};color:#94a3b8;padding:32px">${msg}</td></tr>`;
+  }
+
+  document.getElementById('summary-tbody').innerHTML = bodyHtml;
+  document.getElementById('summary-wrap').style.display = '';
+
+  // pagination buttons
+  const pag = document.getElementById('summary-pagination');
+  if (totalPages <= 1) { pag.style.display = 'none'; return; }
+  pag.style.display = 'flex';
+
+  const btnBase = 'border:none;border-radius:8px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s';
+  const btnActive = `${btnBase};background:linear-gradient(135deg,#1e3a5f,#2b6cb0);color:#fff;box-shadow:0 2px 8px rgba(30,58,95,.3)`;
+  const btnNormal = `${btnBase};background:#f1f5f9;color:#475569`;
+  const btnDisabled = `${btnBase};background:#f8fafc;color:#cbd5e0;cursor:default`;
+
+  const maxVisible = 5;
+  let startPage = Math.max(1, summaryCurrentPage - Math.floor(maxVisible/2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+
+  let html = '';
+  // ก่อนหน้า
+  html += `<button onclick="summaryGoPage(1)" style="${summaryCurrentPage===1?btnDisabled:btnNormal}" ${summaryCurrentPage===1?'disabled':''}>«</button>`;
+  html += `<button onclick="summaryGoPage(${summaryCurrentPage-1})" style="${summaryCurrentPage===1?btnDisabled:btnNormal}" ${summaryCurrentPage===1?'disabled':''}>‹</button>`;
+  if (startPage > 1) html += `<span style="padding:0 4px;color:#94a3b8;align-self:center">…</span>`;
+  for (let p = startPage; p <= endPage; p++) {
+    html += `<button onclick="summaryGoPage(${p})" style="${p===summaryCurrentPage?btnActive:btnNormal}">${p}</button>`;
+  }
+  if (endPage < totalPages) html += `<span style="padding:0 4px;color:#94a3b8;align-self:center">…</span>`;
+  html += `<button onclick="summaryGoPage(${summaryCurrentPage+1})" style="${summaryCurrentPage===totalPages?btnDisabled:btnNormal}" ${summaryCurrentPage===totalPages?'disabled':''}>›</button>`;
+  html += `<button onclick="summaryGoPage(${totalPages})" style="${summaryCurrentPage===totalPages?btnDisabled:btnNormal}" ${summaryCurrentPage===totalPages?'disabled':''}>»</button>`;
+  pag.innerHTML = html;
+}
+
+function summaryGoPage(p) {
+  if (!leaveSummaryData) return;
+  const kw = (document.getElementById('summary-search')?.value || '').trim().toLowerCase();
+  const total = kw
+    ? leaveSummaryData.employees.filter(e =>
+        (e.employee_id||'').toLowerCase().includes(kw) ||
+        (e.name||'').toLowerCase().includes(kw) ||
+        (e.department||'').toLowerCase().includes(kw)).length
+    : leaveSummaryData.employees.length;
+  const pageSize = parseInt(document.getElementById('summary-page-size')?.value || '20');
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  summaryCurrentPage = Math.max(1, Math.min(p, totalPages));
+  renderSummaryPage();
+  document.getElementById('hrsec-summary').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function exportLeaveSummary() {
+  const year = document.getElementById('summary-year')?.value || new Date().getFullYear();
+  const data = leaveSummaryData;
+  if (!data) return Swal.fire({ icon:'warning', title:'ยังไม่มีข้อมูล', text:'กรุณาโหลดข้อมูลก่อน Export', confirmButtonColor:'#1e3a5f' });
+  const { leaveTypes, employees } = data;
+  const kw = (document.getElementById('summary-search')?.value || '').trim().toLowerCase();
+  const exportData = kw
+    ? employees.filter(e =>
+        (e.employee_id||'').toLowerCase().includes(kw) ||
+        (e.name||'').toLowerCase().includes(kw) ||
+        (e.department||'').toLowerCase().includes(kw))
+    : employees;
+  if (!exportData.length) return Swal.fire({ icon:'warning', title:'ไม่มีข้อมูล', text:'ไม่พบข้อมูลที่ตรงกับคำค้นหา', confirmButtonColor:'#1e3a5f' });
+  const suffix = kw ? ` (ค้นหา: ${kw})` : '';
+  const headers = ['#','รหัสพนักงาน','ชื่อ-นามสกุล','แผนก', ...leaveTypes.map(lt=>lt.name), 'รวมทั้งหมด'];
+  const rows = exportData.map((emp, idx) => {
+    let totalDays = 0, totalHours = 0;
+    const cells = leaveTypes.map(lt => {
+      const t = emp.types[lt.id];
+      totalDays  += Number(t?.days||0);
+      totalHours += Number(t?.hours||0);
+      if (!t || (!t.days && !t.hours)) return '-';
+      const d=Number(t.days),h=Number(t.hours),wh=Math.floor(h),wm=Math.round((h-wh)*60);
+      const p=[];if(d>0)p.push(`${d}วัน`);if(wh>0)p.push(`${wh}ชม.`);if(wm>0)p.push(`${wm}น.`);
+      return p.join(' ')||'-';
+    });
+    const td=Number(totalDays),th2=Number(totalHours),wh2=Math.floor(th2),wm2=Math.round((th2-wh2)*60);
+    const tp=[];if(td>0)tp.push(`${td}วัน`);if(wh2>0)tp.push(`${wh2}ชม.`);if(wm2>0)tp.push(`${wm2}น.`);
+    return [idx+1, emp.employee_id||'', emp.name||'', emp.department||'', ...cells, tp.join(' ')||'-'];
+  });
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `สรุปการลา ${year}`);
+  XLSX.writeFile(wb, `leave_summary_${year}${kw?'_'+kw:''}.xlsx`);
+}
+
+// ===== สรุปตามแผนก =====
+let deptSummaryData = null;
+let deptSummaryCurrentPage = 1;
+
+function initDeptSummaryYearFilter() {
+  const sel = document.getElementById('deptsummary-year');
+  if (!sel || sel.options.length) return;
+  const cur = new Date().getFullYear();
+  for (let y = cur; y >= cur - 5; y--) sel.appendChild(new Option(y, y));
+  sel.value = cur;
+}
+
+async function loadDeptSummary() {
+  initDeptSummaryYearFilter();
+  deptSummaryCurrentPage = 1;
+  const year = document.getElementById('deptsummary-year')?.value || new Date().getFullYear();
+  document.getElementById('deptsummary-loading').style.display = '';
+  document.getElementById('deptsummary-wrap').style.display = 'none';
+  document.getElementById('deptsummary-cards').style.display = 'none';
+  document.getElementById('deptsummary-info-bar').style.display = 'none';
+  document.getElementById('deptsummary-pagination').style.display = 'none';
+  document.getElementById('deptsummary-alert').style.display = 'none';
+  const data = await api('GET', `/hr/leave-summary?year=${year}`);
+  document.getElementById('deptsummary-loading').style.display = 'none';
+  if (data.error || !data.leaveTypes) {
+    const al = document.getElementById('deptsummary-alert');
+    al.style.display = '';
+    al.innerHTML = `<div style="background:#fee2e2;color:#991b1b;border-radius:8px;padding:12px 16px;font-size:13px">เกิดข้อผิดพลาด: ${data.error || JSON.stringify(data)}</div>`;
+    return;
+  }
+  // aggregate by department
+  const deptMap = {};
+  for (const emp of data.employees) {
+    const dept = emp.department || 'ไม่ระบุแผนก';
+    if (!deptMap[dept]) deptMap[dept] = { dept, empCount: 0, empSet: new Set(), types: {} };
+    deptMap[dept].empSet.add(emp.user_id);
+    for (const lt of data.leaveTypes) {
+      if (!deptMap[dept].types[lt.id]) deptMap[dept].types[lt.id] = { days: 0, hours: 0, count: 0 };
+      deptMap[dept].types[lt.id].days  += Number(emp.types[lt.id]?.days  || 0);
+      deptMap[dept].types[lt.id].hours += Number(emp.types[lt.id]?.hours || 0);
+      deptMap[dept].types[lt.id].count += Number(emp.types[lt.id]?.count || 0);
+    }
+  }
+  const departments = Object.values(deptMap).map(d => ({ ...d, empCount: d.empSet.size }))
+    .sort((a, b) => a.dept.localeCompare(b.dept, 'th'));
+  // กรองเฉพาะประเภทการลาที่มีข้อมูลจริงในแผนกใดแผนกหนึ่ง
+  const activeLeaveTypesDept = data.leaveTypes.filter(lt =>
+    departments.some(d => Number(d.types[lt.id]?.count || 0) > 0)
+  );
+  deptSummaryData = { leaveTypes: activeLeaveTypesDept, departments, totalEmployees: data.employees.length };
+  buildDeptSummaryHeader(activeLeaveTypesDept);
+  renderDeptStatCards(departments, activeLeaveTypesDept);
+  renderDeptSummaryPage();
+}
+
+function renderDeptStatCards(departments, leaveTypes) {
+  const container = document.getElementById('deptsummary-cards');
+  const totalDepts = departments.length;
+  const totalEmps  = departments.reduce((s, d) => s + d.empCount, 0);
+  let totalLeaves  = 0;
+  for (const d of departments)
+    for (const lt of leaveTypes)
+      totalLeaves += Number(d.types[lt.id]?.count || 0);
+
+  const card = (icon, label, val, grad, shadow) =>
+    `<div style="background:${grad};border-radius:14px;padding:18px 22px;min-width:150px;flex:1;box-shadow:${shadow};color:#fff">
+      <div style="font-size:26px;margin-bottom:6px">${icon}</div>
+      <div style="font-size:22px;font-weight:800;line-height:1">${val}</div>
+      <div style="font-size:12px;opacity:.85;margin-top:4px">${label}</div>
+    </div>`;
+
+  container.innerHTML =
+    card('🏢','จำนวนแผนกทั้งหมด', totalDepts,
+         'linear-gradient(135deg,#1e3a5f,#2b6cb0)','0 4px 14px rgba(30,58,95,.35)') +
+    card('👥','พนักงานทั้งหมด', totalEmps,
+         'linear-gradient(135deg,#0369a1,#38bdf8)','0 4px 14px rgba(3,105,161,.3)') +
+    card('📋','ประเภทการลา', leaveTypes.length,
+         'linear-gradient(135deg,#7c3aed,#a78bfa)','0 4px 14px rgba(124,58,237,.3)') +
+    card('📅','ครั้งที่ลาทั้งหมด (approved)', totalLeaves,
+         'linear-gradient(135deg,#059669,#34d399)','0 4px 14px rgba(5,150,105,.3)');
+  container.style.display = 'flex';
+}
+
+function buildDeptSummaryHeader(leaveTypes) {
+  const thS = 'padding:10px 12px;font-size:12px;font-weight:700;text-align:center;white-space:nowrap;border:1px solid #e2e8f0;background:linear-gradient(135deg,#1e3a5f,#2b6cb0);color:#fff';
+  const thL = 'padding:10px 12px;font-size:12px;font-weight:700;text-align:left;white-space:nowrap;border:1px solid #e2e8f0;background:linear-gradient(135deg,#1e3a5f,#2b6cb0);color:#fff';
+  let h = `<tr>
+    <th style="${thL};position:sticky;left:0;z-index:2">#</th>
+    <th style="${thL};position:sticky;left:32px;z-index:2;min-width:180px">🏢 แผนก</th>
+    <th style="${thS};min-width:90px">👥 พนักงาน</th>`;
+  for (const lt of leaveTypes) h += `<th style="${thS};min-width:110px">${lt.name}</th>`;
+  h += `<th style="${thS}">📊 รวมทั้งหมด</th></tr>`;
+  document.getElementById('deptsummary-thead').innerHTML = h;
+}
+
+function renderDeptSummaryPage() {
+  if (!deptSummaryData) return;
+  const { leaveTypes, departments } = deptSummaryData;
+  const kw = (document.getElementById('deptsummary-search')?.value || '').trim().toLowerCase();
+  const filtered = kw ? departments.filter(d => d.dept.toLowerCase().includes(kw)) : departments;
+  const pageSize = parseInt(document.getElementById('deptsummary-page-size')?.value || '10');
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (deptSummaryCurrentPage > totalPages) deptSummaryCurrentPage = totalPages;
+  const start = (deptSummaryCurrentPage - 1) * pageSize;
+  const pageData = filtered.slice(start, start + pageSize);
+
+  document.getElementById('deptsummary-info-bar').style.display = 'flex';
+  document.getElementById('deptsummary-info-text').innerHTML =
+    `แสดง <b>${total ? start+1 : 0}–${Math.min(start+pageSize, total)}</b> จาก <b>${total}</b> แผนก` +
+    (totalPages > 1 ? ` &nbsp;|&nbsp; หน้า <b>${deptSummaryCurrentPage}</b> / <b>${totalPages}</b>` : '');
+
+  const tdC = 'padding:10px 12px;border:1px solid #e2e8f0;font-size:12px;text-align:center;white-space:nowrap';
+  const tdL = 'padding:10px 12px;border:1px solid #e2e8f0;font-size:12px;text-align:left;white-space:nowrap';
+
+  const fmtT = (days, hours) => {
+    const d=Number(days),h=Number(hours),wh=Math.floor(h),wm=Math.round((h-wh)*60);
+    const p=[];if(d>0)p.push(`${d}วัน`);if(wh>0)p.push(`${wh}ชม.`);if(wm>0)p.push(`${wm}น.`);
+    return p.join(' ')||'–';
+  };
+
+  let body = '';
+  const deptColors = ['#eff6ff','#f0fdf4','#fdf4ff','#fff7ed','#f0f9ff','#fefce8'];
+
+  pageData.forEach((dept, i) => {
+    let totalDays = 0, totalHours = 0, totalCount = 0;
+    for (const lt of leaveTypes) {
+      totalDays  += Number(dept.types[lt.id]?.days  || 0);
+      totalHours += Number(dept.types[lt.id]?.hours || 0);
+      totalCount += Number(dept.types[lt.id]?.count || 0);
+    }
+    const bg = i % 2 === 0 ? '#fff' : '#f8fafc';
+    const accentBg = deptColors[(start+i) % deptColors.length];
+    body += `<tr style="background:${bg}">
+      <td style="${tdC};position:sticky;left:0;background:${bg};color:#94a3b8;font-size:11px">${start+i+1}</td>
+      <td style="${tdL};position:sticky;left:32px;background:${bg}">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:8px;background:${accentBg};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏢</div>
+          <div>
+            <div style="font-weight:700;color:#1e3a5f;font-size:13px">${dept.dept}</div>
+            <div style="font-size:11px;color:#94a3b8">ลาทั้งหมด ${totalCount} ครั้ง</div>
+          </div>
+        </div>
+      </td>
+      <td style="${tdC};font-weight:700;color:#0369a1;font-size:14px">${dept.empCount}<br><span style="font-size:10px;font-weight:400;color:#94a3b8">คน</span></td>`;
+    for (const lt of leaveTypes) {
+      const t = dept.types[lt.id];
+      const d = Number(t?.days||0), h = Number(t?.hours||0), cnt = Number(t?.count||0);
+      if (d > 0 || h > 0) {
+        body += `<td style="${tdC};color:#1d4ed8;font-weight:700">${fmtT(d,h)}<br><span style="font-size:10px;color:#94a3b8">(${cnt}ครั้ง)</span></td>`;
+      } else {
+        body += `<td style="${tdC};color:#e2e8f0;font-size:16px">·</td>`;
+      }
+    }
+    body += `<td style="${tdC};font-weight:800;color:#1e3a5f;background:#eff6ff">${fmtT(totalDays,totalHours)}</td></tr>`;
+  });
+
+  if (!filtered.length) {
+    const msg = kw ? `ไม่พบแผนก "${kw}"` : 'ไม่มีข้อมูล';
+    body = `<tr><td colspan="${leaveTypes.length+4}" style="${tdC};color:#94a3b8;padding:32px">${msg}</td></tr>`;
+  }
+
+  document.getElementById('deptsummary-tbody').innerHTML = body;
+  document.getElementById('deptsummary-wrap').style.display = '';
+
+  // pagination
+  const pag = document.getElementById('deptsummary-pagination');
+  if (totalPages <= 1) { pag.style.display = 'none'; return; }
+  pag.style.display = 'flex';
+  const btnBase = 'border:none;border-radius:8px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s';
+  const btnActive   = `${btnBase};background:linear-gradient(135deg,#1e3a5f,#2b6cb0);color:#fff;box-shadow:0 2px 8px rgba(30,58,95,.3)`;
+  const btnNormal   = `${btnBase};background:#f1f5f9;color:#475569`;
+  const btnDisabled = `${btnBase};background:#f8fafc;color:#cbd5e0;cursor:default`;
+  const maxVis = 5;
+  let sp = Math.max(1, deptSummaryCurrentPage - Math.floor(maxVis/2));
+  let ep = Math.min(totalPages, sp + maxVis - 1);
+  if (ep - sp < maxVis - 1) sp = Math.max(1, ep - maxVis + 1);
+  let html = '';
+  html += `<button onclick="deptSummaryGoPage(1)" style="${deptSummaryCurrentPage===1?btnDisabled:btnNormal}" ${deptSummaryCurrentPage===1?'disabled':''}>«</button>`;
+  html += `<button onclick="deptSummaryGoPage(${deptSummaryCurrentPage-1})" style="${deptSummaryCurrentPage===1?btnDisabled:btnNormal}" ${deptSummaryCurrentPage===1?'disabled':''}>‹</button>`;
+  if (sp > 1) html += `<span style="padding:0 4px;color:#94a3b8;align-self:center">…</span>`;
+  for (let p = sp; p <= ep; p++)
+    html += `<button onclick="deptSummaryGoPage(${p})" style="${p===deptSummaryCurrentPage?btnActive:btnNormal}">${p}</button>`;
+  if (ep < totalPages) html += `<span style="padding:0 4px;color:#94a3b8;align-self:center">…</span>`;
+  html += `<button onclick="deptSummaryGoPage(${deptSummaryCurrentPage+1})" style="${deptSummaryCurrentPage===totalPages?btnDisabled:btnNormal}" ${deptSummaryCurrentPage===totalPages?'disabled':''}>›</button>`;
+  html += `<button onclick="deptSummaryGoPage(${totalPages})" style="${deptSummaryCurrentPage===totalPages?btnDisabled:btnNormal}" ${deptSummaryCurrentPage===totalPages?'disabled':''}>»</button>`;
+  pag.innerHTML = html;
+}
+
+function deptSummaryGoPage(p) {
+  if (!deptSummaryData) return;
+  const kw = (document.getElementById('deptsummary-search')?.value || '').trim().toLowerCase();
+  const total = kw
+    ? deptSummaryData.departments.filter(d => d.dept.toLowerCase().includes(kw)).length
+    : deptSummaryData.departments.length;
+  const pageSize = parseInt(document.getElementById('deptsummary-page-size')?.value || '10');
+  deptSummaryCurrentPage = Math.max(1, Math.min(p, Math.ceil(total/pageSize)));
+  renderDeptSummaryPage();
+  document.getElementById('hrsec-deptsummary').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+async function exportDeptSummary() {
+  const year = document.getElementById('deptsummary-year')?.value || new Date().getFullYear();
+  const data = deptSummaryData;
+  if (!data) return Swal.fire({ icon:'warning', title:'ยังไม่มีข้อมูล', text:'กรุณาโหลดข้อมูลก่อน Export', confirmButtonColor:'#1e3a5f' });
+  const { leaveTypes, departments } = data;
+  const kw = (document.getElementById('deptsummary-search')?.value || '').trim().toLowerCase();
+  const exportDepts = kw ? departments.filter(d => d.dept.toLowerCase().includes(kw)) : departments;
+  if (!exportDepts.length) return Swal.fire({ icon:'warning', title:'ไม่มีข้อมูล', text:'ไม่พบแผนกที่ตรงกับคำค้นหา', confirmButtonColor:'#1e3a5f' });
+  const headers = ['#','แผนก','จำนวนพนักงาน (คน)', ...leaveTypes.map(lt=>lt.name), 'รวมทั้งหมด'];
+  const fmtT = (d,h) => {
+    const wh=Math.floor(h),wm=Math.round((h-wh)*60);
+    const p=[];if(d>0)p.push(`${d}วัน`);if(wh>0)p.push(`${wh}ชม.`);if(wm>0)p.push(`${wm}น.`);
+    return p.join(' ')||'-';
+  };
+  const rows = exportDepts.map((dept, idx) => {
+    let td=0, th2=0;
+    const cells = leaveTypes.map(lt => {
+      const t = dept.types[lt.id];
+      td += Number(t?.days||0); th2 += Number(t?.hours||0);
+      return (Number(t?.days||0)+Number(t?.hours||0)) > 0 ? fmtT(Number(t.days),Number(t.hours)) : '-';
+    });
+    return [idx+1, dept.dept, dept.empCount, ...cells, fmtT(td,th2)];
+  });
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `สรุปตามแผนก ${year}`);
+  XLSX.writeFile(wb, `dept_leave_summary_${year}${kw?'_'+kw:''}.xlsx`);
 }
 
 // ===== IMPORT EXCEL =====

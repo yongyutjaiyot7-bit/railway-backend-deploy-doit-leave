@@ -811,5 +811,43 @@ module.exports = function (db) {
     res.json({ message: 'ลบสำเร็จ' });
   });
 
+  // GET /api/hr/leave-summary?year=YYYY
+  router.get('/leave-summary', (req, res) => {
+    const year = req.query.year || new Date().getFullYear().toString();
+    try {
+      const rows = db.prepare(`
+        SELECT u.id as user_id, u.employee_id, u.name, u.department,
+               lt.id as lt_id, lt.name as leave_type,
+               COALESCE(SUM(lr.days),0) as total_days,
+               COALESCE(SUM(lr.hours),0) as total_hours,
+               COUNT(lr.id) as total_count
+        FROM users u
+        CROSS JOIN leave_types lt
+        LEFT JOIN leave_requests lr
+          ON lr.employee_id = u.id
+          AND lr.leave_type_id = lt.id
+          AND lr.status = 'approved'
+          AND strftime('%Y', lr.start_date) = ?
+        WHERE u.role != 'hr_admin'
+        GROUP BY u.id, lt.id
+        ORDER BY u.department, u.name, lt.id
+      `).all(year);
+
+      const leaveTypes = db.prepare(`SELECT id, name FROM leave_types ORDER BY id`).all();
+      const employees = [];
+      const empMap = {};
+      for (const r of rows) {
+        if (!empMap[r.user_id]) {
+          empMap[r.user_id] = { user_id: r.user_id, employee_id: r.employee_id, name: r.name, department: r.department, types: {} };
+          employees.push(empMap[r.user_id]);
+        }
+        empMap[r.user_id].types[r.lt_id] = { days: r.total_days, hours: r.total_hours, count: r.total_count };
+      }
+      res.json({ leaveTypes, employees });
+    } catch(e) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return router;
 };

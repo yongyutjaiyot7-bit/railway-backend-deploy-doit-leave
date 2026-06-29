@@ -15,8 +15,8 @@ module.exports = function (db) {
   }
 
   // Reference working Saturday for monthly employees (alternate Saturdays)
-  // 2026-01-03 is assumed to be a working Saturday — adjust if needed
-  const WORKING_SAT_REF = new Date('2026-01-03T00:00:00');
+  // 2026-01-10 is the reference working Saturday (2026-01-03 is holiday_sat)
+  const WORKING_SAT_REF = new Date('2026-01-10T00:00:00');
 
   function isWorkingSaturday(d) {
     const pad = n => String(n).padStart(2,'0');
