@@ -16,7 +16,7 @@
 <!-- iOS splash screens (iPhone) -->
 <link rel="apple-touch-startup-image" href="/icons/splash-portrait.png" media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3)">
 <link rel="manifest" href="/manifest.json">
-<title>ระบบลาออนไลน์ DOIT</title>
+<title>ระบบลาออนไลน์</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -31,17 +31,42 @@
 
   /* ===== NAV ===== */
   nav {
-    background: linear-gradient(90deg,#0f2744,#1a4a8a,#1565c0);
-    color: #fff; display: flex; align-items: center; justify-content: space-between;
-    padding: 0 28px; height: 62px;
-    box-shadow: 0 4px 16px rgba(15,39,68,.4); position: sticky; top: 0; z-index: 100;
-    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: linear-gradient(135deg,#0f2744 0%,#1a4a8a 55%,#1565c0 100%);
+    color: #fff;
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; z-index: 200;
+    box-shadow: 0 4px 20px rgba(15,39,68,.45);
+    border-bottom: 1px solid rgba(255,255,255,.1);
   }
-  nav h1 { font-size: 19px; font-weight: 800; letter-spacing: .4px; display:flex;align-items:center;gap:9px; text-shadow:0 1px 3px rgba(0,0,0,.3); }
-  #nav-user { font-size: 13px; display: flex; align-items: center; gap: 14px; }
-  #nav-name { background:rgba(255,255,255,.15);padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid rgba(255,255,255,.2); }
-  #btn-logout { background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.35); color: #fff; padding: 7px 17px; border-radius: 9px; cursor: pointer; font-size: 13px; font-weight:600; transition:.15s; font-family:inherit; }
-  #btn-logout:hover { background: rgba(255,255,255,.25); transform:translateY(-1px); }
+  /* spacer ที่เติม background สีเดียวกับ nav ใน safe-area บนสุด */
+  nav .nav-safe {
+    height: env(safe-area-inset-top);
+    flex-shrink: 0;
+  }
+  nav .nav-content {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px; padding: 0 28px;
+  }
+  nav h1 {
+    font-size: 17px; font-weight: 800; letter-spacing: .3px;
+    display:flex; align-items:center; gap:8px;
+    text-shadow:0 1px 4px rgba(0,0,0,.35);
+    line-height:1.3;
+  }
+  nav h1 small {
+    display:block; font-size:11px; font-weight:500; opacity:.75; letter-spacing:.2px; margin-top:1px;
+  }
+  #nav-user { font-size: 13px; display: flex; align-items: center; gap: 10px; }
+  #nav-name { background:rgba(255,255,255,.14);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.22); }
+  #btn-logout {
+    background: rgba(255,255,255,.14); border: 1.5px solid rgba(255,255,255,.4);
+    color: #fff; padding: 7px 16px; border-radius: 20px;
+    cursor: pointer; font-size: 13px; font-weight:700; transition:.18s; font-family:inherit;
+    box-shadow:0 2px 8px rgba(0,0,0,.18);
+    display:flex; align-items:center; gap:5px;
+  }
+  #btn-logout::before { content:''; }
+  #btn-logout:hover { background: rgba(255,255,255,.28); transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.22); }
 
   /* ===== TABS ===== */
   #tabs { display: flex; gap: 0; background: #fff; border-bottom: 2px solid #dde3ec; padding: 0 24px; overflow-x: auto; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
@@ -276,43 +301,81 @@
   html { -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; height:-webkit-fill-available; }
   body { min-height:100vh; min-height:-webkit-fill-available; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; }
   input, select, textarea { touch-action:manipulation; }
-  nav { padding-left:max(28px,env(safe-area-inset-left)); padding-right:max(28px,env(safe-area-inset-right)); }
+  /* safe-area: left/right for landscape notch */
+  nav .nav-content {
+    padding-left:max(28px,env(safe-area-inset-left));
+    padding-right:max(28px,env(safe-area-inset-right));
+  }
 
   /* ===== BOTTOM NAV ===== */
   #bottom-nav {
     display:none; position:fixed; bottom:0; left:0; right:0;
-    background:#fff; border-top:1px solid #dde3ec;
-    box-shadow:0 -4px 20px rgba(0,0,0,.12); z-index:500;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    border-top:1px solid rgba(0,0,0,.08);
+    box-shadow:0 -8px 32px rgba(15,39,68,.13); z-index:500;
     padding-bottom:env(safe-area-inset-bottom);
     padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right);
   }
-  #bottom-nav .bnav-inner { display:flex; justify-content:space-around; align-items:center; height:60px; }
+  #bottom-nav .bnav-inner { display:flex; justify-content:space-around; align-items:center; height:62px; padding:0 4px; }
   .bnav-item {
-    display:flex; flex-direction:column; align-items:center; gap:3px; flex:1; padding:8px 2px;
+    display:flex; flex-direction:column; align-items:center; gap:2px; flex:1; padding:6px 4px;
     cursor:pointer; color:#94a3b8; font-size:10px; font-weight:700; border:none; background:none;
     font-family:inherit; -webkit-tap-highlight-color:transparent;
-    user-select:none; -webkit-user-select:none; touch-action:manipulation; transition:color .15s;
+    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+    transition:color .2s, transform .15s;
+    position:relative; border-radius:14px;
   }
-  .bnav-item .bnav-icon { font-size:23px; line-height:1; }
-  .bnav-item.active { color:#0f2744; }
-  .bnav-item.active .bnav-icon { transform:scale(1.18); filter:drop-shadow(0 2px 4px rgba(21,101,192,.3)); }
-  .bnav-item:active { opacity:0.6; }
+  .bnav-item .bnav-icon {
+    font-size:22px; line-height:1;
+    width:40px; height:32px; display:flex; align-items:center; justify-content:center;
+    border-radius:12px; transition:background .2s, transform .2s;
+  }
+  .bnav-item.active { color:#1565c0; }
+  .bnav-item.active .bnav-icon {
+    background:linear-gradient(135deg,#e8f0fc,#dbeafe);
+    transform:scale(1.1);
+    box-shadow:0 3px 10px rgba(21,101,192,.2);
+  }
+  .bnav-item:active { transform:scale(.93); }
   @media(max-width:768px) { #bottom-nav { display:block; } }
 
   /* ===== MOBILE RESPONSIVE — ทุกหน้า ===== */
   @media(max-width:768px) {
-    /* NAV */
-    nav { padding:0 12px; height:52px; }
-    nav h1 { font-size:14px; }
+    /* NAV mobile — nav-safe เป็น spacer ให้ status bar, nav-content เป็น row จริงๆ */
+    nav .nav-content {
+      height:52px;
+      padding-left:max(14px,env(safe-area-inset-left));
+      padding-right:max(14px,env(safe-area-inset-right));
+    }
+    nav h1 { font-size:15px; line-height:1.3; }
+    nav h1 small { font-size:10px; }
     #nav-name { display:none; }
-    #btn-logout { padding:6px 10px; font-size:12px; }
+    /* ปุ่ม logout บนมือถือ — icon กลม กดง่าย */
+    #btn-logout {
+      font-size:0; /* ซ่อน text */
+      width:38px; height:38px; flex-shrink:0;
+      border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(255,255,255,.18);
+      border:1.5px solid rgba(255,255,255,.45);
+      box-shadow:0 2px 8px rgba(0,0,0,.18);
+      padding:0;
+    }
+    #btn-logout::before { content:'👤'; font-size:18px; }
     #btn-install-pwa { padding:5px 8px; font-size:11px; }
 
     /* TABS */
     #tabs { display:none !important; }
 
     /* MAIN */
-    main { padding:10px 10px calc(66px + env(safe-area-inset-bottom)) !important; overflow-x:hidden; }
+    main {
+      padding-top:12px !important;
+      padding-left:10px !important;
+      padding-right:10px !important;
+      padding-bottom:calc(70px + env(safe-area-inset-bottom)) !important;
+      overflow-x:hidden;
+    }
 
     /* CARD */
     .card { padding:12px 10px; margin-bottom:10px; border-radius:10px; }
@@ -510,10 +573,8 @@
     .form-grid { grid-template-columns: 1fr; }
     .form-group.full { grid-column: 1; }
     #req-date-grid { grid-template-columns: 1fr !important; }
-    main { padding: 10px 12px; }
     .cal-day { min-height: 60px; }
     .cal-event { display: none; }
-    nav { padding: 0 14px; }
     nav h1 { font-size:16px; }
     .card { padding: 18px; }
     #emp-stat-grid-row { grid-template-columns: repeat(2,1fr) !important; }
@@ -526,7 +587,7 @@
 <!-- LOGIN -->
 <div id="login-page">
   <div class="login-card">
-    <h1>🏢 ระบบลาออนไลน์<br>DOIT</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <p>กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน</p>
     <div id="login-alert"></div>
     <div class="form-group">
@@ -843,11 +904,14 @@
 <!-- APP -->
 <div id="app">
   <nav>
-    <h1>🏢 ระบบลาออนไลน์ บริษัท ดูอิท จำกัด</h1>
-    <div id="nav-user">
-      <span id="nav-name"></span>
-      <button id="btn-install-pwa" onclick="installPWA()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;align-items:center;gap:5px">📲 ติดตั้งแอป</button>
-      <button id="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+    <div class="nav-safe"></div>
+    <div class="nav-content">
+      <h1>🏢 ระบบลาออนไลน์<small id="nav-company"></small></h1>
+      <div id="nav-user">
+        <span id="nav-name"></span>
+        <button id="btn-install-pwa" onclick="installPWA()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;align-items:center;gap:5px">📲 ติดตั้งแอป</button>
+        <button id="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+      </div>
     </div>
   </nav>
 
@@ -2229,6 +2293,11 @@ function showApp() {
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('app').style.display       = 'block';
   document.getElementById('nav-name').textContent    = user.name;
+  // แสดงชื่อบริษัทใต้ชื่อระบบถ้ามี
+  if (user.company) {
+    const nc = document.getElementById('nav-company');
+    if (nc) nc.textContent = user.company;
+  }
 
   // ดึง employee_type + menuPerms ล่าสุดจาก DB
   fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
@@ -3284,7 +3353,7 @@ async function loadPending() {
     <td><span style="font-size:12px">${r.unit}<br>${r.department}</span></td>
     <td>${r.leave_type_name}</td>
     <td style="font-size:13px">${fmtDate(r.start_date)}${r.start_date !== r.end_date ? ' – ' + fmtDate(r.end_date) : ''}</td>
-    <td style="text-align:center">${r.days} วัน</td>
+    <td style="text-align:center">${fmtDuration(r.days, r.hours)}</td>
     <td style="font-size:13px;max-width:150px">${r.reason}</td>
     <td><button class="btn btn-primary btn-sm" onclick="openApproveModal(${r.approval_id})">ดำเนินการ</button></td>
   </tr>`).join('');
@@ -3305,7 +3374,7 @@ async function loadApproveHistory() {
     <td style="font-family:monospace;font-size:13px">${r.request_no}</td>
     <td>${r.employee_name}</td>
     <td>${r.leave_type_name}</td>
-    <td style="font-size:13px">${fmtDate(r.start_date)} – ${fmtDate(r.end_date)} (${r.days} วัน)</td>
+    <td style="font-size:13px">${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}<br>${fmtDuration(r.days, r.hours)}</td>
     <td>${badge} <span style="font-size:11px;color:#718096">${lvlLabel}</span></td>
     <td style="font-size:13px">${r.comment || '-'}</td>
     <td style="font-size:12px;color:#718096">${r.acted_at ? fmtDate(r.acted_at.slice(0,10)) + ' ' + r.acted_at.slice(11,16) : '-'}</td>
@@ -3359,8 +3428,11 @@ function fmtDate(d) {
   return `${day}-${m}-${y}`;
 }
 function fmtDuration(days, hours) {
+  const DISPLAY_H_PER_DAY = 8;
   const d = Number(days) || 0;
-  const h = Number(hours) || 0;
+  let h = Number(hours) || 0;
+  // hours อาจเก็บเป็นชั่วโมงรวม — เอาเฉพาะส่วนเกินจาก days
+  if (h >= DISPLAY_H_PER_DAY) h = h % DISPLAY_H_PER_DAY;
   const wholeH = Math.floor(h);
   const mins   = Math.round((h - wholeH) * 60);
   const parts  = [];
