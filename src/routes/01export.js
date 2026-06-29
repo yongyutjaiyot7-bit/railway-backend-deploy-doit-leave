@@ -1,5 +1,5 @@
 const express = require('express');
-const ExcelJS = require('exceljs');
+const XLSX = require('xlsx');
 const { authenticate, authorize } = require('../middleware/auth');
 
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
@@ -36,70 +36,64 @@ module.exports = function (db) {
     return rows.map(r => ({ ...r, สถานะ: STATUS_LABEL[r.raw_status] || r.raw_status, raw_status: undefined }));
   }
 
-  const HEADER_KEYS = ['เลขที่คำขอ','รหัสพนักงาน','ชื่อ_นามสกุล','แผนก','ฝ่าย','หน่วยงาน',
-                       'ประเภทการลา','วันที่เริ่มลา','วันที่สิ้นสุด','จำนวนวัน','เหตุผล','สถานะ','วันที่ยื่น'];
-  const COL_WIDTHS   = [14, 14, 22, 14, 14, 16, 16, 14, 14, 10, 26, 16, 16];
+  function buildSheet(data) {
+    const headers = ['เลขที่คำขอ','รหัสพนักงาน','ชื่อ_นามสกุล','แผนก','ฝ่าย','หน่วยงาน',
+                     'ประเภทการลา','วันที่เริ่มลา','วันที่สิ้นสุด','จำนวนวัน','เหตุผล','สถานะ','วันที่ยื่น'];
+    const rows = data.map(r => headers.map(h => r[h] ?? ''));
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
 
-  async function buildDetailSheet(wb, data, sheetName) {
-    const ws = wb.addWorksheet(sheetName);
-    ws.columns = HEADER_KEYS.map((k, i) => ({ header: k, key: k, width: COL_WIDTHS[i] }));
+    // column widths
+    ws['!cols'] = [12,14,20,12,12,14,14,14,14,10,24,16,16].map(w => ({ wch: w }));
 
     // header style
-    ws.getRow(1).eachCell(cell => {
-      cell.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } };
-      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      cell.border    = { bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } } };
+    headers.forEach((_, i) => {
+      const cell = XLSX.utils.encode_cell({ r: 0, c: i });
+      if (!ws[cell]) return;
+      ws[cell].s = {
+        fill: { fgColor: { rgb: '1E3A5F' } },
+        font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: { bottom: { style: 'thin', color: { rgb: 'CCCCCC' } } },
+      };
     });
-    ws.getRow(1).height = 22;
 
+    // data row styles
     data.forEach((r, ri) => {
-      const row = ws.addRow(HEADER_KEYS.map(k => r[k] ?? ''));
-      const isApproved = r.สถานะ === 'อนุมัติแล้ว';
-      const isRejected = r.สถานะ === 'ปฏิเสธ';
-      const bgColor = isApproved
-        ? (ri % 2 === 0 ? 'FFF0FFF4' : 'FFE6FFFA')
-        : isRejected
-          ? (ri % 2 === 0 ? 'FFFFF5F5' : 'FFFED7D7')
-          : (ri % 2 === 0 ? 'FFF7FAFC' : 'FFFFFFFF');
-      row.eachCell((cell, ci) => {
-        cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
-        cell.font      = { size: 10 };
-        cell.alignment = { horizontal: ci === 10 ? 'center' : 'left', vertical: 'middle' };
-        cell.border    = { bottom: { style: 'hair', color: { argb: 'FFE2E8F0' } } };
+      const isEven = ri % 2 === 0;
+      headers.forEach((_, ci) => {
+        const cell = XLSX.utils.encode_cell({ r: ri + 1, c: ci });
+        if (!ws[cell]) return;
+        let fillColor = isEven ? 'F7FAFC' : 'FFFFFF';
+        if (r.สถานะ === 'อนุมัติแล้ว') fillColor = isEven ? 'F0FFF4' : 'E6FFFA';
+        if (r.สถานะ === 'ปฏิเสธ') fillColor = isEven ? 'FFF5F5' : 'FED7D7';
+        ws[cell].s = {
+          fill: { fgColor: { rgb: fillColor } },
+          font: { sz: 10 },
+          alignment: { horizontal: ci === 9 ? 'center' : 'left', vertical: 'center' },
+          border: { bottom: { style: 'hair', color: { rgb: 'E2E8F0' } } },
+        };
       });
     });
 
-    ws.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
-    if (data.length > 0) {
-      ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: data.length + 1, column: HEADER_KEYS.length } };
-    }
+    // freeze header row
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
     return ws;
   }
 
   // ====== EXCEL (.xlsx) ======
-  router.get('/excel', async (req, res) => {
+  router.get('/excel', (req, res) => {
     const { year, department } = req.query;
     const data = fetchData(year, department);
     const y = parseInt(year) || new Date().getFullYear();
 
-    const wb = new ExcelJS.Workbook();
-    wb.creator = 'ระบบลาออนไลน์';
-    wb.title   = `รายงานการลา ${y}`;
+    const wb = XLSX.utils.book_new();
+    wb.Props = { Title: `รายงานการลา ${y}`, Author: 'ระบบลาออนไลน์' };
 
-    await buildDetailSheet(wb, data, 'รายละเอียดการลา');
+    // sheet 1: รายละเอียด
+    const ws = buildSheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'รายละเอียดการลา');
 
     // sheet 2: สรุปรายบุคคล
-    const ws2 = wb.addWorksheet('สรุปรายบุคคล');
-    const sumHeaders = ['รหัสพนักงาน','ชื่อ','แผนก','รวมวัน','อนุมัติ','รออนุมัติ','ปฏิเสธ'];
-    const sumWidths  = [14, 22, 14, 10, 10, 12, 10];
-    ws2.columns = sumHeaders.map((h, i) => ({ header: h, key: h, width: sumWidths[i] }));
-    ws2.getRow(1).eachCell(cell => {
-      cell.font  = { bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    });
-
     const summary = {};
     data.forEach(r => {
       const key = r['รหัสพนักงาน'];
@@ -109,38 +103,37 @@ module.exports = function (db) {
       else if (r.สถานะ === 'ปฏิเสธ') summary[key].ปฏิเสธ += Number(r['จำนวนวัน']) || 0;
       else summary[key].รออนุมัติ += Number(r['จำนวนวัน']) || 0;
     });
-    Object.values(summary).forEach(s => ws2.addRow(sumHeaders.map(h => s[h] ?? 0)));
+    const sumHeaders = ['รหัสพนักงาน','ชื่อ','แผนก','รวมวัน','อนุมัติ','รออนุมัติ','ปฏิเสธ'];
+    const sumRows = Object.values(summary).map(s => sumHeaders.map(h => s[h] ?? 0));
+    const ws2 = XLSX.utils.aoa_to_sheet([sumHeaders, ...sumRows]);
+    ws2['!cols'] = [12, 20, 14, 10, 10, 12, 10].map(w => ({ wch: w }));
+    XLSX.utils.book_append_sheet(wb, ws2, 'สรุปรายบุคคล');
 
-    const buf = await wb.xlsx.writeBuffer();
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
     res.setHeader('Content-Disposition', `attachment; filename="leave-report-${y}.xlsx"`);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buf);
   });
 
-  // ====== EXCEL MACRO (.xlsm) — ส่งเป็น .xlsx แทนเพราะ exceljs ไม่รองรับ VBA ======
-  router.get('/xlsm', async (req, res) => {
+  // ====== EXCEL MACRO (.xlsm) ======
+  router.get('/xlsm', (req, res) => {
     const { year, department } = req.query;
     const data = fetchData(year, department);
     const y = parseInt(year) || new Date().getFullYear();
 
-    const wb = new ExcelJS.Workbook();
-    wb.creator = 'ระบบลาออนไลน์';
+    const wb = XLSX.utils.book_new();
+    wb.Props = { Title: `รายงานการลา ${y} (Macro)`, Author: 'ระบบลาออนไลน์' };
 
-    await buildDetailSheet(wb, data, 'รายละเอียดการลา');
+    const ws = buildSheet(data);
+
+    // AutoFilter range
+    const lastRow = data.length + 1;
+    const lastCol = XLSX.utils.encode_col(12);
+    ws['!autofilter'] = { ref: `A1:${lastCol}${lastRow}` };
+
+    XLSX.utils.book_append_sheet(wb, ws, 'รายละเอียดการลา');
 
     // sheet สรุปตามประเภทการลา
-    const ws3 = wb.addWorksheet('สรุปตามประเภท');
-    ws3.columns = [
-      { header: 'ประเภทการลา', key: 'ประเภทการลา', width: 20 },
-      { header: 'จำนวนครั้ง',  key: 'จำนวนครั้ง',  width: 14 },
-      { header: 'รวมวัน',       key: 'รวมวัน',       width: 12 },
-    ];
-    ws3.getRow(1).eachCell(cell => {
-      cell.font  = { bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    });
-
     const byType = {};
     data.forEach(r => {
       const t = r['ประเภทการลา'];
@@ -148,11 +141,14 @@ module.exports = function (db) {
       byType[t].จำนวนครั้ง++;
       byType[t].รวมวัน += Number(r['จำนวนวัน']) || 0;
     });
-    Object.values(byType).forEach(r => ws3.addRow([r.ประเภทการลา, r.จำนวนครั้ง, r.รวมวัน]));
+    const typeHeaders = ['ประเภทการลา','จำนวนครั้ง','รวมวัน'];
+    const ws3 = XLSX.utils.aoa_to_sheet([typeHeaders, ...Object.values(byType).map(r => typeHeaders.map(h => r[h]))]);
+    ws3['!cols'] = [18, 12, 12].map(w => ({ wch: w }));
+    XLSX.utils.book_append_sheet(wb, ws3, 'สรุปตามประเภท');
 
-    const buf = await wb.xlsx.writeBuffer();
-    res.setHeader('Content-Disposition', `attachment; filename="leave-report-${y}.xlsx"`);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsm' });
+    res.setHeader('Content-Disposition', `attachment; filename="leave-report-${y}.xlsm"`);
+    res.setHeader('Content-Type', 'application/vnd.ms-excel.sheet.macroEnabled.12');
     res.send(buf);
   });
 
@@ -164,7 +160,8 @@ module.exports = function (db) {
     const deptLabel = department ? ` — แผนก${department}` : '';
     const genDate = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    const total    = data.length;
+    // สรุป
+    const total = data.length;
     const approved = data.filter(r => r.สถานะ === 'อนุมัติแล้ว').length;
     const pending  = data.filter(r => ['รอตรวจสอบ','รอระดับอนุมัติ'].includes(r.สถานะ)).length;
     const rejected = data.filter(r => r.สถานะ === 'ปฏิเสธ').length;

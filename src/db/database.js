@@ -270,6 +270,27 @@ async function initDb() {
     )
   `);
 
+  // ตาราง log การลบใบลา
+  sqlDb.run(`
+    CREATE TABLE IF NOT EXISTS leave_delete_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      leave_request_id INTEGER NOT NULL,
+      request_no TEXT NOT NULL,
+      employee_name TEXT NOT NULL,
+      employee_id_code TEXT NOT NULL,
+      leave_type TEXT NOT NULL,
+      start_date TEXT NOT NULL,
+      end_date TEXT NOT NULL,
+      days REAL NOT NULL,
+      hours REAL NOT NULL,
+      status_before TEXT NOT NULL,
+      deleted_by_user_id INTEGER NOT NULL,
+      deleted_by_name TEXT NOT NULL,
+      deleted_by_email TEXT NOT NULL,
+      deleted_at TEXT DEFAULT (datetime('now','localtime'))
+    )
+  `);
+
   // Seed วันหยุดประเพณี ปี 2026 (2569) — seed เฉพาะถ้ายังไม่มีข้อมูลปีนี้
   const chCount = db.prepare("SELECT COUNT(*) as c FROM company_holidays WHERE date LIKE '2026%'").get();
   if (!chCount || chCount.c === 0) {

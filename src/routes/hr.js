@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 const { authenticate } = require('../middleware/auth');
 
 const xlsUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -593,38 +593,109 @@ module.exports = function (db) {
     res.json({ message: 'แก้ไขข้อมูลการลาสำเร็จ' });
   });
 
-  // DELETE /api/hr/leave-records/:id
-  router.delete('/leave-records/:id', (req, res) => {
-    const lr = db.prepare('SELECT * FROM leave_requests WHERE id=?').get(req.params.id);
+  // DELETE /api/hr/leave-records/:id — ต้องยืนยันด้วย email+password (ไม่ใช่ hr001)
+  router.delete('/leave-records/:id', async (req, res) => {
+    const { confirm_email, confirm_password } = req.body || {};
+    if (!confirm_email || !confirm_password)
+      return res.status(400).json({ message: 'กรุณาระบุ Email และ Password เพื่อยืนยัน' });
+
+    // ตรวจสอบ email ต้องไม่ใช่ hr001@company.com
+    if (confirm_email.trim().toLowerCase() === 'hr001@company.com')
+      return res.status(403).json({ message: 'ไม่อนุญาตให้ใช้บัญชี hr001@company.com ในการลบ' });
+
+    // ตรวจสอบว่า email+password ถูกต้องในระบบ
+    const confirmer = db.prepare('SELECT * FROM users WHERE email=?').get(confirm_email.trim().toLowerCase());
+    if (!confirmer) return res.status(401).json({ message: 'ไม่พบบัญชีผู้ใช้นี้ในระบบ' });
+    const pwOk = await bcrypt.compare(confirm_password, confirmer.password);
+    if (!pwOk) return res.status(401).json({ message: 'รหัสผ่านไม่ถูกต้อง' });
+
+    // เฉพาะ hr_admin หรือแผนกบุคคลเท่านั้นที่มีสิทธิ์ลบ
+    const isHrAdmin = confirmer.role === 'hr_admin';
+    const isHrDept  = (confirmer.department || '').includes('บุคคล');
+    if (!isHrAdmin && !isHrDept)
+      return res.status(403).json({ message: `ไม่มีสิทธิ์ลบใบลา — เฉพาะแผนกบุคคลหรือ HR Admin เท่านั้น (บัญชีของท่านอยู่แผนก "${confirmer.department || 'ไม่ระบุ'}")` });
+
+    const lr = db.prepare(`
+      SELECT lr.*, lt.name as leave_type_name, u.name as emp_name, u.employee_id as emp_code
+      FROM leave_requests lr
+      JOIN leave_types lt ON lt.id = lr.leave_type_id
+      JOIN users u ON u.id = lr.employee_id
+      WHERE lr.id=?
+    `).get(req.params.id);
     if (!lr) return res.status(404).json({ message: 'ไม่พบคำขอลา' });
+
     // คืนวันลาถ้าเคย approved
     if (lr.status === 'approved') {
       const year = new Date(lr.start_date).getFullYear();
       db.prepare('UPDATE leave_balances SET used_days = MAX(0, used_days - ?) WHERE employee_id=? AND leave_type_id=? AND year=?')
         .run(lr.days, lr.employee_id, lr.leave_type_id, year);
     }
+
+    // บันทึก log ก่อนลบ
+    db.prepare(`
+      INSERT INTO leave_delete_logs
+        (leave_request_id, request_no, employee_name, employee_id_code, leave_type,
+         start_date, end_date, days, hours, status_before,
+         deleted_by_user_id, deleted_by_name, deleted_by_email)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).run(
+      lr.id, lr.request_no, lr.emp_name, lr.emp_code, lr.leave_type_name,
+      lr.start_date, lr.end_date, lr.days, lr.hours, lr.status,
+      confirmer.id, confirmer.name, confirmer.email
+    );
+
     db.prepare('DELETE FROM approvals WHERE leave_request_id=?').run(lr.id);
     db.prepare('DELETE FROM leave_requests WHERE id=?').run(lr.id);
     res.json({ message: 'ลบคำขอลาสำเร็จ' });
   });
 
+  // GET /api/hr/leave-delete-logs — ประวัติการลบใบลา
+  router.get('/leave-delete-logs', (req, res) => {
+    try {
+      const { page = 1, limit = 20, search = '' } = req.query;
+      const offset = (Number(page) - 1) * Number(limit);
+      const kw = `%${search}%`;
+      const rows = db.prepare(`
+        SELECT * FROM leave_delete_logs
+        WHERE (employee_name LIKE ? OR employee_id_code LIKE ? OR request_no LIKE ?
+               OR deleted_by_name LIKE ? OR deleted_by_email LIKE ?)
+        ORDER BY deleted_at DESC
+        LIMIT ? OFFSET ?
+      `).all(kw, kw, kw, kw, kw, Number(limit), offset);
+      const total = db.prepare(`
+        SELECT COUNT(*) as c FROM leave_delete_logs
+        WHERE (employee_name LIKE ? OR employee_id_code LIKE ? OR request_no LIKE ?
+               OR deleted_by_name LIKE ? OR deleted_by_email LIKE ?)
+      `).get(kw, kw, kw, kw, kw);
+      res.json({ rows, total: total.c });
+    } catch(e) { res.status(500).json({ message: e.message }); }
+  });
+
   // ===== GET /api/hr/employee-template — ดาวน์โหลด Excel template =====
-  router.get('/employee-template', (req, res) => {
-    const wb = XLSX.utils.book_new();
-    const headers = [['รหัสพนักงาน*','ชื่อ-นามสกุล*','อีเมล*','รหัสผ่าน*','บทบาท*','แผนก','ฝ่าย','หน่วยงาน']];
-    const example = [
-      ['EMP011','สมชาย ใจดี','somchai@company.com','password123','employee','บัญชี','การเงิน','หน่วยบัญชี1'],
-      ['UH002','มานี รักงาน','manee@company.com','password123','unit_head','IT','เทคโนโลยี','หน่วย Dev'],
+  router.get('/employee-template', async (req, res) => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('พนักงาน');
+    ws.columns = [
+      { header: 'รหัสพนักงาน*',  key: 'a', width: 18 },
+      { header: 'ชื่อ-นามสกุล*', key: 'b', width: 24 },
+      { header: 'อีเมล*',         key: 'c', width: 30 },
+      { header: 'รหัสผ่าน*',      key: 'd', width: 18 },
+      { header: 'บทบาท*',         key: 'e', width: 20 },
+      { header: 'แผนก',           key: 'f', width: 16 },
+      { header: 'ฝ่าย',           key: 'g', width: 16 },
+      { header: 'หน่วยงาน',       key: 'h', width: 20 },
     ];
-    const note = [['หมายเหตุ: บทบาท (role) ใส่ได้ดังนี้: employee | unit_head | department_head | division_manager | hr_admin']];
-    const ws = XLSX.utils.aoa_to_sheet([...headers, ...example, [], ...note]);
-    ws['!cols'] = [18,22,28,16,18,14,14,18].map(w => ({ wch: w }));
-    // style header row
-    ['A1','B1','C1','D1','E1','F1','G1','H1'].forEach(c => {
-      if (ws[c]) ws[c].s = { font: { bold: true }, fill: { fgColor: { rgb: '1e3a5f' } }, fontColor: { rgb: 'ffffff' } };
+    // style header
+    ws.getRow(1).eachCell(cell => {
+      cell.font  = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e3a5f' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
-    XLSX.utils.book_append_sheet(wb, ws, 'พนักงาน');
-    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    ws.addRow(['EMP011','สมชาย ใจดี','somchai@company.com','password123','employee','บัญชี','การเงิน','หน่วยบัญชี1']);
+    ws.addRow(['UH002','มานี รักงาน','manee@company.com','password123','unit_head','IT','เทคโนโลยี','หน่วย Dev']);
+    ws.addRow([]);
+    ws.addRow(['หมายเหตุ: บทบาท (role) ใส่ได้ดังนี้: employee | unit_head | department_head | division_manager | hr_admin']);
+    const buf = await wb.xlsx.writeBuffer();
     res.setHeader('Content-Disposition', 'attachment; filename="employee_template.xlsx"');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buf);
@@ -634,9 +705,11 @@ module.exports = function (db) {
   router.post('/import-employees', xlsUpload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ message: 'ไม่พบไฟล์' });
     try {
-      const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(req.file.buffer);
+      const ws = wb.worksheets[0];
+      const rows = [];
+      ws.eachRow(row => rows.push(row.values.slice(1).map(v => v === null || v === undefined ? '' : (typeof v === 'object' && v.text ? v.text : String(v)))));
 
       // หา header row (แถวแรก)
       const dataRows = rows.slice(1).filter(r => r[0] && String(r[0]).trim() && !String(r[0]).startsWith('หมายเหตุ'));
@@ -710,13 +783,15 @@ module.exports = function (db) {
   });
 
   // POST /api/hr/company-holidays/import — นำเข้า Excel/CSV
-  router.post('/company-holidays/import', xlsUpload.single('file'), (req, res) => {
+  router.post('/company-holidays/import', xlsUpload.single('file'), async (req, res) => {
     if (req.user.role !== 'hr_admin') return res.status(403).json({ message: 'เฉพาะ HR Admin เท่านั้น' });
     if (!req.file) return res.status(400).json({ message: 'ไม่พบไฟล์' });
     try {
-      const wb = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(req.file.buffer);
+      const ws = wb.worksheets[0];
+      const rows = [];
+      ws.eachRow(row => rows.push(row.values.slice(1)));
       const dataRows = rows.slice(1).filter(r => r[0] && r[1]);
 
       const ins = db.prepare('INSERT OR REPLACE INTO company_holidays (date, name, created_by) VALUES (?,?,?)');
@@ -759,18 +834,23 @@ module.exports = function (db) {
   });
 
   // GET /api/hr/company-holidays/template — ดาวน์โหลด template
-  router.get('/company-holidays/template', (req, res) => {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([
-      ['วันที่ (YYYY-MM-DD)', 'ชื่อวันหยุด'],
-      ['2026-01-01', 'วันขึ้นปีใหม่'],
-      ['2026-04-13', 'วันสงกรานต์'],
-      ['2026-04-14', 'วันสงกรานต์'],
-      ['', '--- ใส่รายการเพิ่มเติมต่อจากนี้ ---'],
-    ]);
-    ws['!cols'] = [{ wch: 20 }, { wch: 40 }];
-    XLSX.utils.book_append_sheet(wb, ws, 'วันหยุด');
-    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  router.get('/company-holidays/template', async (req, res) => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('วันหยุด');
+    ws.columns = [
+      { header: 'วันที่ (YYYY-MM-DD)', key: 'date', width: 22 },
+      { header: 'ชื่อวันหยุด',          key: 'name', width: 42 },
+    ];
+    ws.getRow(1).eachCell(cell => {
+      cell.font  = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e3a5f' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
+    ws.addRow(['2026-01-01', 'วันขึ้นปีใหม่']);
+    ws.addRow(['2026-04-13', 'วันสงกรานต์']);
+    ws.addRow(['2026-04-14', 'วันสงกรานต์']);
+    ws.addRow(['', '--- ใส่รายการเพิ่มเติมต่อจากนี้ ---']);
+    const buf = await wb.xlsx.writeBuffer();
     res.setHeader('Content-Disposition', 'attachment; filename="holiday_template.xlsx"');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buf);
