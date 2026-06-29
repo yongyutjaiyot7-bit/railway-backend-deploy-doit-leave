@@ -5242,9 +5242,18 @@ async function openEmpModal(id = null) {
   leaveTypesCache = await api('GET', '/hr/leave-types');
   const quotaGrid = document.getElementById('em-quota-grid');
   quotaGrid.innerHTML = leaveTypesCache.map(lt => `
-    <div class="form-group">
-      <label>${lt.name}</label>
-      <input type="number" id="quota-${lt.id}" value="${lt.max_days_per_year}" min="0" style="width:100px"> วัน/ปี
+    <div class="form-group" style="border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;background:#f8fafc">
+      <label style="font-weight:700;color:#1e3a5f;margin-bottom:6px;display:block">${lt.name}</label>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <input type="number" id="quota-${lt.id}" value="${lt.max_days_per_year}" min="0" style="width:80px;border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 8px;font-size:14px;font-weight:700;color:#1e3a5f"> วัน/ปี
+      </div>
+      <div style="margin-top:7px;font-size:12px;display:flex;gap:10px;flex-wrap:wrap">
+        <span>ใช้ไปแล้ว: <b id="used-${lt.id}" style="color:#c53030">-</b> วัน</span>
+        <span>คงเหลือ: <b id="remain-${lt.id}" style="color:#276749">-</b> วัน</span>
+      </div>
+      <div style="margin-top:5px;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden">
+        <div id="bar-${lt.id}" style="height:100%;width:0%;background:linear-gradient(90deg,#fc8181,#f56565);border-radius:99px;transition:width .4s"></div>
+      </div>
     </div>
   `).join('');
 
@@ -5261,7 +5270,23 @@ async function openEmpModal(id = null) {
     document.getElementById('em-emptype').value = u.employee_type || 'monthly';
     document.getElementById('em-probation').value = u.probation_start_date || '';
     toggleProbationField();
-    if (u.balances) u.balances.forEach(b => { const el = document.getElementById(`quota-${b.leave_type_id}`); if (el) el.value = b.total_days; });
+    if (u.balances) u.balances.forEach(b => {
+      const quotaEl  = document.getElementById(`quota-${b.leave_type_id}`);
+      const usedEl   = document.getElementById(`used-${b.leave_type_id}`);
+      const remainEl = document.getElementById(`remain-${b.leave_type_id}`);
+      const barEl    = document.getElementById(`bar-${b.leave_type_id}`);
+      if (quotaEl)  quotaEl.value = b.total_days;
+      const used    = b.used_days || 0;
+      const total   = b.total_days || 0;
+      const remain  = Math.max(0, total - used);
+      const pct     = total > 0 ? Math.min(100, (used / total) * 100) : 0;
+      if (usedEl)   usedEl.textContent   = used;
+      if (remainEl) remainEl.textContent = remain;
+      if (barEl) {
+        barEl.style.width = pct + '%';
+        barEl.style.background = pct >= 100 ? '#e53e3e' : pct >= 75 ? '#ed8936' : 'linear-gradient(90deg,#68d391,#38a169)';
+      }
+    });
   } else {
     ['em-empid','em-name','em-email','em-pass','em-unit','em-dept','em-div','em-probation'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('em-role').value    = 'employee';
