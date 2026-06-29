@@ -2656,31 +2656,49 @@ async function loadBalance() {
 
   // โควต้าคงเหลือ + ใช้ไป — progress bars
   const barColors = ['#e53e3e','#d69e2e','#38a169','#3182ce','#805ad5','#00b5d8'];
-  const barBg     = ['#fff5f5','#fffaf0','#f0fff4','#ebf8ff','#faf5ff','#e6fffa'];
   const barsEl = document.getElementById('emp-balance-bars');
   if (Array.isArray(balance) && balance.length) {
     if (barsEl) {
-      barsEl.innerHTML = balance.map((b, i) => {
-        const used = b.used_days || 0;
-        const total = b.total_days || 1;
-        const remain = Math.max(0, total - used);
-        const pct = Math.min(100, Math.round((used / total) * 100));
-        const c = barColors[i % barColors.length];
-        const bg = barBg[i % barBg.length];
-        return `<div style="margin-bottom:14px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-            <span style="font-size:13px;font-weight:700;color:#2d3748">${b.leave_type_name}</span>
-            <span style="font-size:12px;color:#718096"><span style="font-weight:700;color:${c}">${Number.isInteger(used)?used:used.toFixed(1)}</span>/${total} วัน</span>
-          </div>
-          <div style="background:#f0f4f8;border-radius:20px;height:8px;overflow:hidden">
-            <div style="background:linear-gradient(90deg,${c},${c}cc);height:100%;width:${pct}%;border-radius:20px;transition:width .6s ease"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-top:3px">
-            <span style="font-size:11px;color:#a0aec0">ใช้ไป ${Number.isInteger(used)?used:used.toFixed(1)} วัน (${pct}%)</span>
-            <span style="font-size:11px;color:#48bb78;font-weight:600">คงเหลือ ${Number.isInteger(remain)?remain:remain.toFixed(1)} วัน</span>
-          </div>
-        </div>`;
-      }).join('');
+      let showAll = false;
+      const usedItems  = balance.filter(b => (b.used_days || 0) > 0);
+      const hiddenCount = balance.length - usedItems.length;
+
+      function renderBalanceBars() {
+        const list = showAll ? balance : usedItems;
+        const rows = list.map((b, i) => {
+          const used   = b.used_days || 0;
+          const total  = b.total_days || 1;
+          const remain = Math.max(0, total - used);
+          const pct    = Math.min(100, Math.round((used / total) * 100));
+          const c      = barColors[i % barColors.length];
+          return `<div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+              <span style="font-size:13px;font-weight:700;color:#2d3748">${b.leave_type_name}</span>
+              <span style="font-size:12px;color:#718096"><span style="font-weight:700;color:${c}">${Number.isInteger(used)?used:used.toFixed(1)}</span>/${total} วัน</span>
+            </div>
+            <div style="background:#f0f4f8;border-radius:20px;height:8px;overflow:hidden">
+              <div style="background:linear-gradient(90deg,${c},${c}cc);height:100%;width:${pct}%;border-radius:20px;transition:width .6s ease"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px">
+              <span style="font-size:11px;color:#a0aec0">ใช้ไป ${Number.isInteger(used)?used:used.toFixed(1)} วัน (${pct}%)</span>
+              <span style="font-size:11px;color:#48bb78;font-weight:600">คงเหลือ ${Number.isInteger(remain)?remain:remain.toFixed(1)} วัน</span>
+            </div>
+          </div>`;
+        }).join('');
+
+        const toggleBtn = hiddenCount > 0 ? `<div style="text-align:center;margin-top:6px">
+          <button onclick="(function(){const el=document.getElementById('emp-balance-bars');const b=el._balanceData;b._showAll=!b._showAll;b._render();})()" style="background:none;border:none;color:#3182ce;font-size:12px;cursor:pointer;padding:4px 8px;border-radius:6px;text-decoration:underline">
+            ${showAll ? '▲ แสดงเฉพาะที่ใช้งาน' : `▼ แสดงทั้งหมด (ซ่อนอยู่ ${hiddenCount} รายการ)`}
+          </button>
+        </div>` : '';
+
+        barsEl.innerHTML = (list.length === 0
+          ? `<div class="empty" style="font-size:13px">ยังไม่มีการใช้วันลาในปีนี้</div>`
+          : rows) + toggleBtn;
+      }
+
+      barsEl._balanceData = { _showAll: false, _render: () => { showAll = barsEl._balanceData._showAll; renderBalanceBars(); } };
+      renderBalanceBars();
     }
   } else if (barsEl) {
     if (balance && balance.error) {
