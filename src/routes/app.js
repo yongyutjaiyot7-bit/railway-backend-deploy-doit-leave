@@ -1063,20 +1063,18 @@ async function submitRequest() {
 // ====== HISTORY ======
 let historyCache = [];
 let histCurrentPage = 1;
-async function loadHistory(forceRefresh) {
-  // refresh เสมอ — ล้าง cache เก่าทิ้ง
-  const data = await api('GET', '/leave/my-requests');
-  historyCache = Array.isArray(data) ? data : [];
-  // populate leave type filter
-  const types = [...new Set(historyCache.map(r => r.leave_type_name))].filter(Boolean);
-  const sel = document.getElementById('hist-filter-type');
-  if (sel) {
-    sel.innerHTML = '<option value="">-- ทุกประเภท --</option>';
-    types.forEach(t => { const o = new Option(t,t); sel.add(o); });
+async function loadHistory() {
+  if (!historyCache.length) {
+    const data = await api('GET', '/leave/my-requests');
+    historyCache = Array.isArray(data) ? data : [];
+    // populate leave type filter
+    const types = [...new Set(historyCache.map(r => r.leave_type_name))].filter(Boolean);
+    const sel = document.getElementById('hist-filter-type');
+    if (sel && sel.options.length <= 1) types.forEach(t => { const o = new Option(t,t); sel.add(o); });
+    // default ปีปัจจุบัน
+    const yearEl = document.getElementById('hist-filter-year');
+    if (yearEl && !yearEl.value) yearEl.value = new Date().getFullYear();
   }
-  // default ปีปัจจุบัน
-  const yearEl = document.getElementById('hist-filter-year');
-  if (yearEl && !yearEl.value) yearEl.value = new Date().getFullYear();
   histCurrentPage = 1;
   renderHistoryTable();
 }

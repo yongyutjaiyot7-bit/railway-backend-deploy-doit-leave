@@ -16,8 +16,7 @@
 <!-- iOS splash screens (iPhone) -->
 <link rel="apple-touch-startup-image" href="/icons/splash-portrait.png" media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3)">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="/dist/css/app.css">
-<title>ระบบลาออนไลน์ DOIT</title>
+<title>ระบบลาออนไลน์</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -31,7 +30,7 @@
 <!-- LOGIN -->
 <div id="login-page">
   <div class="login-card">
-    <h1>🏢 ระบบลาออนไลน์<br>DOIT</h1>
+    <h1>🏢 ระบบลาออนไลน์</h1>
     <p>กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน</p>
     <div id="login-alert"></div>
     <div class="form-group">
@@ -350,7 +349,7 @@
   <nav>
     <div class="nav-safe"></div>
     <div class="nav-content">
-      <h1>🏢 ระบบลาออนไลน์ บริษัท ดูอิท จำกัด<small id="nav-company"></small></h1>
+      <h1>🏢 ระบบลาออนไลน์<small id="nav-company"></small></h1>
       <div id="nav-user">
         <span id="nav-name"></span>
         <button id="btn-install-pwa" onclick="installPWA()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;align-items:center;gap:5px">📲 ติดตั้งแอป</button>
@@ -1571,22 +1570,42 @@
               <label>⏰ ลาเกิน (วัน)</label>
               <input id="lt-over-days" type="number" min="0" style="width:100px" placeholder="เช่น 3 (0=ปิด)">
             </div>
+            <div class="form-group">
+              <label>⏩ ล่วงหน้า (วัน)</label>
+              <input id="lt-advance-days" type="number" min="0" style="width:100px" placeholder="0=ไม่จำกัด">
+            </div>
+            <div class="form-group">
+              <label>⏪ ย้อนหลัง (วัน)</label>
+              <input id="lt-backdate-days" type="number" min="0" style="width:100px" placeholder="0=ไม่อนุญาต">
+            </div>
             <button class="btn btn-primary" style="margin-top:auto" onclick="saveLeaveType()">+ เพิ่มประเภทการลา</button>
           </div>
 
           <div id="lt-alert"></div>
           <div class="section-header"><span>📋 รายการประเภทการลาทั้งหมด</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+            <div style="position:relative;flex:1;min-width:200px;max-width:340px">
+              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:15px">🔍</span>
+              <input id="lt-search" type="text" placeholder="ค้นหารหัส หรือ ชื่อประเภทการลา..."
+                style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;font-family:inherit;box-sizing:border-box"
+                oninput="ltSearchChanged()">
+            </div>
+            <span id="lt-count" style="font-size:12px;color:#64748b"></span>
+          </div>
           <div class="table-wrap" style="border-radius:12px;border:1.5px solid #e2e8f0;box-shadow:0 2px 12px rgba(0,0,0,.06)"><table>
             <thead><tr style="background:linear-gradient(135deg,#dbeafe,#eff6ff);border-bottom:2px solid #93c5fd">
               <th style="text-align:center;color:#1d4ed8;border-bottom:none;padding:13px 14px;font-size:13px;font-weight:700">🔖 รหัสลา</th>
               <th style="color:#1e3a5f;border-bottom:none;padding:13px 16px;font-size:13px">🏷️ ชื่อประเภทการลา</th>
+              <th style="text-align:center;color:#d97706;border-bottom:none;padding:13px 14px;font-size:13px;font-weight:700">⏩ ล่วงหน้า/วัน</th>
               <th style="text-align:center;color:#0369a1;border-bottom:none;padding:13px 14px;font-size:13px;font-weight:700">📅 โควต้าวันลา/ปี</th>
+              <th style="text-align:center;color:#7c3aed;border-bottom:none;padding:13px 14px;font-size:13px;font-weight:700">⏪ ย้อนหลัง/วัน</th>
               <th style="text-align:center;color:#374151;border-bottom:none;padding:13px 14px;font-size:13px">📎 ต้องแนบเอกสาร</th>
               <th style="text-align:center;color:#374151;border-bottom:none;padding:13px 14px;font-size:13px">⏰ ลาเกิน (วัน) แนบเอกสาร</th>
               <th style="text-align:center;color:#1e3a5f;border-bottom:none;padding:13px 16px;font-size:13px">⚙️ จัดการ</th>
             </tr></thead>
-            <tbody id="lt-tbody"><tr><td colspan="6" class="empty">กำลังโหลด...</td></tr></tbody>
+            <tbody id="lt-tbody"><tr><td colspan="8" class="empty">กำลังโหลด...</td></tr></tbody>
           </table></div>
+          <div id="lt-pagination" style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:12px;flex-wrap:wrap"></div>
         </div>
       </div>
 
@@ -1688,5 +1707,6 @@
 <div class="tooltip-box" id="tooltip"></div>
 
 <script src="/dist/js/app.js"></script>
+<script src="/dist/js/lt-patch.js"></script>
 </body>
 </html>

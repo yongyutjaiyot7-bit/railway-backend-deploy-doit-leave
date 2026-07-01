@@ -217,6 +217,12 @@ async function initDb() {
   try { sqlDb.run('ALTER TABLE leave_types ADD COLUMN requires_doc_over_days INTEGER DEFAULT 0'); } catch(e) {}
   // Migration: leave type code
   try { sqlDb.run("ALTER TABLE leave_types ADD COLUMN code TEXT DEFAULT ''"); } catch(e) {}
+  // Migration: over-quota unpaid excess flag
+  try { sqlDb.run('ALTER TABLE leave_requests ADD COLUMN is_unpaid_excess INTEGER DEFAULT 0'); } catch(e) {}
+  try { sqlDb.run('ALTER TABLE leave_requests ADD COLUMN unpaid_excess_days REAL DEFAULT 0'); } catch(e) {}
+  // Migration: advance/backdate limits per leave type (0 = ไม่จำกัด/ไม่อนุญาต)
+  try { sqlDb.run('ALTER TABLE leave_types ADD COLUMN advance_days INTEGER DEFAULT 0'); } catch(e) {}
+  try { sqlDb.run('ALTER TABLE leave_types ADD COLUMN backdate_days INTEGER DEFAULT 0'); } catch(e) {}
   // Migration: per-user menu permissions
   sqlDb.run(`
     CREATE TABLE IF NOT EXISTS user_menu_permissions (
@@ -270,7 +276,7 @@ async function initDb() {
     )
   `);
 
-  // ตาราง log การลบใบลา
+  // ตาราง log การลบใบลา (เดิม)
   sqlDb.run(`
     CREATE TABLE IF NOT EXISTS leave_delete_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -287,6 +293,23 @@ async function initDb() {
       deleted_by_user_id INTEGER NOT NULL,
       deleted_by_name TEXT NOT NULL,
       deleted_by_email TEXT NOT NULL,
+      deleted_at TEXT DEFAULT (datetime('now','localtime'))
+    )
+  `);
+
+  // ตาราง log การลบทุกประเภท ทุกหน้า ทุกสิทธิ์
+  sqlDb.run(`
+    CREATE TABLE IF NOT EXISTS delete_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      table_name TEXT NOT NULL,
+      record_id TEXT,
+      record_summary TEXT,
+      deleted_by_user_id INTEGER,
+      deleted_by_name TEXT,
+      deleted_by_email TEXT,
+      deleted_by_role TEXT,
+      ip_address TEXT,
       deleted_at TEXT DEFAULT (datetime('now','localtime'))
     )
   `);
@@ -314,37 +337,48 @@ async function initDb() {
     insHol.run('2026-12-31', 'วันสิ้นปี');
   }
 
-  // Leave types: ล้างและ seed ใหม่ทุกครั้งที่ code list เปลี่ยน — ตรวจด้วย B01
+  // Leave types — ตรวจด้วย B04 (ลากิจบริษัท รายเดือน) ซึ่งเป็น type ใหม่
   const correctTypes = [
-    ['01',  'ลาคลอด',                                98, 1, 0],
-    ['02',  'ลาเพื่อช่วยคู่สมรสคลอดบุตร',            15, 1, 0],
-    ['04',  'ลาฌาปนกิจ',                              3, 0, 0],
-    ['05',  'ลาสมรส',                                  3, 0, 0],
-    ['06',  'ลาบวช',                                  15, 1, 0],
-    ['07',  'ลาเพื่อการศึกษา',                        30, 1, 0],
-    ['08',  'ลาทำหมัน',                                3, 1, 0],
-    ['09',  'ลา (แลกวันหยุดนักขัตฤกษ์)',               1, 0, 0],
-    ['10',  'ลารักษาตัวเนื่องจากอุบัติเหตุในงาน',     30, 1, 0],
-    ['11',  'ลาป่วย (โควิด)',                          14, 1, 0],
-    ['12',  'ลาฝากครรภ์',                             12, 1, 0],
-    ['B01', 'ลากิจ (รายเดือน)',                       10, 0, 0],
-    ['B02', 'ลากิจ (รายวัน)',                         10, 0, 0],
-    ['B03', 'พักงาน',                                  0, 0, 0],
-    ['B4',  'ลากิจ (พิเศษ)',                           3, 0, 0],
-    ['S02', 'ลาป่วย',                                 30, 0, 3],
-    ['V03', 'ลาพักร้อน',                              10, 0, 0],
+    // code,  name,                                   max_days, req_doc, req_doc_over_days
+    ['01',  'ลาคลอด',                                120, 1, 0],   // กม. ไทย 98+22 = 120 วัน
+    ['02',  'ลาเพื่อช่วยคู่สมรสคลอดบุตร',             15, 1, 0],
+    ['04',  'ลาฌาปนกิจ',                               3, 0, 0],
+    ['05',  'ลาสมรส',                                   3, 0, 0],
+    ['06',  'ลาบวช',                                   15, 1, 0],
+    ['07',  'ลาเพื่อการศึกษา',                         30, 1, 0],
+    ['08',  'ลาทำหมัน',                                 3, 1, 0],
+    ['09',  'ลา (แลกวันหยุดนักขัตฤกษ์)',                1, 0, 0],
+    ['10',  'ลารักษาตัวเนื่องจากอุบัติเหตุในงาน',      30, 1, 0],
+    ['11',  'ลาป่วย (โควิด)',                           14, 1, 0],
+    ['12',  'ลาฝากครรภ์',                              12, 1, 0],
+    ['B01', 'ลากิจกฎหมาย (รายเดือน)',                   3, 0, 0],  // กม.แรงงาน 3 วัน 8:00-18:00
+    ['B02', 'ลากิจกฎหมาย (รายวัน)',                     3, 0, 0],  // กม.แรงงาน 3 วัน 8:00-17:00
+    ['B03', 'พักงาน',                                    0, 0, 0],
+    ['B04', 'ลากิจบริษัท (รายเดือน)',                   4, 0, 0],  // นโยบายบริษัท 4 วัน 8:00-18:00
+    ['B4',  'ลากิจ (พิเศษ)',                             3, 0, 0],
+    ['S02', 'ลาป่วย',                                   30, 0, 3],
+    ['V03', 'ลาพักร้อน',                               10, 0, 0],
   ];
-  const needReseed = !db.prepare("SELECT id FROM leave_types WHERE code='B01'").get();
+  const needReseed = !db.prepare("SELECT id FROM leave_types WHERE code='B04'").get();
   if (needReseed) {
-    // ลบ leave_balances ก่อน (FK) แล้วล้าง leave_types
+    // ล้าง leave_balances + leave_types แล้ว seed ใหม่
     try { sqlDb.run('DELETE FROM leave_balances'); } catch(e) {}
     try { sqlDb.run('DELETE FROM leave_types'); } catch(e) {}
     const insLt = db.prepare('INSERT INTO leave_types (code,name,max_days_per_year,requires_document,requires_doc_over_days) VALUES (?,?,?,?,?)');
     for (const row of correctTypes) insLt.run(...row);
   } else {
-    // อัปเดตชื่อที่อาจผิดจาก seed เก่า
-    const upLt = db.prepare('UPDATE leave_types SET name=? WHERE code=?');
-    for (const [code, name] of correctTypes) upLt.run(name, code);
+    // อัปเดตชื่อ + โควต้า (ครอบคลุมกรณีเปลี่ยนจาก seed เก่า)
+    const upLt = db.prepare('UPDATE leave_types SET name=?, max_days_per_year=? WHERE code=?');
+    for (const [code, name, days] of correctTypes) upLt.run(name, days, code);
+    // เพิ่ม type ใหม่ที่ยังไม่มี
+    const insNew = db.prepare('INSERT OR IGNORE INTO leave_types (code,name,max_days_per_year,requires_document,requires_doc_over_days) VALUES (?,?,?,?,?)');
+    for (const row of correctTypes) insNew.run(...row);
+    // ตั้งค่า advance_days/backdate_days ให้ประเภทที่รู้กฎชัดเจน (เฉพาะถ้ายัง = 0)
+    const setLimits = db.prepare('UPDATE leave_types SET advance_days=?, backdate_days=? WHERE code=? AND advance_days=0 AND backdate_days=0');
+    setLimits.run(3,  0, 'B01'); // ลากิจกฎหมายรายเดือน: ล่วงหน้า 3 วัน, ย้อนหลังไม่ได้
+    setLimits.run(3,  0, 'B02'); // ลากิจกฎหมายรายวัน
+    setLimits.run(3,  0, 'B04'); // ลากิจบริษัทรายเดือน
+    setLimits.run(0, 30, 'S02'); // ลาป่วย: ย้อนหลังได้ 30 วัน, ล่วงหน้าไม่จำกัด
   }
 
   return db;

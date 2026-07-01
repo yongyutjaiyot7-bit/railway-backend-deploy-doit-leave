@@ -118,7 +118,11 @@ module.exports = function (db) {
 
   // GET /api/leave/types
   router.get('/types', authenticate, (req, res) => {
-    res.json(db.prepare('SELECT * FROM leave_types').all());
+    res.json(db.prepare(`SELECT id, code, name, max_days_per_year, requires_document,
+      COALESCE(requires_doc_over_days,0) as requires_doc_over_days,
+      COALESCE(advance_days,0)  as advance_days,
+      COALESCE(backdate_days,0) as backdate_days
+      FROM leave_types ORDER BY id`).all());
   });
 
   // GET /api/leave/departments — รายชื่อแผนก/หน่วยงานทั้งหมด
@@ -154,26 +158,46 @@ module.exports = function (db) {
 
   // POST /api/leave/request  (multipart/form-data — รองรับไฟล์แนบ)
   router.post('/request', authenticate, upload.array('attachments', 5), (req, res) => {
-    const { leave_type_id, start_date, end_date, start_datetime, end_datetime, reason } = req.body;
-    if (!leave_type_id || !start_date || !end_date || !reason) {
+    const { leave_type_id, start_date, end_date, start_datetime, end_datetime, reason, allow_unpaid } = req.body;
+    if (!leave_type_id || !start_date || !end_date) {
       (req.files || []).forEach(f => fs.unlink(f.path, () => {}));
       return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
     }
+    if (!reason || !reason.trim()) {
+      (req.files || []).forEach(f => fs.unlink(f.path, () => {}));
+      return res.status(400).json({ message: 'กรุณาระบุเหตุผลการลา' });
+    }
 
-    // ตรวจสอบการลาย้อนหลัง — อนุโลมเฉพาะลาป่วย
+    // ดึงข้อมูลประเภทลาก่อนเพื่อใช้ตรวจสอบกฎ
+    const leaveTypeMeta = db.prepare('SELECT * FROM leave_types WHERE id = ?').get(leave_type_id);
+    const ltAdvanceDays  = leaveTypeMeta?.advance_days  ?? 0; // 0 = ไม่จำกัด
+    const ltBackdateDays = leaveTypeMeta?.backdate_days ?? 0; // 0 = ไม่อนุญาต
+
     const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
     const startDateObj  = new Date(start_date + 'T00:00:00');
     const isBackdated   = startDateObj < todayMidnight;
+    const daysAhead     = Math.round((startDateObj - todayMidnight) / 86400000);
+    const daysBehind    = Math.round((todayMidnight - startDateObj) / 86400000);
+
     if (isBackdated) {
-      const sickType = db.prepare("SELECT id FROM leave_types WHERE name = 'ลาป่วย'").get();
-      if (!sickType || parseInt(leave_type_id) !== sickType.id) {
+      if (ltBackdateDays === 0) {
+        // ไม่อนุญาตย้อนหลัง
         (req.files || []).forEach(f => fs.unlink(f.path, () => {}));
-        return res.status(400).json({ message: 'การลาย้อนหลังอนุโลมเฉพาะ "ลาป่วย" เท่านั้น ประเภทการลาอื่นๆ กรุณาติดต่อ HR Admin' });
+        return res.status(400).json({ message: `"${leaveTypeMeta?.name}" ไม่สามารถยื่นย้อนหลังได้ กรุณาติดต่อ HR Admin` });
+      }
+      if (daysBehind > ltBackdateDays) {
+        (req.files || []).forEach(f => fs.unlink(f.path, () => {}));
+        return res.status(400).json({ message: `"${leaveTypeMeta?.name}" ย้อนหลังได้ไม่เกิน ${ltBackdateDays} วัน (ย้อนหลัง ${daysBehind} วัน)` });
+      }
+    } else {
+      // ล่วงหน้า
+      if (ltAdvanceDays > 0 && daysAhead > ltAdvanceDays) {
+        (req.files || []).forEach(f => fs.unlink(f.path, () => {}));
+        return res.status(400).json({ message: `"${leaveTypeMeta?.name}" ยื่นล่วงหน้าได้ไม่เกิน ${ltAdvanceDays} วัน (ล่วงหน้า ${daysAhead} วัน)` });
       }
     }
 
     // ตรวจสอบเงื่อนไข "ลาเกิน N วัน ต้องแนบเอกสาร"
-    const leaveTypeMeta = db.prepare('SELECT * FROM leave_types WHERE id = ?').get(leave_type_id);
     const overLimit = leaveTypeMeta?.requires_doc_over_days || 0;
     // (days จะถูกคำนวณด้านล่าง ณ จุดนี้ใช้ค่าคร่าวๆ จากวันที่)
     // ตรวจสอบหลังคำนวณ days จริง — ดำเนินการด้านล่างแทน
@@ -204,10 +228,26 @@ module.exports = function (db) {
 
     if (!balance) return res.status(400).json({ message: 'ไม่มีข้อมูลโควต้าการลา' });
     const remain = balance.total_days - balance.used_days;
+
+    // ลาเกินโควต้า: ถ้ายังไม่ได้ยืนยัน → ตอบกลับให้ frontend แสดง confirm dialog
+    let isUnpaidExcess = 0;
+    let unpaidExcessDays = 0;
     if (remain < days) {
-      (req.files || []).forEach(f => fs.unlink(f.path, () => {}));
-      const remainDisp = Number.isInteger(remain) ? remain : remain.toFixed(1);
-      return res.status(400).json({ message: `วันลาไม่เพียงพอ (คงเหลือ ${remainDisp} วัน)` });
+      if (!allow_unpaid || allow_unpaid === 'false' || allow_unpaid === false) {
+        (req.files || []).forEach(f => fs.unlink(f.path, () => {}));
+        const remainDisp = Number.isInteger(remain) ? remain : remain.toFixed(1);
+        const excessDisp = Number.isInteger(days - remain) ? (days - remain) : (days - remain).toFixed(1);
+        return res.status(200).json({
+          over_quota: true,
+          remain: remainDisp,
+          excess: excessDisp,
+          leave_type_name: leaveTypeMeta?.name || '',
+          message: `โควต้าคงเหลือ ${remainDisp} วัน — ลาเกิน ${excessDisp} วัน จะถือเป็น "ลาไม่รับค่าจ้าง"`
+        });
+      }
+      // ผู้ใช้ยืนยันแล้ว → บันทึก flag
+      isUnpaidExcess = 1;
+      unpaidExcessDays = Math.max(0, days - remain);
     }
 
     const { approver1_id, approver2_id } = req.body;
@@ -218,9 +258,9 @@ module.exports = function (db) {
 
     const request_no = generateRequestNo();
     const result = db.prepare(`
-      INSERT INTO leave_requests (request_no, employee_id, leave_type_id, start_date, end_date, start_datetime, end_datetime, days, hours, reason, is_backdated)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(request_no, req.user.id, leave_type_id, start_date, end_date, startDt, endDt, days, hours, reason, isBackdated ? 1 : 0);
+      INSERT INTO leave_requests (request_no, employee_id, leave_type_id, start_date, end_date, start_datetime, end_datetime, days, hours, reason, is_backdated, is_unpaid_excess, unpaid_excess_days)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(request_no, req.user.id, leave_type_id, start_date, end_date, startDt, endDt, days, hours, reason, isBackdated ? 1 : 0, isUnpaidExcess, unpaidExcessDays);
     const leaveId = result.lastInsertRowid;
 
     const insApproval = db.prepare('INSERT INTO approvals (leave_request_id, level, approver_id) VALUES (?, ?, ?)');
@@ -234,7 +274,10 @@ module.exports = function (db) {
     `);
     (req.files || []).forEach(f => insFile.run(leaveId, f.filename, f.originalname, f.mimetype, f.size));
 
-    res.status(201).json({ message: 'ยื่นคำขอลาสำเร็จ', request_no, leave_request_id: leaveId, days, hours, attachments: (req.files||[]).length });
+    const successMsg = isUnpaidExcess
+      ? `ยื่นคำขอลาสำเร็จ — ลาเกินโควต้า ${unpaidExcessDays} วัน ถือเป็นลาไม่รับค่าจ้าง`
+      : 'ยื่นคำขอลาสำเร็จ';
+    res.status(201).json({ message: successMsg, request_no, leave_request_id: leaveId, days, hours, attachments: (req.files||[]).length, is_unpaid_excess: isUnpaidExcess, unpaid_excess_days: unpaidExcessDays });
 
     // แจ้งเตือนผู้อนุมัติระดับ 1 (fire-and-forget)
     try {
@@ -286,9 +329,9 @@ module.exports = function (db) {
   // GET /api/leave/my-requests
   router.get('/my-requests', authenticate, (req, res) => {
     const requests = db.prepare(`
-      SELECT lr.*, lt.name as leave_type_name
+      SELECT lr.*, COALESCE(lt.name,'(ไม่พบประเภทลา)') as leave_type_name
       FROM leave_requests lr
-      JOIN leave_types lt ON lt.id = lr.leave_type_id
+      LEFT JOIN leave_types lt ON lt.id = lr.leave_type_id
       WHERE lr.employee_id = ?
       ORDER BY lr.created_at DESC
     `).all(req.user.id);
@@ -309,10 +352,17 @@ module.exports = function (db) {
 
   // DELETE /api/leave/request/:id
   router.delete('/request/:id', authenticate, (req, res) => {
-    const lr = db.prepare('SELECT * FROM leave_requests WHERE id = ? AND employee_id = ?').get(req.params.id, req.user.id);
+    const lr = db.prepare(`SELECT lr.*, lt.name as leave_type_name FROM leave_requests lr JOIN leave_types lt ON lt.id=lr.leave_type_id WHERE lr.id=? AND lr.employee_id=?`).get(req.params.id, req.user.id);
     if (!lr) return res.status(404).json({ message: 'ไม่พบคำขอลา' });
     if (lr.status !== 'pending') return res.status(400).json({ message: 'ไม่สามารถยกเลิกได้' });
     db.prepare("UPDATE leave_requests SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?").run(lr.id);
+    try {
+      db.prepare(`INSERT INTO delete_logs (action, table_name, record_id, record_summary, deleted_by_user_id, deleted_by_name, deleted_by_email, deleted_by_role, ip_address)
+        VALUES (?,?,?,?,?,?,?,?,?)`)
+        .run('CANCEL_LEAVE_REQUEST', 'leave_requests', String(lr.id),
+          `${lr.request_no} ${lr.leave_type_name} ${lr.start_date}–${lr.end_date} ${lr.days}วัน`,
+          req.user.id, req.user.name || '', req.user.email || '', req.user.role || '', req.ip || '');
+    } catch(_) {}
     res.json({ message: 'ยกเลิกคำขอลาสำเร็จ' });
   });
 

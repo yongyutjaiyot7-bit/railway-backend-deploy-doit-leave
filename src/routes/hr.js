@@ -12,6 +12,17 @@ const path = require('path');
 module.exports = function (db) {
   const router = express.Router();
 
+  // ฟังก์ชัน log การลบ
+  function logDelete(req, { action, table_name, record_id, record_summary }) {
+    try {
+      db.prepare(`INSERT INTO delete_logs (action, table_name, record_id, record_summary, deleted_by_user_id, deleted_by_name, deleted_by_email, deleted_by_role, ip_address)
+        VALUES (?,?,?,?,?,?,?,?,?)`)
+        .run(action, table_name, String(record_id || ''), record_summary || '',
+          req.user?.id || null, req.user?.name || '', req.user?.email || '',
+          req.user?.role || '', req.ip || '');
+    } catch(_) {}
+  }
+
   // ตรวจสิทธิ์: hr_admin เข้าได้เสมอ หรือมี can_access_hr ใน user_menu_permissions
   router.use(authenticate, (req, res, next) => {
     if (req.user.role === 'hr_admin') return next();
@@ -147,6 +158,7 @@ module.exports = function (db) {
     if (hasLeave && hasLeave.c > 0) return res.status(400).json({ message: `ไม่สามารถลบได้ มีประวัติการลา ${hasLeave.c} รายการ` });
     db.prepare('DELETE FROM leave_balances WHERE employee_id=?').run(u.id);
     db.prepare('DELETE FROM users WHERE id=?').run(u.id);
+    logDelete(req, { action: 'DELETE_EMPLOYEE', table_name: 'users', record_id: u.id, record_summary: `${u.name} (${u.employee_id}) แผนก:${u.department}` });
     res.json({ message: 'ลบพนักงานสำเร็จ' });
   });
 
@@ -193,6 +205,7 @@ module.exports = function (db) {
     const p = db.prepare('SELECT * FROM access_permissions WHERE role=?').get(req.params.role);
     if (!p) return res.status(404).json({ message: 'ไม่พบบทบาท' });
     db.prepare('DELETE FROM access_permissions WHERE role=?').run(req.params.role);
+    logDelete(req, { action: 'DELETE_PERMISSION', table_name: 'access_permissions', record_id: req.params.role, record_summary: `บทบาท: ${req.params.role}` });
     res.json({ message: `ลบบทบาท "${req.params.role}" สำเร็จ` });
   });
 
@@ -326,6 +339,7 @@ module.exports = function (db) {
     const r = db.prepare('SELECT * FROM dept_approvers WHERE id=?').get(req.params.id);
     if (!r) return res.status(404).json({ message: 'ไม่พบรายการ' });
     db.prepare('DELETE FROM dept_approvers WHERE id=?').run(req.params.id);
+    logDelete(req, { action: 'DELETE_DEPT_APPROVER', table_name: 'dept_approvers', record_id: r.id, record_summary: `แผนก:${r.department} ระดับ:${r.level}` });
     res.json({ message: 'ลบผู้อนุมัติสำเร็จ' });
   });
 
@@ -361,30 +375,39 @@ module.exports = function (db) {
 
   // GET /api/hr/leave-types
   router.get('/leave-types', (req, res) => {
-    res.json(db.prepare('SELECT * FROM leave_types').all());
+    res.json(db.prepare(`SELECT id, code, name, max_days_per_year, requires_document,
+      COALESCE(requires_doc_over_days,0) as requires_doc_over_days,
+      COALESCE(advance_days,0)  as advance_days,
+      COALESCE(backdate_days,0) as backdate_days
+      FROM leave_types ORDER BY id`).all());
   });
 
   // POST /api/hr/leave-types
   router.post('/leave-types', (req, res) => {
-    const { code, name, max_days_per_year, requires_document, requires_doc_over_days } = req.body;
+    const { code, name, max_days_per_year, requires_document, requires_doc_over_days, advance_days, backdate_days } = req.body;
     if (!name || !max_days_per_year) return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
-    const r = db.prepare('INSERT INTO leave_types (code,name,max_days_per_year,requires_document,requires_doc_over_days) VALUES (?,?,?,?,?)')
-      .run(code||'', name, Number(max_days_per_year), requires_document ? 1 : 0, requires_doc_over_days ? Number(requires_doc_over_days) : 0);
+    const r = db.prepare('INSERT INTO leave_types (code,name,max_days_per_year,requires_document,requires_doc_over_days,advance_days,backdate_days) VALUES (?,?,?,?,?,?,?)')
+      .run(code||'', name, Number(max_days_per_year), requires_document ? 1 : 0,
+        requires_doc_over_days ? Number(requires_doc_over_days) : 0,
+        Number(advance_days)  || 0,
+        Number(backdate_days) || 0);
     res.status(201).json({ message: 'เพิ่มประเภทการลาสำเร็จ', id: r.lastInsertRowid });
   });
 
   // PUT /api/hr/leave-types/:id
   router.put('/leave-types/:id', (req, res) => {
-    const { code, name, max_days_per_year, requires_document, requires_doc_over_days } = req.body;
+    const { code, name, max_days_per_year, requires_document, requires_doc_over_days, advance_days, backdate_days } = req.body;
     const lt = db.prepare('SELECT * FROM leave_types WHERE id=?').get(req.params.id);
     if (!lt) return res.status(404).json({ message: 'ไม่พบประเภทการลา' });
-    db.prepare('UPDATE leave_types SET code=?,name=?,max_days_per_year=?,requires_document=?,requires_doc_over_days=? WHERE id=?')
+    db.prepare('UPDATE leave_types SET code=?,name=?,max_days_per_year=?,requires_document=?,requires_doc_over_days=?,advance_days=?,backdate_days=? WHERE id=?')
       .run(
         code !== undefined ? code : (lt.code||''),
         name||lt.name,
         max_days_per_year ? Number(max_days_per_year) : lt.max_days_per_year,
         requires_document !== undefined ? (requires_document?1:0) : lt.requires_document,
         requires_doc_over_days !== undefined ? Number(requires_doc_over_days) : (lt.requires_doc_over_days||0),
+        advance_days  !== undefined ? Number(advance_days)  : (lt.advance_days||0),
+        backdate_days !== undefined ? Number(backdate_days) : (lt.backdate_days||0),
         lt.id
       );
     res.json({ message: 'อัปเดตประเภทการลาสำเร็จ' });
@@ -392,9 +415,12 @@ module.exports = function (db) {
 
   // DELETE /api/hr/leave-types/:id
   router.delete('/leave-types/:id', (req, res) => {
+    const lt = db.prepare('SELECT * FROM leave_types WHERE id=?').get(req.params.id);
+    if (!lt) return res.status(404).json({ message: 'ไม่พบประเภทการลา' });
     const used = db.prepare('SELECT COUNT(*) as c FROM leave_requests WHERE leave_type_id=?').get(req.params.id);
     if (used && used.c > 0) return res.status(400).json({ message: `ไม่สามารถลบได้ มีการลาประเภทนี้ ${used.c} รายการ` });
     db.prepare('DELETE FROM leave_types WHERE id=?').run(req.params.id);
+    logDelete(req, { action: 'DELETE_LEAVE_TYPE', table_name: 'leave_types', record_id: lt.id, record_summary: `${lt.name} (${lt.code})` });
     res.json({ message: 'ลบประเภทการลาสำเร็จ' });
   });
 
@@ -546,7 +572,7 @@ module.exports = function (db) {
 
     const baseSql = `
       FROM leave_requests lr
-      JOIN leave_types lt ON lt.id = lr.leave_type_id
+      LEFT JOIN leave_types lt ON lt.id = lr.leave_type_id
       JOIN users u ON u.id = lr.employee_id
       ${where}
     `;
@@ -555,7 +581,7 @@ module.exports = function (db) {
     const rows = db.prepare(`
       SELECT lr.id, lr.request_no, lr.start_date, lr.end_date, lr.start_datetime, lr.end_datetime, lr.days, lr.hours, lr.reason,
              lr.status, lr.created_at, lr.updated_at,
-             lt.name as leave_type_name, lt.id as leave_type_id,
+             COALESCE(lt.name,'(ไม่พบประเภทลา)') as leave_type_name, lt.id as leave_type_id,
              u.name as employee_name, u.employee_id as emp_code,
              u.department, u.division, u.unit
       ${baseSql}
@@ -785,7 +811,9 @@ module.exports = function (db) {
   // DELETE /api/hr/company-holidays/:id
   router.delete('/company-holidays/:id', (req, res) => {
     if (req.user.role !== 'hr_admin') return res.status(403).json({ message: 'เฉพาะ HR Admin เท่านั้น' });
+    const h = db.prepare('SELECT * FROM company_holidays WHERE id=?').get(req.params.id);
     db.prepare('DELETE FROM company_holidays WHERE id=?').run(req.params.id);
+    logDelete(req, { action: 'DELETE_HOLIDAY', table_name: 'company_holidays', record_id: req.params.id, record_summary: h ? `${h.date} ${h.name}` : req.params.id });
     res.json({ message: 'ลบสำเร็จ' });
   });
 
@@ -894,8 +922,26 @@ module.exports = function (db) {
   // DELETE /api/hr/work-schedule/:id
   router.delete('/work-schedule/:id', (req, res) => {
     if (req.user.role !== 'hr_admin') return res.status(403).json({ message: 'เฉพาะ HR Admin เท่านั้น' });
+    const ws = db.prepare('SELECT * FROM work_schedule WHERE id=?').get(req.params.id);
     db.prepare('DELETE FROM work_schedule WHERE id=?').run(req.params.id);
+    logDelete(req, { action: 'DELETE_WORK_SCHEDULE', table_name: 'work_schedule', record_id: req.params.id, record_summary: ws ? `${ws.date} (${ws.type})` : req.params.id });
     res.json({ message: 'ลบสำเร็จ' });
+  });
+
+  // GET /api/hr/delete-logs — ดู log การลบทุกประเภท
+  router.get('/delete-logs', (req, res) => {
+    const { page = 1, limit = 50, action = '', search = '' } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (action) { where += ' AND action=?'; params.push(action); }
+    if (search) {
+      where += ' AND (record_summary LIKE ? OR deleted_by_name LIKE ? OR deleted_by_email LIKE ?)';
+      const kw = `%${search}%`; params.push(kw, kw, kw);
+    }
+    const total = db.prepare(`SELECT COUNT(*) as c FROM delete_logs ${where}`).get(...params).c;
+    const rows  = db.prepare(`SELECT * FROM delete_logs ${where} ORDER BY deleted_at DESC LIMIT ? OFFSET ?`).all(...params, Number(limit), offset);
+    res.json({ rows, total, page: Number(page), limit: Number(limit) });
   });
 
   // GET /api/hr/leave-summary?year=YYYY
