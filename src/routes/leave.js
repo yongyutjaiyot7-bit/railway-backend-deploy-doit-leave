@@ -10,8 +10,17 @@ module.exports = function (db) {
 
   function generateRequestNo() {
     const d = new Date();
-    const prefix = `LV${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-    return `${prefix}${String(Math.floor(Math.random() * 9000) + 1000)}`;
+    const yy   = String(d.getFullYear()).slice(-2);
+    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const dd   = String(d.getDate()).padStart(2, '0');
+    // sequence: นับใบลาทั้งหมดใน DB + 1
+    const count = (db.prepare('SELECT COUNT(*) as c FROM leave_requests').get().c || 0) + 1;
+    const seq   = String(count).padStart(5, '0');
+    const body  = `LV${yy}${mm}${dd}${seq}`;
+    // check digit = sum ของตัวเลขทั้งหมด MOD 10
+    const digits = body.replace(/\D/g, '');
+    const checkDigit = digits.split('').reduce((s, c) => s + parseInt(c), 0) % 10;
+    return `${body}${checkDigit}`;
   }
 
   // Reference working Saturday for monthly employees (alternate Saturdays)
@@ -158,11 +167,19 @@ module.exports = function (db) {
     // ดึง leave_requests ของ user นี้ที่อยู่ในปีงบประมาณ
     const requests = db.prepare(`SELECT leave_type_id, days, start_date FROM leave_requests WHERE employee_id = ? AND status IN ('pending','approved_l1','approved')`).all(req.user.id);
 
-    // กรองเฉพาะที่อยู่ในปีงบประมาณ (start_date format DD-MM-YYYY)
+    // กรองเฉพาะที่อยู่ในปีงบประมาณ (รองรับทั้ง DD-MM-YYYY และ YYYY-MM-DD)
     function inFY(dateStr) {
       if (!dateStr || dateStr.length < 10) return false;
-      const mm = parseInt(dateStr.substring(3, 5), 10);
-      const yyyy = parseInt(dateStr.substring(6, 10), 10);
+      let mm, yyyy;
+      if (dateStr[2] === '-') {
+        // DD-MM-YYYY
+        mm   = parseInt(dateStr.substring(3, 5), 10);
+        yyyy = parseInt(dateStr.substring(6, 10), 10);
+      } else {
+        // YYYY-MM-DD หรือ ISO
+        yyyy = parseInt(dateStr.substring(0, 4), 10);
+        mm   = parseInt(dateStr.substring(5, 7), 10);
+      }
       if (mm >= 11 && yyyy === fy) return true;
       if (mm <= 10 && yyyy === fy + 1) return true;
       return false;
@@ -172,7 +189,7 @@ module.exports = function (db) {
     const usedMap = {};
     requests.forEach(r => {
       if (inFY(r.start_date)) {
-        usedMap[r.leave_type_id] = (usedMap[r.leave_type_id] || 0) + (r.days || 0);
+        usedMap[r.leave_type_id] = (usedMap[r.leave_type_id] || 0) + (parseFloat(r.days) || 0);
       }
     });
 

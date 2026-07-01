@@ -378,6 +378,7 @@ function switchTab(name) {
 // ====== EMPLOYEE DASHBOARD ======
 let empLeaveData = [];
 let empPage = 1;
+let empBalanceCache = []; // cache โควต้าคงเหลือสำหรับตรวจสอบก่อน submit
 
 async function loadBalance() {
   try {
@@ -397,6 +398,7 @@ async function loadBalance() {
   ]);
   if (history && history.error) { console.error('loadBalance my-requests error:', history.error); }
   empLeaveData = Array.isArray(history) ? history : [];
+  empBalanceCache = Array.isArray(balance) ? balance : [];
 
   // stat cards
   const total    = empLeaveData.length;
@@ -848,6 +850,67 @@ function calcReqDays() {
     return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.`;
   };
   document.getElementById('req-duration-detail').textContent = `${fmt(sv)} — ${fmt(ev)}`;
+
+  // ===== Validation Alerts =====
+  // ตรวจสอบหลังจาก user เลือกวันที่ครบแล้ว (ทั้ง start และ end)
+  const warnings = [];
+
+  // 1. ตรวจวันหยุด — วันเริ่มหรือสิ้นสุดตรงกับวันหยุด
+  const checkD = new Date(startDateStr + 'T00:00:00');
+  const endD   = new Date(endDateStr   + 'T00:00:00');
+  const holidayNames = [];
+  for (let d = new Date(checkD); d <= endD; d.setDate(d.getDate() + 1)) {
+    const pad = n => String(n).padStart(2,'0');
+    const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const dow = d.getDay();
+    // วันอาทิตย์ = 0
+    if (dow === 0) { holidayNames.push(`${d.getDate()}/${d.getMonth()+1} (อาทิตย์)`); continue; }
+    if (isCompanyHoliday(ds)) holidayNames.push(`${d.getDate()}/${d.getMonth()+1} — ${companyHolidayName(ds)}`);
+  }
+  if (holidayNames.length) {
+    warnings.push({ icon: 'warning', title: '📅 วันที่เลือกมีวันหยุด', html:
+      '<div style="text-align:left">ช่วงลาของคุณมีวันหยุดดังนี้:<br><ul style="margin:8px 0 0 16px">'
+      + holidayNames.map(n => `<li>${n}</li>`).join('')
+      + '</ul><br><span style="color:#718096;font-size:12px">วันหยุดจะไม่ถูกนับเป็นวันลา</span></div>'
+    });
+  }
+
+  // 2. วันลาทั้งหมดเป็น 0 (เลือกแต่วันหยุด/เสาร์-อาทิตย์)
+  if (workHours === 0 && !end <= start) {
+    warnings.push({ icon: 'error', title: '❌ ไม่มีวันทำงานในช่วงที่เลือก',
+      text: 'วันที่เลือกทั้งหมดเป็นวันหยุดหรือวันไม่มีการทำงาน กรุณาเลือกวันใหม่'
+    });
+  }
+
+  // 3. ตรวจโควต้า
+  const ltSel = document.getElementById('req-type');
+  if (ltSel && ltSel.value && empBalanceCache.length && workDays > 0) {
+    const ltId = parseInt(ltSel.value);
+    const bal  = empBalanceCache.find(b => Number(b.leave_type_id) === ltId);
+    if (bal) {
+      const remain = Math.max(0, (bal.total_days || 0) - (bal.used_days || 0));
+      if (workDays > remain) {
+        warnings.push({ icon: 'warning', title: '⚠️ วันลาเกินโควต้า',
+          html: `<div style="text-align:left;line-height:1.9">
+            ประเภทการลา: <b>${bal.leave_type_name}</b><br>
+            โควต้าคงเหลือ: <b style="color:#38a169">${remain} วัน</b><br>
+            วันที่ขอลา: <b style="color:#c53030">${workDays} วัน</b><br>
+            เกินโควต้า: <b style="color:#c53030">${(workDays - remain).toFixed(1)} วัน</b><br>
+            <span style="font-size:12px;color:#718096">วันที่เกินจะถือเป็นลาไม่รับค่าจ้าง</span>
+          </div>`
+        });
+      }
+    }
+  }
+
+  // แสดง alert ทีละอัน (queue)
+  if (warnings.length) {
+    (async function showWarnings() {
+      for (const w of warnings) {
+        await Swal.fire({ confirmButtonColor: '#1e3a5f', confirmButtonText: 'รับทราบ', ...w });
+      }
+    })();
+  }
 }
 const updateDays = calcReqDays;
 
@@ -1456,7 +1519,7 @@ function exportReport(fmt) {
     const STATUS_TH = { pending:'รอตรวจสอบ', approved_l1:'รอระดับอนุมัติ', approved:'อนุมัติแล้ว', rejected:'ปฏิเสธ', cancelled:'ยกเลิก' };
     const rows = filtered.map(r => `<tr><td>${r.emp_code}</td><td>${r.employee_name}</td><td>${r.department}</td><td>${r.division}</td><td>${r.leave_type_name}</td><td>${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}</td><td style="text-align:center">${r.days}</td><td>${STATUS_TH[r.status]||r.status}</td></tr>`).join('');
     const win = window.open('','_blank');
-    win.document.write(`<html><head><title>รายงานการลา</title><style>body{font-family:sans-serif;font-size:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:4px 8px}th{background:#e2e8f0}</style></head><body><h2>รายงานการลา ปี ${document.getElementById('rpt-year')?.value||''}</h2><table><thead><tr><th>รหัส</th><th>ชื่อ</th><th>แผนก</th><th>ฝ่าย</th><th>ประเภท</th><th>ช่วงวันที่</th><th>วัน</th><th>สถานะ</th></tr></thead><tbody>${rows}</tbody></table></body></html>`);
+    win.document.write(`<html><head><title>รายงานการลา</title><style>@page{size:A4 landscape}body{font-family:sans-serif;font-size:12px;position:relative;margin-bottom:40px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:4px 8px}th{background:#e2e8f0}.watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:120px;color:rgba(0,0,0,0.08);font-weight:700;white-space:nowrap;pointer-events:none;z-index:9999;font-family:sans-serif}.print-footer{position:fixed;bottom:0;left:0;right:0;padding:6px 16px;font-size:11px;color:#555;border-top:1px solid #ddd;background:#fff;display:flex;justify-content:space-between}@media print{@page{size:A4 landscape}.watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:120px;color:rgba(0,0,0,0.08);font-weight:700;white-space:nowrap}.print-footer{position:fixed;bottom:0;left:0;right:0;padding:6px 16px;font-size:11px;color:#555;border-top:1px solid #ddd;display:flex;justify-content:space-between}}</style></head><body><div class="watermark">บริษัท ดูอิท จำกัด</div><div class="print-footer"><span>พิมพ์โดย: ${user?.name||''}</span><span id="pg-footer"></span></div><h2>รายงานการลา ปี ${document.getElementById('rpt-year')?.value||''}</h2><table><thead><tr><th>รหัส</th><th>ชื่อ</th><th>แผนก</th><th>ฝ่าย</th><th>ประเภท</th><th>ช่วงวันที่</th><th>วัน</th><th>สถานะ</th></tr></thead><tbody>${rows}</tbody></table></body></html>`);
     win.document.close(); win.print();
   }
 }
@@ -1475,14 +1538,20 @@ function exportEmpReport(leaveId, empName) {
     return p.join(' ')||'0';
   };
   const trs = rows.map(r => `<tr><td>${r.leave_type_name}</td><td>${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}</td><td style="text-align:center;font-weight:600">${fmtDur(r.days,r.hours)}</td><td style="color:#555">${r.reason||'-'}</td><td>${STATUS_TH[r.status]||r.status}</td></tr>`).join('');
-  const totalDays = rows.reduce((s,r)=>s+(r.days||0),0);
-  const totalHours = rows.reduce((s,r)=>s+(Number(r.hours)||0),0);
+  const _sumDays = rows.reduce((s,r)=>s+Math.floor(Number(r.days)||0),0);
+  const _sumRemH = rows.reduce((s,r)=>s+(Number(r.hours)||0),0);
+  const _extraD  = Math.floor(_sumRemH/8);
+  const _finalRH = _sumRemH - _extraD*8;
+  const _tWH     = Math.floor(_finalRH);
+  const _tM      = Math.round((_finalRH-_tWH)*60);
+  const _tD      = _sumDays + _extraD;
+  const totalStr = [_tD>0?`${_tD} วัน`:'',_tWH>0?`${_tWH} ชม.`:'',_tM>0?`${_tM} นาที`:''].filter(Boolean).join(' ')||'0';
   const win = window.open('','_blank');
-  win.document.write(`<html><head><title>รายงานการลา - ${empName}</title><style>body{font-family:sans-serif;font-size:13px;padding:20px}h2{margin-bottom:4px}p{margin:2px 0;color:#555}table{border-collapse:collapse;width:100%;margin-top:14px}th,td{border:1px solid #ccc;padding:6px 10px}th{background:#e2e8f0}.total{font-weight:600;color:#2d3748}</style></head><body>
+  win.document.write(`<html><head><title>รายงานการลา</title><style>@page{size:A4 landscape}body{font-family:sans-serif;font-size:13px;padding:20px;padding-bottom:50px;position:relative}h2{margin-bottom:4px}p{margin:2px 0;color:#555}table{border-collapse:collapse;width:100%;margin-top:14px}th,td{border:1px solid #ccc;padding:6px 10px}th{background:#e2e8f0}.total{font-weight:600;color:#2d3748}.watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:120px;color:rgba(0,0,0,0.08);font-weight:700;white-space:nowrap;pointer-events:none;z-index:9999;font-family:sans-serif}.print-footer{position:fixed;bottom:0;left:0;right:0;padding:6px 16px;font-size:11px;color:#555;border-top:1px solid #ddd;background:#fff;display:flex;justify-content:space-between}@media print{@page{size:A4 landscape}.watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:120px;color:rgba(0,0,0,0.08);font-weight:700;white-space:nowrap}.print-footer{position:fixed;bottom:0;left:0;right:0;padding:6px 16px;font-size:11px;color:#555;border-top:1px solid #ddd;display:flex;justify-content:space-between}}</style></head><body><div class="watermark">บริษัท ดูอิท จำกัด</div><div class="print-footer"><span>พิมพ์โดย: ${user?.name||''}</span></div>
   <h2>รายงานการลา</h2>
   <p>พนักงาน: <b>${empName}</b> (${rows[0].emp_code})</p>
   <p>แผนก: ${rows[0].department} | ฝ่าย: ${rows[0].division}</p>
-  <table><thead><tr><th>ประเภทการลา</th><th>ช่วงวันที่</th><th style="text-align:center">จำนวน</th><th>เหตุผลการลา</th><th>สถานะ</th></tr></thead><tbody>${trs}<tr><td colspan="2" style="text-align:right;font-weight:600">รวมทั้งหมด</td><td style="text-align:center;font-weight:700">${fmtDur(totalDays,totalHours)}</td><td colspan="2"></td></tr></tbody></table>
+  <table><thead><tr><th>ประเภทการลา</th><th>ช่วงวันที่</th><th style="text-align:center">จำนวน</th><th>เหตุผลการลา</th><th>สถานะ</th></tr></thead><tbody>${trs}<tr><td colspan="2" style="text-align:right;font-weight:600">รวมทั้งหมด</td><td style="text-align:center;font-weight:700">${totalStr}</td><td colspan="2"></td></tr></tbody></table>
   </body></html>`);
   win.document.close(); win.print();
 }

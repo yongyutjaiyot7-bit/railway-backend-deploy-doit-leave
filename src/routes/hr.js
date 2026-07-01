@@ -524,8 +524,15 @@ module.exports = function (db) {
     const lt = db.prepare('SELECT id,max_days_per_year FROM leave_types WHERE id=?').get(leave_type_id);
     if (!lt) return res.status(404).json({ message: 'ไม่พบประเภทการลา' });
     const d = new Date();
-    const prefix = `HR${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-    const request_no = `${prefix}${String(Math.floor(Math.random()*9000)+1000)}`;
+    const yy  = String(d.getFullYear()).slice(-2);
+    const mm2 = String(d.getMonth()+1).padStart(2,'0');
+    const dd2 = String(d.getDate()).padStart(2,'0');
+    const count2 = (db.prepare('SELECT COUNT(*) as c FROM leave_requests').get().c || 0) + 1;
+    const seq2   = String(count2).padStart(5,'0');
+    const body2  = `HR${yy}${mm2}${dd2}${seq2}`;
+    const digits2 = body2.replace(/\D/g,'');
+    const check2  = digits2.split('').reduce((s,c)=>s+parseInt(c),0) % 10;
+    const request_no = `${body2}${check2}`;
     const calcDays = days ? Number(days) : (Math.floor((new Date(end_date)-new Date(start_date))/86400000)+1);
     const recStatus = status || 'approved';
     const checkerId  = checker_id  ? Number(checker_id)  : req.user.id;

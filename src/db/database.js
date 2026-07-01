@@ -235,6 +235,31 @@ async function initDb() {
   try {
     sqlDb.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_leave_types_code ON leave_types(code) WHERE code IS NOT NULL AND code != ''`);
   } catch(e) {}
+  // Migration: reformat existing request_no to new format LV/HR{YY}{MMDD}{00001}{checkDigit}
+  // ตรวจทั้ง LENGTH != 14 และ format เก่าที่ใช้ปี 4 หลัก (positions 3-6 เป็นปี เช่น 2026)
+  try {
+    const needReformat = sqlDb.prepare(`
+      SELECT COUNT(*) as c FROM leave_requests
+      WHERE LENGTH(request_no) != 14
+         OR CAST(SUBSTR(request_no, 3, 4) AS INTEGER) BETWEEN 2020 AND 2099
+    `).get();
+    if (needReformat && needReformat.c > 0) {
+      const rows = sqlDb.prepare(`SELECT id, request_no, created_at FROM leave_requests ORDER BY id ASC`).all();
+      const upd  = sqlDb.prepare(`UPDATE leave_requests SET request_no=? WHERE id=?`);
+      rows.forEach((r, idx) => {
+        const prefix = r.request_no.startsWith('HR') ? 'HR' : 'LV';
+        const dt = new Date(r.created_at || Date.now());
+        const yy = String(dt.getFullYear()).slice(-2);
+        const mm = String(dt.getMonth()+1).padStart(2,'0');
+        const dd = String(dt.getDate()).padStart(2,'0');
+        const seq = String(idx+1).padStart(5,'0');
+        const body = `${prefix}${yy}${mm}${dd}${seq}`;
+        const digits = body.replace(/\D/g,'');
+        const check = digits.split('').reduce((s,c)=>s+parseInt(c),0) % 10;
+        upd.run(`${body}${check}`, r.id);
+      });
+    }
+  } catch(e) {}
   // Migration: per-user menu permissions
   sqlDb.run(`
     CREATE TABLE IF NOT EXISTS user_menu_permissions (
