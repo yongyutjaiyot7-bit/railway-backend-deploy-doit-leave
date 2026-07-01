@@ -412,14 +412,16 @@ async function loadBalance() {
   const barColors = ['#e53e3e','#d69e2e','#38a169','#3182ce','#805ad5','#00b5d8'];
   const barsEl = document.getElementById('emp-balance-bars');
   if (Array.isArray(balance) && balance.length) {
+    // แสดงปีงบประมาณในหัว section
+    const fyVal = balance[0] && balance[0].fiscal_year;
+    const fyLabelEl = document.getElementById('emp-balance-fy-label');
+    if (fyLabelEl && fyVal) fyLabelEl.textContent = `ปีงบประมาณ ${fyVal} (พ.ย. ${fyVal} – ต.ค. ${fyVal+1})`;
     if (barsEl) {
-      let showAll = false;
-      const usedItems  = balance.filter(b => (b.used_days || 0) > 0);
-      const hiddenCount = balance.length - usedItems.length;
-
-      function renderBalanceBars() {
-        const list = showAll ? balance : usedItems;
-        const rows = list.map((b, i) => {
+      const usedBalance = balance.filter(b => (b.used_days || 0) > 0);
+      if (usedBalance.length === 0) {
+        barsEl.innerHTML = '<div class="empty" style="font-size:13px">ยังไม่มีการใช้วันลาในปีนี้</div>';
+      } else {
+        barsEl.innerHTML = usedBalance.map((b, i) => {
           const used   = b.used_days || 0;
           const total  = b.total_days || 1;
           const remain = Math.max(0, total - used);
@@ -431,7 +433,7 @@ async function loadBalance() {
               <span style="font-size:12px;color:#718096"><span style="font-weight:700;color:${c}">${Number.isInteger(used)?used:used.toFixed(1)}</span>/${total} วัน</span>
             </div>
             <div style="background:#f0f4f8;border-radius:20px;height:8px;overflow:hidden">
-              <div style="background:linear-gradient(90deg,${c},${c}cc);height:100%;width:${pct}%;border-radius:20px;transition:width .6s ease"></div>
+              <div style="background:linear-gradient(90deg,${c},${c}cc);height:100%;width:${pct}%;border-radius:20deg;transition:width .6s ease"></div>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:3px">
               <span style="font-size:11px;color:#a0aec0">ใช้ไป ${Number.isInteger(used)?used:used.toFixed(1)} วัน (${pct}%)</span>
@@ -439,20 +441,7 @@ async function loadBalance() {
             </div>
           </div>`;
         }).join('');
-
-        const toggleBtn = hiddenCount > 0 ? `<div style="text-align:center;margin-top:6px">
-          <button onclick="(function(){const el=document.getElementById('emp-balance-bars');const b=el._balanceData;b._showAll=!b._showAll;b._render();})()" style="background:none;border:none;color:#3182ce;font-size:12px;cursor:pointer;padding:4px 8px;border-radius:6px;text-decoration:underline">
-            ${showAll ? '▲ แสดงเฉพาะที่ใช้งาน' : `▼ แสดงทั้งหมด (ซ่อนอยู่ ${hiddenCount} รายการ)`}
-          </button>
-        </div>` : '';
-
-        barsEl.innerHTML = (list.length === 0
-          ? `<div class="empty" style="font-size:13px">ยังไม่มีการใช้วันลาในปีนี้</div>`
-          : rows) + toggleBtn;
       }
-
-      barsEl._balanceData = { _showAll: false, _render: () => { showAll = barsEl._balanceData._showAll; renderBalanceBars(); } };
-      renderBalanceBars();
     }
   } else if (barsEl) {
     if (balance && balance.error) {
@@ -770,11 +759,12 @@ function calcLeaveResultFE(startDateStr, endDateStr, startDtStr, endDtStr) {
     const dow  = cur.getDay();
     if (maxH > 0) {
       if (startDateStr === endDateStr) {
-        // วันเดียว: คำนวนจากเวลาจริง
-        const actualH = (new Date(endDtStr) - new Date(startDtStr)) / 3600000;
-        const h = Math.min(Math.max(0, actualH), maxH);
+        // วันเดียว: หักพักเที่ยงด้วย calcRangeHours
+        const st = new Date(startDtStr);
+        const et = new Date(endDtStr);
+        const h = calcRangeHours(st.getHours()*60 + st.getMinutes(), et.getHours()*60 + et.getMinutes(), maxH);
         totalHours += h;
-        totalDays  += Math.max(0.5, Math.round((h / maxH) * 2) / 2);
+        totalDays  += h > 0 ? Math.max(0.5, Math.round((h / maxH) * 2) / 2) : 0;
       } else {
         const isFirst = ds === startDateStr;
         const isLast  = ds === endDateStr;
@@ -831,11 +821,11 @@ function calcReqDays() {
   const endDateStr   = ev.slice(0, 10);
   const { hours: workHours, days: workDays } = calcLeaveResultFE(startDateStr, endDateStr, sv, ev);
 
-  // ฐานการแสดงผล: 1 วัน = 8 ชม. เสมอ (ตามเงื่อนไขบริษัท)
-  // จ-พฤ รายเดือน: workHours=9 → 9÷8 = 1 วัน เหลือ 1 ชม.
-  // ศ รายเดือน:    workHours=8 → 8÷8 = 1 วัน เหลือ 0 ชม.
+  // ฐานการแสดงผล: 1 วัน = 8 ชม. เสมอ
+  // จ-พฤ รายเดือน เต็มวัน: workHours=9 → 9÷8 = 1 วัน เหลือ 1 ชม.
+  // ศ รายเดือน เต็มวัน:    workHours=8 → 8÷8 = 1 วัน เหลือ 0 ชม.
   const DISPLAY_H_PER_DAY = 8;
-  const fullDays    = Math.floor(workDays);
+  const fullDays    = Math.floor(workHours / DISPLAY_H_PER_DAY);
   const remHoursRaw = workHours - fullDays * DISPLAY_H_PER_DAY;
   const extraH      = Math.max(0, Math.floor(remHoursRaw));
   const extraMin    = Math.max(0, Math.round((remHoursRaw - extraH) * 60));
@@ -1362,24 +1352,16 @@ function fmtDuration(days, hours) {
   const d = Number(days) || 0;
   const h = Number(hours) || 0;
   let text, color;
-  if (d > 0) {
-    // มีค่า days (0.5, 1, 1.5, 2, ...) → แสดงเป็นวันเสมอ
-    // เช่น ลาครึ่งวัน จ-พฤ รายเดือน = 0.5 วัน ไม่ว่าจะ 4h หรือ 5h
-    text  = `${d} วัน`;
-    color = d >= 1 ? '#1e3a5f' : '#2b6cb0';
-  } else if (h > 0) {
-    // days=0 แต่มีชั่วโมง (กรณี admin กรอกเฉพาะชั่วโมง)
+  const parts = [];
+  if (d > 0) parts.push(`${d} วัน`);
+  if (h > 0) {
     const wholeH = Math.floor(h);
     const mins   = Math.round((h - wholeH) * 60);
-    const parts  = [];
     if (wholeH > 0) parts.push(`${wholeH} ชม.`);
     if (mins > 0)   parts.push(`${mins} นาที`);
-    text  = parts.length ? parts.join(' ') : '0';
-    color = '#2b6cb0';
-  } else {
-    text  = '0';
-    color = '#718096';
   }
+  if (parts.length === 0) { text = '0'; color = '#718096'; }
+  else { text = parts.join(' '); color = d >= 1 ? '#1e3a5f' : '#2b6cb0'; }
   return `<div style="font-weight:700;font-size:13px;color:${color}">${text}</div>`;
 }
 

@@ -86,11 +86,17 @@ module.exports = function (db) {
 
       if (maxH > 0) {
         if (startDate === endDate) {
-          // ลาวันเดียว: ใช้เวลาจริง
-          const actualH = (new Date(endDt) - new Date(startDt)) / 3600000;
-          const h = Math.min(Math.max(0, actualH), maxH);
+          // ลาวันเดียว: หักพักเที่ยง 12:00-13:00
+          const st = new Date(startDt), et = new Date(endDt);
+          const stMin = st.getHours()*60 + st.getMinutes();
+          const etMin = et.getHours()*60 + et.getMinutes();
+          let mins = Math.max(0, etMin - stMin);
+          const lS = 12*60, lE = 13*60;
+          if (stMin < lE && etMin > lS)
+            mins -= Math.max(0, Math.min(etMin, lE) - Math.max(stMin, lS));
+          const h = Math.min(Math.max(0, mins/60), maxH);
           totalHours += h;
-          totalDays  += Math.max(0.5, Math.round((h / maxH) * 2) / 2);
+          totalDays  += h > 0 ? Math.max(0.5, Math.round((h / maxH) * 2) / 2) : 0;
         } else {
           // หลายวัน: นับเต็มวันทำงานต่อวัน
           totalHours += maxH;
@@ -141,18 +147,36 @@ module.exports = function (db) {
 
   // GET /api/leave/balance
   router.get('/balance', authenticate, (req, res) => {
-    const year = parseInt(req.query.year) || new Date().getFullYear();
-    // ดึงทุกประเภทลา LEFT JOIN balance เพื่อให้แสดงแม้ยังไม่มี record
-    const rows = db.prepare(`
-      SELECT lt.id as leave_type_id, lt.name as leave_type_name, lt.max_days_per_year as total_days,
-             COALESCE(lb.used_days, 0) as used_days,
-             COALESCE(lb.id, NULL) as id, lb.year
-      FROM leave_types lt
-      LEFT JOIN leave_balances lb ON lb.leave_type_id = lt.id
-        AND lb.employee_id = ? AND lb.year = ?
-      WHERE lt.max_days_per_year > 0
-      ORDER BY lt.code, lt.name
-    `).all(req.user.id, year);
+    // ปีงบประมาณ: พ.ย. YYYY → ต.ค. YYYY+1  (label = YYYY)
+    const now = new Date();
+    const defaultFY = now.getMonth() >= 10 ? now.getFullYear() : now.getFullYear() - 1;
+    const fy = parseInt(req.query.fy) || defaultFY;
+
+    // ดึง leave_types
+    const types = db.prepare(`SELECT id as leave_type_id, name as leave_type_name, max_days_per_year as total_days FROM leave_types WHERE max_days_per_year > 0 ORDER BY code, name`).all();
+
+    // ดึง leave_requests ของ user นี้ที่อยู่ในปีงบประมาณ
+    const requests = db.prepare(`SELECT leave_type_id, days, start_date FROM leave_requests WHERE employee_id = ? AND status IN ('pending','approved_l1','approved')`).all(req.user.id);
+
+    // กรองเฉพาะที่อยู่ในปีงบประมาณ (start_date format DD-MM-YYYY)
+    function inFY(dateStr) {
+      if (!dateStr || dateStr.length < 10) return false;
+      const mm = parseInt(dateStr.substring(3, 5), 10);
+      const yyyy = parseInt(dateStr.substring(6, 10), 10);
+      if (mm >= 11 && yyyy === fy) return true;
+      if (mm <= 10 && yyyy === fy + 1) return true;
+      return false;
+    }
+
+    // รวม used_days ต่อ leave_type_id
+    const usedMap = {};
+    requests.forEach(r => {
+      if (inFY(r.start_date)) {
+        usedMap[r.leave_type_id] = (usedMap[r.leave_type_id] || 0) + (r.days || 0);
+      }
+    });
+
+    const rows = types.map(t => ({ ...t, used_days: usedMap[t.leave_type_id] || 0, fiscal_year: fy }));
     res.json(rows);
   });
 

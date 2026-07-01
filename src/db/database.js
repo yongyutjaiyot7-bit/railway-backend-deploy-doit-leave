@@ -223,6 +223,18 @@ async function initDb() {
   // Migration: advance/backdate limits per leave type (0 = ไม่จำกัด/ไม่อนุญาต)
   try { sqlDb.run('ALTER TABLE leave_types ADD COLUMN advance_days INTEGER DEFAULT 0'); } catch(e) {}
   try { sqlDb.run('ALTER TABLE leave_types ADD COLUMN backdate_days INTEGER DEFAULT 0'); } catch(e) {}
+  // Migration: deduplicate leave_types by name (keep lowest id per name)
+  try {
+    sqlDb.run(`DELETE FROM leave_types WHERE id NOT IN (
+      SELECT MIN(id) FROM leave_types GROUP BY name
+    )`);
+    // clean up leave_balances that reference deleted leave_type ids
+    sqlDb.run(`DELETE FROM leave_balances WHERE leave_type_id NOT IN (SELECT id FROM leave_types)`);
+  } catch(e) {}
+  // Migration: unique index on code (non-empty)
+  try {
+    sqlDb.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_leave_types_code ON leave_types(code) WHERE code IS NOT NULL AND code != ''`);
+  } catch(e) {}
   // Migration: per-user menu permissions
   sqlDb.run(`
     CREATE TABLE IF NOT EXISTS user_menu_permissions (
